@@ -1,0 +1,104 @@
+/* ================= PRODUCTS PAGE ================= */
+
+.products-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.products-top-bar h3 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.add-product-btn {
+  background: #e11d48;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.add-product-btn:hover {
+  background: #be123c;
+}
+
+/* GRID */
+.seller-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+/* PRODUCT CARD */
+.seller-product-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease;
+}
+
+.seller-product-card:hover {
+  transform: translateY(-4px);
+}
+
+/* IMAGE */
+.seller-product-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+/* INFO */
+.seller-product-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.seller-product-card p {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+/* PRICE */
+.seller-product-card .price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin-top: 6px;
+}
+
+/* ACTIONS */
+.product-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.product-actions button {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.product-actions .edit-btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+.product-actions .delete-btn {
+  background: #dc2626;
+  color: #fff;
+}

@@ -1,9 +1,11 @@
-import products from "../../data/products";
+import { useProducts } from "../../context/ProductContext";
 import ProductCard from "../common/ProductCard";
 
 export default function RelatedProducts({ currentId }) {
+  const { products } = useProducts(); // 🔥 merged products
+
   const related = products
-    .filter(p => p.id !== currentId)
+    .filter((p) => p.id !== currentId)
     .slice(0, 4);
 
   return (
@@ -11,7 +13,7 @@ export default function RelatedProducts({ currentId }) {
       <h3>Related Products</h3>
 
       <div className="related-grid">
-        {related.map(product => (
+        {related.map((product) => (
           <ProductCard
             key={product.id}
             product={product}

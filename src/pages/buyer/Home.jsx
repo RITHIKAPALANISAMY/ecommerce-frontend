@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ProductCard from "../../components/common/ProductCard";
-import products from "../../data/products";
+import { useProducts } from "../../context/ProductContext";
 
 /* ---------------- HERO SLIDER ---------------- */
 
@@ -64,6 +64,7 @@ const categories = [
 
 export default function Home() {
   const navigate = useNavigate();
+  const { products } = useProducts();
 
   return (
     <div className="home">

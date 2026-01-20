@@ -3,11 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import CheckoutSteps from "./CheckoutSteps";
 import { useState } from "react";
+import { useOrders } from "../../context/OrderContext";
+import { useAuth } from "../../context/AuthContext";
+import { useSellerProducts } from "../../context/SellerProductContext";
 
 export default function CheckoutPayment() {
   const navigate = useNavigate();
+  const { placeOrder } = useOrders();
+  const { user } = useAuth();
   const { cartItems, clearCart } = useCart();
+  const { hasSufficientStock, reduceStockAfterOrder } =
+    useSellerProducts();
+
   const [method, setMethod] = useState("cod");
+  const [error, setError] = useState("");
 
   const subtotal = cartItems.reduce(
     (sum, i) => sum + i.price * i.qty,
@@ -17,40 +26,71 @@ export default function CheckoutPayment() {
   const gst = Math.round(subtotal * 0.18);
   const total = subtotal + delivery + gst;
 
-const placeOrder = () => {
-  const order = {
-    id: Date.now(),
-    items: cartItems,
-    address: JSON.parse(localStorage.getItem("checkoutAddress")) || null,
+  const sellerItemsForStock = cartItems
+    .filter((item) => item.sellerId)
+    .map((item) => ({
+      productId: item.id,
+      quantity: item.qty,
+    }));
 
-    total,
-    date: new Date().toLocaleDateString(),
-    status: "Placed"
-  };
+  const handlePlaceOrder = () => {
+    setError("");
 
-  const orders = JSON.parse(localStorage.getItem("orders")) || [];
-  localStorage.setItem("orders", JSON.stringify([...orders, order]));
+    if (
+      sellerItemsForStock.length > 0 &&
+      !hasSufficientStock(sellerItemsForStock)
+    ) {
+      setError(
+        "Some seller items in your cart are out of stock or exceed available quantity."
+      );
+      return;
+    }
 
-  navigate("/order-success");
+    const orderItems = cartItems.map((item) => ({
+      productId: item.id,
+      title: item.title,
+      price: item.price,
+      quantity: item.qty,
+      sellerId: item.sellerId || "admin",
+    }));
 
-  setTimeout(() => {
+    const order = {
+      id: Date.now(),
+      buyerEmail: user.email,
+      items: orderItems,
+      address:
+        JSON.parse(localStorage.getItem("checkoutAddress")) || null,
+      total,
+      date: new Date().toLocaleDateString(),
+      status: "Placed",
+      paymentMethod: method,
+    };
+
+    placeOrder(order);
+
+    if (sellerItemsForStock.length > 0) {
+      reduceStockAfterOrder(sellerItemsForStock);
+    }
+
+    
+
+    // ✅ FIXED NAVIGATION (THIS IS THE KEY)
+    navigate("/order-success");
     clearCart();
-  }, 100);
-};
 
-
+  };
 
   return (
     <div className="checkout-wrapper">
-
-      {/* CHECKOUT STEPS */}
       <CheckoutSteps currentStep={3} />
 
       <div className="checkout-grid">
-
-        {/* LEFT – PAYMENT OPTIONS */}
         <div className="payment-card">
           <h2>Payment Options</h2>
+
+          {error && (
+            <div className="checkout-error">⚠️ {error}</div>
+          )}
 
           <div
             className={`payment-option ${method === "upi" ? "active" : ""}`}
@@ -75,7 +115,9 @@ const placeOrder = () => {
           </div>
 
           <div
-            className={`payment-option ${method === "netbanking" ? "active" : ""}`}
+            className={`payment-option ${
+              method === "netbanking" ? "active" : ""
+            }`}
             onClick={() => setMethod("netbanking")}
           >
             <span className="icon">🏦</span>
@@ -86,7 +128,9 @@ const placeOrder = () => {
           </div>
 
           <div
-            className={`payment-option ${method === "wallet" ? "active" : ""}`}
+            className={`payment-option ${
+              method === "wallet" ? "active" : ""
+            }`}
             onClick={() => setMethod("wallet")}
           >
             <span className="icon">👛</span>
@@ -108,21 +152,27 @@ const placeOrder = () => {
           </div>
 
           <div className="payment-actions">
-            <button className="back-btn" onClick={() => navigate("/checkout/summary")}>
+            <button
+              className="back-btn"
+              onClick={() => navigate("/checkout/summary")}
+            >
               Back
             </button>
-            <button className="place-btn" onClick={placeOrder}>
+
+            <button
+              className="place-btn"
+              onClick={handlePlaceOrder}
+            >
               Place Order →
             </button>
           </div>
         </div>
 
-        {/* RIGHT – PRICE DETAILS */}
         <div className="price-card">
           <h3>Price Details</h3>
 
           <div className="price-row">
-            <span>Subtotal (1 item)</span>
+            <span>Subtotal ({cartItems.length} item)</span>
             <span>₹{subtotal}</span>
           </div>
 
@@ -143,7 +193,6 @@ const placeOrder = () => {
             <span>₹{total}</span>
           </div>
         </div>
-
       </div>
     </div>
   );

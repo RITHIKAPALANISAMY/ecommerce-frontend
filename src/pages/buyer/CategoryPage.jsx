@@ -1,12 +1,13 @@
 import { useParams, useLocation } from "react-router-dom";
 import { useState } from "react";
-import products from "../../data/products";
+import { useProducts } from "../../context/ProductContext";
 import ProductCard from "../../components/common/ProductCard";
 import "../../styles/categoryPage.css";
 
 export default function CategoryPage() {
   const { category } = useParams();
   const { search } = useLocation();
+  const { products } = useProducts();
 
   const params = new URLSearchParams(search);
   const query = params.get("q") || "";
@@ -16,17 +17,30 @@ export default function CategoryPage() {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
 
+  /* ✅ FIX 1: case-insensitive category match */
   const categoryProducts = products.filter(
-    (p) => p.category === category
+    (p) =>
+      p.category &&
+      p.category.toLowerCase() === category.toLowerCase()
   );
 
-  const allBrands = [...new Set(categoryProducts.map(p => p.brand))];
+  /* ✅ FIX 2: ignore undefined brands (seller products) */
+  const allBrands = [
+    ...new Set(
+      categoryProducts
+        .map((p) => p.brand)
+        .filter(Boolean)
+    ),
+  ];
 
   const filteredProducts = categoryProducts
     .filter((p) =>
       p.title.toLowerCase().includes(query.toLowerCase())
     )
-    .filter((p) => p.rating >= minRating)
+    /* ✅ FIX 3: safe rating filter */
+    .filter((p) =>
+      minRating === 0 ? true : (p.rating || 0) >= minRating
+    )
     .filter((p) => p.price <= maxPrice)
     .filter((p) =>
       brands.length === 0 ? true : brands.includes(p.brand)
@@ -38,9 +52,9 @@ export default function CategoryPage() {
         case "HIGH_LOW":
           return b.price - a.price;
         case "RATING_HIGH":
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         case "RATING_LOW":
-          return a.rating - b.rating;
+          return (a.rating || 0) - (b.rating || 0);
         default:
           return 0;
       }
@@ -63,7 +77,6 @@ export default function CategoryPage() {
 
   return (
     <div className="category-page">
-
       {/* LEFT FILTERS */}
       <aside className="filters-panel">
         <div className="filters-header">
@@ -136,7 +149,6 @@ export default function CategoryPage() {
           ))}
         </div>
       </main>
-
     </div>
   );
 }

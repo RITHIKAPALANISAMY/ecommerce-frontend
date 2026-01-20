@@ -1,9 +1,10 @@
 import { useLocation } from "react-router-dom";
-import products from "../../data/products";
+import { useProducts } from "../../context/ProductContext";
 import ProductCard from "../../components/common/ProductCard";
 
 export default function SearchResults() {
   const { search } = useLocation();
+  const { products } = useProducts(); 
   const params = new URLSearchParams(search);
 
   const query = params.get("q") || "";

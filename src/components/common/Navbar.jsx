@@ -15,8 +15,9 @@ export default function Navbar() {
   const location = useLocation();
 
   const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+  const isSeller = user?.role === "seller";
 
-  /* CLOSE ON OUTSIDE CLICK */
+  /* CLOSE DROPDOWN ON OUTSIDE CLICK */
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -41,8 +42,12 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="logo">ShopVerse</Link>
+      {/* LOGO */}
+      <Link to="/" className="logo">
+        ShopVerse
+      </Link>
 
+      {/* SEARCH */}
       <input
         className="search"
         placeholder="Search for Products, Brands and More"
@@ -52,45 +57,77 @@ export default function Navbar() {
       />
 
       <div className="nav-actions">
-        {user ? (
-          <div className="user-wrapper" ref={dropdownRef}>
-            {/* USER BUTTON */}
-            <button
-              className="user-btn"
-              onClick={() => setOpen((o) => !o)}
+        {/* ================= BEFORE LOGIN ================= */}
+        {!user && (
+          <>
+            <Link className="nav-link login-link" to="/login">
+              Login
+            </Link>
+
+            <div
+              className="nav-link seller-link"
+              onClick={() => navigate("/become-seller")}
             >
-              <span className="user-icon">👤</span>
-              <span className="user-name">
-                {user.email.split("@")[0]}
-              </span>
-            </button>
-
-            {/* DROPDOWN */}
-            {open && (
-              <div className="user-dropdown">
-                <div className="user-top">
-                  <strong>{user.email.split("@")[0]}</strong>
-                  <p>{user.email}</p>
-                  <span className="user-role">Buyer Account</span>
-                </div>
-
-                <Link to="/orders" className="dropdown-item">
-                  ⬜ My Dashboard
-                </Link>
-
-                <button
-                  className="dropdown-logout"
-                  onClick={logout}
-                >
-                  ➜ Logout
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link className="login-link" to="/login">Login</Link>
+              🏬 <span>Become a Seller</span>
+            </div>
+          </>
         )}
 
+        {/* ================= AFTER LOGIN ================= */}
+        {user && (
+          <>
+            {/* SHOW ONLY IF USER IS NOT SELLER */}
+            {!isSeller && (
+              <div
+                className="nav-link seller-link"
+                onClick={() => navigate("/become-seller")}
+              >
+                🏬 <span>Become a Seller</span>
+              </div>
+            )}
+
+            {/* USER DROPDOWN */}
+            <div className="user-wrapper" ref={dropdownRef}>
+              <div
+                className="nav-link user-nav-link"
+                onClick={() => setOpen((o) => !o)}
+              >
+                👤
+                <span className="user-name">
+                  {user.email.split("@")[0]}
+                </span>
+              </div>
+
+              {open && (
+                <div className="user-dropdown">
+                  <div className="user-top">
+                    <strong>{user.email.split("@")[0]}</strong>
+                    <p>{user.email}</p>
+                    <span className="user-role">
+                      {isSeller ? "Seller Account" : "Buyer Account"}
+                    </span>
+                  </div>
+
+                  <Link
+                    to={isSeller ? "/seller/dashboard" : "/orders"}
+                    className="dropdown-item"
+                  >
+                    ⬜ {isSeller ? "Seller Dashboard" : "My Dashboard"}
+                  </Link>
+
+                  <button
+                    className="dropdown-logout"
+                    onClick={logout}
+                  >
+                    ➜ Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* CART */}
         <div className="cart" onClick={() => navigate("/cart")}>
           🛒 {cartCount > 0 && <span className="badge">{cartCount}</span>}
         </div>

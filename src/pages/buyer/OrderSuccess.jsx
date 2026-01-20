@@ -2,20 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/orderSuccess.css";
 
-
 export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const orders = JSON.parse(localStorage.getItem("orders")) || [];
+    const orders =
+      JSON.parse(localStorage.getItem("orders")) || [];
 
+    // 🔒 If no orders, redirect to home
     if (orders.length === 0) {
       navigate("/");
       return;
     }
 
-    // ✅ ALWAYS TAKE LAST ORDER
+    // ✅ Always show the latest order
     setOrder(orders[orders.length - 1]);
   }, [navigate]);
 
@@ -52,10 +53,10 @@ export default function OrderSuccess() {
         <hr />
 
         <h4>Order Items</h4>
-        {order.items.map((item) => (
-          <div key={item.id} className="order-item">
+        {order.items.map((item, index) => (
+          <div key={index} className="order-item">
             <strong>{item.title}</strong>
-            <p>Qty: {item.qty}</p>
+            <p>Qty: {item.quantity}</p>
             <p>₹{item.price}</p>
           </div>
         ))}
@@ -68,13 +69,20 @@ export default function OrderSuccess() {
         </div>
 
         <p className="payment-method">
-          Payment Method: <strong>Cash on Delivery</strong>
+          Payment Method:{" "}
+          <strong>
+            {order.paymentMethod || "Cash on Delivery"}
+          </strong>
         </p>
       </div>
 
       <div className="actions">
-        <button onClick={() => navigate("/orders")}>View Orders</button>
-        <button onClick={() => navigate("/")}>Continue Shopping</button>
+        <button onClick={() => navigate("/orders")}>
+          View Orders
+        </button>
+        <button onClick={() => navigate("/")}>
+          Continue Shopping
+        </button>
       </div>
     </div>
   );
