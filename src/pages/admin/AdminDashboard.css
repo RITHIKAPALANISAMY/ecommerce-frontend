@@ -1,0 +1,119 @@
+.admin-page {
+  padding: 24px;
+  background: #fafafa;
+  min-height: 100vh;
+  font-family: Inter, sans-serif;
+}
+
+/* Banner */
+.admin-banner {
+  background: linear-gradient(90deg, #8b0023, #b1123c);
+  color: white;
+  padding: 28px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-banner h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.admin-banner p {
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
+/* Tabs */
+.admin-tabs {
+  background: white;
+  padding: 14px 20px;
+  border-radius: 12px;
+  display: flex;
+  gap: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.admin-tabs span {
+  cursor: pointer;
+  font-weight: 500;
+  color: #555;
+}
+
+.admin-tabs .active {
+  color: #8b0023;
+  border-bottom: 2px solid #8b0023;
+  padding-bottom: 6px;
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 14px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.stat-card h2 {
+  margin: 0;
+}
+
+.stat-card p {
+  margin: 4px 0 0;
+  color: #666;
+}
+
+/* Icons */
+.icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.blue {
+  background: #e7f0ff;
+  color: #2563eb;
+}
+
+.purple {
+  background: #f2e9ff;
+  color: #7c3aed;
+}
+
+.orange {
+  background: #fff1e6;
+  color: #ea580c;
+}
+
+.green {
+  background: #e7fbe9;
+  color: #16a34a;
+}
+
+/* Recent Orders */
+.recent-orders {
+  background: white;
+  height: 120px;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}

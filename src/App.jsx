@@ -1,35 +1,135 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, Navigate } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+/* LAYOUTS */
+import BuyerLayout from "./layouts/BuyerLayout";
+import SellerLayout from "./layouts/SellerLayout";
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+/* ADMIN PAGES */
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import Users from "./pages/admin/Users";
+import Products from "./pages/admin/Products";
+import OrdersAdmin from "./pages/admin/Orders";
+import Coupons from "./pages/admin/Coupons";
+// src/index.js or App.jsx
+import { defaultAdmin } from "./utils/defaultAdmin";
+
+const users = JSON.parse(localStorage.getItem("users")) || [];
+
+// Check if admin exists
+if (!users.some(user => user.role === "admin")) {
+  localStorage.setItem("users", JSON.stringify([...users, defaultAdmin]));
 }
 
-export default App
+
+/* ADMIN LAYOUT */
+import AdminRoutes from "./routes/AdminRoutes";
+
+/* ================= ADMIN ROUTES ================= */
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
+<Route
+  path="/admin"
+  element={
+    <ProtectedAdminRoute>
+      <AdminRoutes />
+    </ProtectedAdminRoute>
+  }
+>
+  <Route index element={<AdminDashboard />} />
+  <Route path="dashboard" element={<AdminDashboard />} />
+  <Route path="users" element={<Users />} />
+  <Route path="products" element={<Products />} />
+  <Route path="orders" element={<OrdersAdmin />} />
+  <Route path="coupons" element={<Coupons />} />
+</Route>
+
+
+/* ROUTE GUARDS */
+import SellerRoutes from "./routes/SellerRoutes";
+
+/* BUYER PAGES */
+import Home from "./pages/buyer/Home";
+import ProductDetails from "./pages/buyer/ProductDetails";
+import Cart from "./pages/buyer/Cart";
+import Orders from "./pages/buyer/Orders";
+import OrderSuccess from "./pages/buyer/OrderSuccess";
+import CategoryPage from "./pages/buyer/CategoryPage";
+import SearchResults from "./pages/buyer/SearchResults";
+
+/* CHECKOUT FLOW */
+import Checkout from "./pages/buyer/Checkout";
+import CheckoutAddress from "./pages/buyer/CheckoutAddress";
+import CheckoutSummary from "./pages/buyer/CheckoutSummary";
+import CheckoutPayment from "./pages/buyer/CheckoutPayment";
+
+/* SELLER PAGES */
+import SellerDashboard from "./pages/seller/SellerDashboard";
+
+/* AUTH */
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+
+/* COMMON */
+import Unauthorized from "./pages/Unauthorized";
+import NotFound from "./pages/NotFound";
+import BecomeSeller from "./pages/seller/BecomeSeller";
+import SellerOrders from "./pages/seller/SellerOrders";
+
+export default function App() {
+  return (
+    <Routes>
+
+      {/* ================= SELLER ROUTES ================= */}
+      <Route element={<SellerRoutes />}>
+        <Route element={<SellerLayout />}>
+          <Route path="/seller/dashboard" element={<SellerDashboard />} />
+          <Route path="/seller/orders" element={<SellerOrders />} />
+        </Route>
+      </Route>
+           {/* ================= ADMIN ROUTES ================= */}
+<Route path="/admin" element={<AdminRoutes />}>
+  <Route index element={<AdminDashboard />} />
+  <Route path="dashboard" element={<AdminDashboard />} />
+  <Route path="users" element={<Users />} />
+  <Route path="products" element={<Products />} />
+  <Route path="orders" element={<OrdersAdmin />} />
+  <Route path="coupons" element={<Coupons />} />
+</Route>
+
+
+
+      {/* ================= BUYER ROUTES ================= */}
+      <Route element={<BuyerLayout />}>
+        <Route index element={<Home />} />
+        <Route path="product/:id" element={<ProductDetails />} />
+        <Route path="category/:category" element={<CategoryPage />} />
+        <Route path="search" element={<SearchResults />} />
+        <Route path="cart" element={<Cart />} />
+
+        {/* CHECKOUT */}
+        <Route path="checkout" element={<Checkout />}>
+          <Route index element={<Navigate to="address" replace />} />
+          <Route path="address" element={<CheckoutAddress />} />
+          <Route path="summary" element={<CheckoutSummary />} />
+          <Route path="payment" element={<CheckoutPayment />} />
+        </Route>
+
+        {/* ORDER SUCCESS */}
+        <Route path="order-success" element={<OrderSuccess />} />
+
+        <Route path="orders" element={<Orders />} />
+      </Route>
+
+      {/* ================= AUTH ROUTES ================= */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* ================= COMMON ================= */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/become-seller" element={<BecomeSeller />} />
+
+      <Route path="*" element={<NotFound />} />
+
+    </Routes>
+  );
+}
