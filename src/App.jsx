@@ -1,86 +1,62 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-/* LAYOUTS */
-import BuyerLayout from "./layouts/BuyerLayout";
-import SellerLayout from "./layouts/SellerLayout";
-
-/* ADMIN PAGES */
+/* ================= ADMIN ================= */
+import AdminRoutes from "./routes/AdminRoutes";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-import OrdersAdmin from "./pages/admin/Orders";
+import OrdersAdmin from "./pages/admin/OrdersAdmin";
 import Coupons from "./pages/admin/Coupons";
-// src/index.js or App.jsx
-import { defaultAdmin } from "./utils/defaultAdmin";
 
-const users = JSON.parse(localStorage.getItem("users")) || [];
-
-// Check if admin exists
-if (!users.some(user => user.role === "admin")) {
-  localStorage.setItem("users", JSON.stringify([...users, defaultAdmin]));
-}
-
-
-/* ADMIN LAYOUT */
-import AdminRoutes from "./routes/AdminRoutes";
-
-/* ================= ADMIN ROUTES ================= */
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-
-<Route
-  path="/admin"
-  element={
-    <ProtectedAdminRoute>
-      <AdminRoutes />
-    </ProtectedAdminRoute>
-  }
->
-  <Route index element={<AdminDashboard />} />
-  <Route path="dashboard" element={<AdminDashboard />} />
-  <Route path="users" element={<Users />} />
-  <Route path="products" element={<Products />} />
-  <Route path="orders" element={<OrdersAdmin />} />
-  <Route path="coupons" element={<Coupons />} />
-</Route>
-
-
-/* ROUTE GUARDS */
+/* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
+import SellerLayout from "./layouts/SellerLayout";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import SellerOrders from "./pages/seller/SellerOrders";
+import BecomeSeller from "./pages/seller/BecomeSeller";
 
-/* BUYER PAGES */
+/* ================= BUYER ================= */
+import BuyerLayout from "./layouts/BuyerLayout";
 import Home from "./pages/buyer/Home";
 import ProductDetails from "./pages/buyer/ProductDetails";
-import Cart from "./pages/buyer/Cart";
-import Orders from "./pages/buyer/Orders";
-import OrderSuccess from "./pages/buyer/OrderSuccess";
 import CategoryPage from "./pages/buyer/CategoryPage";
 import SearchResults from "./pages/buyer/SearchResults";
+import Cart from "./pages/buyer/Cart";
+import Orders from "./pages/buyer/Orders";
+import Wishlist from "./pages/buyer/Wishlist";
 
-/* CHECKOUT FLOW */
+/* ================= CHECKOUT ================= */
 import Checkout from "./pages/buyer/Checkout";
 import CheckoutAddress from "./pages/buyer/CheckoutAddress";
 import CheckoutSummary from "./pages/buyer/CheckoutSummary";
 import CheckoutPayment from "./pages/buyer/CheckoutPayment";
+import OrderSuccess from "./pages/buyer/OrderSuccess";
 
-/* SELLER PAGES */
-import SellerDashboard from "./pages/seller/SellerDashboard";
-
-/* AUTH */
+/* ================= AUTH ================= */
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
-
-/* COMMON */
+/* ================= COMMON ================= */
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
-import BecomeSeller from "./pages/seller/BecomeSeller";
-import SellerOrders from "./pages/seller/SellerOrders";
-import Wishlist from "./pages/buyer/Wishlist";
+
 export default function App() {
   return (
     <Routes>
+
+      {/* ================= ADMIN ROUTES ================= */}
+      <Route element={<AdminRoutes />}>
+        <Route path="/admin">
+          <Route index element={<Navigate to="dashboard" />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="products" element={<Products />} />
+          <Route path="orders" element={<OrdersAdmin />} />
+          <Route path="coupons" element={<Coupons />} />
+        </Route>
+      </Route>
 
       {/* ================= SELLER ROUTES ================= */}
       <Route element={<SellerRoutes />}>
@@ -89,17 +65,6 @@ export default function App() {
           <Route path="/seller/orders" element={<SellerOrders />} />
         </Route>
       </Route>
-           {/* ================= ADMIN ROUTES ================= */}
-<Route path="/admin" element={<AdminRoutes />}>
-  <Route index element={<AdminDashboard />} />
-  <Route path="dashboard" element={<AdminDashboard />} />
-  <Route path="users" element={<Users />} />
-  <Route path="products" element={<Products />} />
-  <Route path="orders" element={<OrdersAdmin />} />
-  <Route path="coupons" element={<Coupons />} />
-</Route>
-
-
 
       {/* ================= BUYER ROUTES ================= */}
       <Route element={<BuyerLayout />}>
@@ -108,34 +73,31 @@ export default function App() {
         <Route path="category/:category" element={<CategoryPage />} />
         <Route path="search" element={<SearchResults />} />
         <Route path="cart" element={<Cart />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="wishlist" element={<Wishlist />} />
 
-        {/* CHECKOUT */}
+        {/* CHECKOUT FLOW */}
         <Route path="checkout" element={<Checkout />}>
-          <Route index element={<Navigate to="address" replace />} />
+          <Route index element={<Navigate to="address" />} />
           <Route path="address" element={<CheckoutAddress />} />
           <Route path="summary" element={<CheckoutSummary />} />
           <Route path="payment" element={<CheckoutPayment />} />
         </Route>
 
-        {/* ORDER SUCCESS */}
         <Route path="order-success" element={<OrderSuccess />} />
-
-        <Route path="orders" element={<Orders />} />
       </Route>
 
-      {/* ================= AUTH ROUTES ================= */}
+      {/* ================= AUTH ================= */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-
       {/* ================= COMMON ================= */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/become-seller" element={<BecomeSeller />} />
-      <Route path="/wishlist" element={<Wishlist />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
 
     </Routes>
   );
-} 
+}
