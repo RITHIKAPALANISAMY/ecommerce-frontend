@@ -5,7 +5,7 @@ import AdminRoutes from "./routes/AdminRoutes";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-import OrdersAdmin from "./pages/admin/OrdersAdmin";
+import OrdersAdmin from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
 
 /* ================= SELLER ================= */
