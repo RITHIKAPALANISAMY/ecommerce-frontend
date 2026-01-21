@@ -1,48 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Users.css";
 
-const initialUsers = [
-  {
-    id: 1,
-    name: "Arun Kumar",
-    email: "arun@gmail.com",
-    role: "Buyer",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Priya S",
-    email: "priya@gmail.com",
-    role: "Seller",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Rahul M",
-    email: "rahul@gmail.com",
-    role: "Buyer",
-    status: "Blocked",
-  },
-  {
-    id: 4,
-    name: "Sneha R",
-    email: "sneha@gmail.com",
-    role: "Seller",
-    status: "Active",
-  },
+const STORAGE_KEY = "admin_users";
+
+const defaultUsers = [
+  { id: 1, name: "Arun Kumar", email: "arun@gmail.com", role: "Buyer", status: "Active" },
+  { id: 2, name: "Priya S", email: "priya@gmail.com", role: "Seller", status: "Active" },
+  { id: 3, name: "Rahul M", email: "rahul@gmail.com", role: "Buyer", status: "Blocked" },
+  { id: 4, name: "Sneha R", email: "sneha@gmail.com", role: "Seller", status: "Active" },
 ];
 
 const Users = () => {
-  const [users, setUsers] = useState(initialUsers);
+  /* ===== LAZY INIT (NO setState WARNING) ===== */
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : defaultUsers;
+  });
+
   const [viewUser, setViewUser] = useState(null);
 
-  // BLOCK / UNBLOCK
-  const toggleBlock = (id) => {
-    setUsers(users.map(user =>
-      user.id === id
-        ? { ...user, status: user.status === "Active" ? "Blocked" : "Active" }
-        : user
-    ));
+  /* ===== SAVE TO LOCAL STORAGE ===== */
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }, [users]);
+
+  /* ===== BLOCK / UNBLOCK ===== */
+  const toggleBlock = (user) => {
+    const action = user.status === "Active" ? "Block" : "Unblock";
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === user.id
+          ? { ...u, status: u.status === "Active" ? "Blocked" : "Active" }
+          : u
+      )
+    );
   };
 
   return (
@@ -56,39 +49,46 @@ const Users = () => {
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
-            <th>Action</th>
+            <th style={{ textAlign: "center" }}>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {users.map(user => (
+          {users.map((user) => (
             <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
+              {/* NAME */}
+              <td className="name-cell">
+                <div className="user-name">{user.name}</div>
+              </td>
 
+              {/* EMAIL (FIXED SPACING) */}
+              <td className="email-cell">
+                {user.email}
+              </td>
+
+              {/* ROLE */}
               <td>
-                <span className={`badge ${user.role.toLowerCase()}`}>
+                <span className={`role-badge ${user.role.toLowerCase()}`}>
                   {user.role}
                 </span>
               </td>
 
+              {/* STATUS */}
               <td>
-                <span className={`status ${user.status.toLowerCase()}`}>
+                <span className={`status-badge ${user.status.toLowerCase()}`}>
                   {user.status}
                 </span>
               </td>
 
+              {/* ACTION */}
               <td className="actions">
-                <button
-                  className="view-btn"
-                  onClick={() => setViewUser(user)}
-                >
+                <button className="view-btn" onClick={() => setViewUser(user)}>
                   View
                 </button>
 
                 <button
                   className={`block-btn ${user.status === "Blocked" ? "unblock" : ""}`}
-                  onClick={() => toggleBlock(user.id)}
+                  onClick={() => toggleBlock(user)}
                 >
                   {user.status === "Blocked" ? "Unblock" : "Block"}
                 </button>
@@ -98,7 +98,7 @@ const Users = () => {
         </tbody>
       </table>
 
-      {/* VIEW MODAL */}
+      {/* ===== VIEW MODAL ===== */}
       {viewUser && (
         <div className="modal-overlay">
           <div className="modal">
@@ -108,7 +108,9 @@ const Users = () => {
             <p><b>Role:</b> {viewUser.role}</p>
             <p><b>Status:</b> {viewUser.status}</p>
 
-            <button onClick={() => setViewUser(null)}>Close</button>
+            <button className="close-btn" onClick={() => setViewUser(null)}>
+              Close
+            </button>
           </div>
         </div>
       )}

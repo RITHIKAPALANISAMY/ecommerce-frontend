@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import "./Coupons.css"; 
+import "./Coupons.css";
+const STORAGE_KEY = "admin_coupons";
 
 const initialCoupons = [
   { id: 1, code: "SHOP10", discount: "10%", type: "Flat", expiry: "31 Jan 2026", status: "Active" },
@@ -10,63 +11,82 @@ const initialCoupons = [
 export default function CouponsDashboard() {
   const [coupons, setCoupons] = useState(initialCoupons);
   const [editingId, setEditingId] = useState(null);
-  const [newCoupon, setNewCoupon] = useState({ code: "", discount: "", type: "", expiry: "", status: "Active" });
+  const [newCoupon, setNewCoupon] = useState({
+    code: "",
+    discount: "",
+    type: "",
+    expiry: "",
+    status: "Active",
+  });
 
   const handleDelete = (id) => {
-    setCoupons(coupons.filter(c => c.id !== id));
+    if (!window.confirm("Delete this coupon?")) return;
+    setCoupons(coupons.filter((c) => c.id !== id));
   };
 
   const handleEdit = (id) => {
-    const coupon = coupons.find(c => c.id === id);
+    const coupon = coupons.find((c) => c.id === id);
     setNewCoupon({ ...coupon });
     setEditingId(id);
   };
 
   const handleSave = () => {
+    if (!newCoupon.code || !newCoupon.discount || !newCoupon.type || !newCoupon.expiry) {
+      alert("Fill all fields");
+      return;
+    }
+
     if (editingId) {
-      setCoupons(coupons.map(c => (c.id === editingId ? newCoupon : c)));
+      setCoupons(coupons.map((c) => (c.id === editingId ? newCoupon : c)));
       setEditingId(null);
     } else {
       setCoupons([...coupons, { ...newCoupon, id: Date.now() }]);
     }
+
     setNewCoupon({ code: "", discount: "", type: "", expiry: "", status: "Active" });
   };
 
   return (
-    <div className="coupons-dashboard" style={{ background: "white", padding: "20px", borderRadius: "10px" }}>
+    <div className="coupons-dashboard">
       <h2>Coupons & Deals</h2>
-      <div style={{ marginBottom: "20px" }}>
+
+      {/* ADD / EDIT FORM */}
+      <div className="coupon-form">
         <input
           type="text"
-          placeholder="Code"
+          placeholder="Coupon Code"
           value={newCoupon.code}
-          onChange={e => setNewCoupon({ ...newCoupon, code: e.target.value })}
+          onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })}
         />
+
         <input
           type="text"
-          placeholder="Discount"
+          placeholder="Discount (10% / ₹50)"
           value={newCoupon.discount}
-          onChange={e => setNewCoupon({ ...newCoupon, discount: e.target.value })}
+          onChange={(e) => setNewCoupon({ ...newCoupon, discount: e.target.value })}
         />
+
         <input
           type="text"
-          placeholder="Type"
+          placeholder="Type (Flat / Percentage)"
           value={newCoupon.type}
-          onChange={e => setNewCoupon({ ...newCoupon, type: e.target.value })}
+          onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value })}
         />
+
         <input
           type="date"
-          placeholder="Expiry"
           value={newCoupon.expiry}
-          onChange={e => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
+          onChange={(e) => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
         />
-        <button onClick={handleSave} style={{ backgroundColor: "#800020", color: "white", marginLeft: "10px", padding: "5px 15px", borderRadius: "5px" }}>
-          {editingId ? "Update" : "Add Coupon"}
+
+        <button onClick={handleSave}>
+          {editingId ? "Update Coupon" : "Add Coupon"}
         </button>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead style={{ background: "#f5f5f5" }}>
+      {/* TABLE */}
+      <table className="coupons-table">
+        <thead>
           <tr>
             <th>Coupon Code</th>
             <th>Discount</th>
@@ -76,17 +96,28 @@ export default function CouponsDashboard() {
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {coupons.map(c => (
+          {coupons.map((c) => (
             <tr key={c.id}>
               <td>{c.code}</td>
               <td>{c.discount}</td>
               <td>{c.type}</td>
               <td>{c.expiry}</td>
-              <td style={{ color: c.status === "Active" ? "green" : "red" }}>{c.status}</td>
               <td>
-                <button onClick={() => handleEdit(c.id)} style={{ marginRight: "10px", padding: "5px", cursor: "pointer" }}>Edit</button>
-                <button onClick={() => handleDelete(c.id)} style={{ backgroundColor: "red", color: "white", padding: "5px", cursor: "pointer" }}>Delete</button>
+                <span className={`status ${c.status.toLowerCase()}`}>
+                  {c.status}
+                </span>
+              </td>
+              <td>
+                <div className="action-btns">
+                  <button className="edit" onClick={() => handleEdit(c.id)}>
+                    Edit
+                  </button>
+                  <button className="delete" onClick={() => handleDelete(c.id)}>
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

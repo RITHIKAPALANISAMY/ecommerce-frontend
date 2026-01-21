@@ -1,85 +1,79 @@
-import React, { useState } from "react";
-
-const productsData = [
-  { id: 1, name: "Organic Face Cream", seller: "Priya Store", category: "Beauty", price: 499, status: "Pending" },
-  { id: 2, name: "Eco Shopping Bag", seller: "Green Mart", category: "Eco-Friendly", price: 199, status: "Approved" },
-  { id: 3, name: "Wireless Earbuds", seller: "Tech Hub", category: "Electronics", price: 1299, status: "Pending" },
-];
+import React from "react";
+import { useProducts } from "../../context/ProductContext";
+import "./Products.css";
 
 export default function ProductsApproval() {
-  const [products, setProducts] = useState(productsData);
+  const { products, approveProduct, rejectProduct } = useProducts();
 
   const handleAction = (id, action) => {
-    const confirmed = window.confirm(`Are you sure you want to ${action.toLowerCase()} this product?`);
-    if (!confirmed) return;
-
-    setProducts(products.map(p => {
-      if (p.id === id) {
-        return { ...p, status: action === "Approve" ? "Approved" : "Rejected" };
-      }
-      return p;
-    }));
+    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
+    action === "Approve" ? approveProduct(id) : rejectProduct(id);
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2 style={{ marginBottom: "20px" }}>Products Approval</h2>
-      <table style={{
-        width: "100%",
-        borderCollapse: "collapse",
-        fontFamily: "Arial, sans-serif"
-      }}>
+    <div className="products-approval">
+      <h2>Products Approval</h2>
+
+      <table className="orders-table">
         <thead>
-          <tr style={{ textAlign: "left", borderBottom: "2px solid #ccc" }}>
-            <th style={{ padding: "10px" }}>Product</th>
-            <th style={{ padding: "10px" }}>Seller</th>
-            <th style={{ padding: "10px" }}>Category</th>
-            <th style={{ padding: "10px" }}>Price</th>
-            <th style={{ padding: "10px" }}>Status</th>
-            <th style={{ padding: "10px" }}>Action</th>
+          <tr>
+            <th>Image</th>
+            <th>Product</th>
+            <th>Seller</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th style={{ textAlign: "center" }}>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {products.map(product => (
-            <tr key={product.id} style={{ borderBottom: "1px solid #eee", height: "50px" }}>
-              <td style={{ padding: "10px" }}>{product.name}</td>
-              <td style={{ padding: "10px" }}>{product.seller}</td>
-              <td style={{ padding: "10px" }}>{product.category}</td>
-              <td style={{ padding: "10px" }}>₹{product.price}</td>
-              <td style={{ padding: "10px" }}>
-                <span style={{
-                  padding: "5px 10px",
-                  borderRadius: "15px",
-                  backgroundColor: product.status === "Approved" ? "#d4f5d4" :
-                                   product.status === "Rejected" ? "#f8d6d6" : "#ffe6b3",
-                  color: product.status === "Approved" ? "green" :
-                         product.status === "Rejected" ? "red" : "orange",
-                  fontWeight: "bold",
-                  fontSize: "14px"
-                }}>
-                  {product.status}
+          {products.map((p) => (
+            <tr key={p.id}>
+              {/* IMAGE */}
+              <td>
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="product-image"
+                />
+              </td>
+
+              {/* NAME */}
+              <td className="product-name">{p.name}</td>
+
+              <td>{p.seller || "Seller"}</td>
+              <td>{p.category}</td>
+              <td>₹{p.price}</td>
+
+              {/* STATUS */}
+              <td>
+                <span className={`status ${p.status.toLowerCase()}`}>
+                  {p.status}
                 </span>
               </td>
-              <td style={{ padding: "10px" }}>
-                {product.status === "Pending" ? (
-                  <>
+
+              {/* ACTION */}
+              <td style={{ textAlign: "center" }}>
+                {p.status === "Pending" ? (
+                  <div className="action-group">
                     <button
-                      style={{ 
-                        backgroundColor: "green", color: "white", marginRight: "10px", padding: "8px 15px", border: "none", borderRadius: "5px", cursor: "pointer"
-                      }}
-                      onClick={() => handleAction(product.id, "Approve")}>
+                      className="btn approve"
+                      onClick={() => handleAction(p.id, "Approve")}
+                    >
                       Approve
                     </button>
                     <button
-                      style={{ 
-                        backgroundColor: "red", color: "white", padding: "8px 15px", border: "none", borderRadius: "5px", cursor: "pointer"
-                      }}
-                      onClick={() => handleAction(product.id, "Reject")}>
+                      className="btn reject"
+                      onClick={() => handleAction(p.id, "Reject")}
+                    >
                       Reject
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <button disabled style={{ padding: "8px 15px", borderRadius: "5px", cursor: "not-allowed" }}>{product.status}</button>
+                  <button className="btn disabled" disabled>
+                    {p.status}
+                  </button>
                 )}
               </td>
             </tr>
