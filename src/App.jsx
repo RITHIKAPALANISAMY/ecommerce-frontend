@@ -68,13 +68,16 @@ import SellerDashboard from "./pages/seller/SellerDashboard";
 /* AUTH */
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+
 
 /* COMMON */
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import BecomeSeller from "./pages/seller/BecomeSeller";
 import SellerOrders from "./pages/seller/SellerOrders";
-
+import Wishlist from "./pages/buyer/Wishlist";
 export default function App() {
   return (
     <Routes>
@@ -123,13 +126,16 @@ export default function App() {
       {/* ================= AUTH ROUTES ================= */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
 
       {/* ================= COMMON ================= */}
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/become-seller" element={<BecomeSeller />} />
-
+      <Route path="/wishlist" element={<Wishlist />} />
       <Route path="*" element={<NotFound />} />
 
     </Routes>
   );
-}
+} 
