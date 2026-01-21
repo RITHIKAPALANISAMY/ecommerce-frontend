@@ -33,8 +33,6 @@ import rice1 from "../assets/product/rice1.jpg";
 import oil1 from "../assets/product/oil1.jpg";
 
 const products = [
-  /* -------- BEAUTY -------- */
-
   {
     id: 1,
     title: "Sunscreen SPF 50 PA+++ 100ml",
@@ -43,34 +41,23 @@ const products = [
     price: 899,
     mrp: 1499,
     discount: 40,
-    rating: 4.8,
-    reviewCount: 3456,
     stock: 150,
     images: [sunscreen1, sunscreen2, sunscreen3],
-    description:
-      "Broad spectrum sunscreen with SPF 50 and non-greasy formula.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Good",
-        user: "Kamandla Mallesh",
-        date: "4 months ago",
-        location: "Hyderabad",
-        likes: 8,
-        dislikes: 0,
-      },
-      {
-        id: 2,
-        rating: 5,
-        title: "Nice product ✌️",
-        user: "Flipkart Customer",
-        date: "Apr, 2024",
-        location: "Navi Mumbai",
-        likes: 3,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "SunGuard SPF 50 PA+++ sunscreen provides advanced protection against harmful UVA and UVB rays. It is specially formulated for Indian skin conditions and helps prevent tanning, sunburn, and premature aging.",
+      highlights: [
+        "SPF 50 PA+++ broad spectrum protection",
+        "Lightweight and non-greasy formula",
+        "Water and sweat resistant",
+        "Suitable for all skin types"
+      ],
+      material: "Dermatologically tested UV filters",
+      usage: "Apply generously 15 minutes before sun exposure",
+      care: "Reapply every 2-3 hours when outdoors",
+      warranty: "Not applicable"
+    },
+    reviews: []
   },
 
   {
@@ -81,26 +68,24 @@ const products = [
     price: 299,
     mrp: 399,
     discount: 25,
-    rating: 4.4,
-    reviewCount: 980,
     stock: 200,
     images: [facewash1],
-    description: "Gentle herbal face wash suitable for daily use.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Nice and refreshing",
-        user: "Anitha",
-        date: "Mar, 2024",
-        location: "Chennai",
-        likes: 5,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "GlowCare Herbal Face Wash gently cleanses the skin while maintaining natural moisture. Enriched with herbal extracts, it removes dirt and excess oil without drying the skin.",
+      highlights: [
+        "Gentle herbal formulation",
+        "Removes dirt and impurities",
+        "Maintains skin hydration",
+        "Ideal for daily use"
+      ],
+      material: "Herbal extracts and mild cleansers",
+      usage: "Use twice daily on wet face",
+      care: "Avoid contact with eyes",
+      warranty: "Not applicable"
+    },
+    reviews: []
   },
-
-  /* -------- FASHION -------- */
 
   {
     id: 3,
@@ -110,24 +95,23 @@ const products = [
     price: 2999,
     mrp: 4999,
     discount: 40,
-    rating: 4.6,
-    reviewCount: 2120,
     stock: 80,
     images: [sneakers1, sneakers2, sneakers3],
-    description:
-      "Lightweight running shoes with breathable mesh design.",
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        title: "Excellent",
-        user: "Sandhya Rani",
-        date: "Feb, 2024",
-        location: "Baleshwar",
-        likes: 3,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "Nike running sneakers are designed for maximum comfort and performance. Ideal for running, walking, and gym workouts, they provide excellent cushioning and grip.",
+      highlights: [
+        "Breathable mesh upper",
+        "Shock-absorbing cushioned sole",
+        "Anti-slip rubber outsole",
+        "Lightweight and durable design"
+      ],
+      material: "Mesh upper with rubber sole",
+      usage: "Suitable for sports and daily wear",
+      care: "Clean with dry cloth only",
+      warranty: "6 months manufacturer warranty"
+    },
+    reviews: []
   },
 
   {
@@ -138,26 +122,24 @@ const products = [
     price: 799,
     mrp: 1299,
     discount: 38,
-    rating: 4.3,
-    reviewCount: 860,
     stock: 120,
     images: [tshirt1],
-    description: "Soft cotton t-shirt with comfortable regular fit.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Good quality",
-        user: "Ravi",
-        date: "Jan, 2024",
-        location: "Bangalore",
-        likes: 2,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "This Puma cotton T-shirt offers comfort and style for everyday wear. Designed with breathable fabric, it keeps you comfortable throughout the day.",
+      highlights: [
+        "100% soft cotton fabric",
+        "Regular fit for daily comfort",
+        "Colorfast and durable",
+        "Ideal for casual wear"
+      ],
+      material: "Pure cotton",
+      usage: "Casual and daily wear",
+      care: "Machine wash cold",
+      warranty: "No warranty"
+    },
+    reviews: []
   },
-
-  /* -------- ELECTRONICS -------- */
 
   {
     id: 5,
@@ -167,23 +149,23 @@ const products = [
     price: 1499,
     mrp: 2999,
     discount: 50,
-    rating: 4.5,
-    reviewCount: 3400,
     stock: 90,
     images: [headphone1],
-    description: "High bass wireless headphones with built-in mic.",
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        title: "Amazing sound",
-        user: "Suresh",
-        date: "Dec, 2023",
-        location: "Pune",
-        likes: 6,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "Boat wireless headphones deliver immersive sound quality with deep bass. Designed for music, calls, and gaming, they provide long-lasting comfort.",
+      highlights: [
+        "High-quality sound output",
+        "Built-in microphone for calls",
+        "Long battery life",
+        "Comfortable ear cushions"
+      ],
+      material: "ABS body with cushioned ear pads",
+      usage: "Music, calls, and entertainment",
+      care: "Keep away from water",
+      warranty: "1 year manufacturer warranty"
+    },
+    reviews: []
   },
 
   {
@@ -194,26 +176,24 @@ const products = [
     price: 52999,
     mrp: 64999,
     discount: 18,
-    rating: 4.6,
-    reviewCount: 1250,
     stock: 40,
     images: [laptop1],
-    description: "Powerful laptop with SSD, 8GB RAM and fast performance.",
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        title: "Worth the money",
-        user: "Arjun",
-        date: "Nov, 2023",
-        location: "Delhi",
-        likes: 10,
-        dislikes: 1,
-      },
-    ],
+    description: {
+      about:
+        "This HP laptop is designed for performance and productivity. With SSD storage and fast processing, it is ideal for office work, studies, and entertainment.",
+      highlights: [
+        "15.6-inch Full HD display",
+        "Fast SSD storage",
+        "Smooth multitasking performance",
+        "Lightweight and portable design"
+      ],
+      material: "Metallic body",
+      usage: "Office, education, and entertainment",
+      care: "Use laptop bag for protection",
+      warranty: "1 year manufacturer warranty"
+    },
+    reviews: []
   },
-
-  /* -------- MOBILES -------- */
 
   {
     id: 7,
@@ -223,23 +203,23 @@ const products = [
     price: 24999,
     mrp: 29999,
     discount: 17,
-    rating: 4.4,
-    reviewCount: 5400,
     stock: 70,
     images: [mobile1],
-    description: "5G smartphone with AMOLED display and great camera.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Good phone",
-        user: "Karthik",
-        date: "Oct, 2023",
-        location: "Coimbatore",
-        likes: 12,
-        dislikes: 2,
-      },
-    ],
+    description: {
+      about:
+        "Samsung 5G smartphone offers powerful performance, stunning display, and advanced camera features. Built for multitasking and entertainment.",
+      highlights: [
+        "5G connectivity",
+        "AMOLED display",
+        "High-quality camera system",
+        "Long-lasting battery"
+      ],
+      material: "Glass front with metal frame",
+      usage: "Daily use, photography, and gaming",
+      care: "Use protective case",
+      warranty: "1 year manufacturer warranty"
+    },
+    reviews: []
   },
 
   {
@@ -250,26 +230,24 @@ const products = [
     price: 11999,
     mrp: 14999,
     discount: 20,
-    rating: 4.2,
-    reviewCount: 6200,
     stock: 100,
     images: [mobile2],
-    description: "Affordable smartphone with long battery life.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Value for money",
-        user: "Meena",
-        date: "Sep, 2023",
-        location: "Madurai",
-        likes: 8,
-        dislikes: 1,
-      },
-    ],
+    description: {
+      about:
+        "Redmi budget smartphone delivers reliable performance at an affordable price. Suitable for daily tasks, calls, and media consumption.",
+      highlights: [
+        "Long battery life",
+        "Smooth daily performance",
+        "Value for money",
+        "User-friendly interface"
+      ],
+      material: "Polycarbonate body",
+      usage: "Daily communication and apps",
+      care: "Avoid water exposure",
+      warranty: "1 year manufacturer warranty"
+    },
+    reviews: []
   },
-
-  /* -------- HOME -------- */
 
   {
     id: 9,
@@ -279,23 +257,23 @@ const products = [
     price: 3499,
     mrp: 4999,
     discount: 30,
-    rating: 4.5,
-    reviewCount: 2100,
     stock: 60,
     images: [mixer1],
-    description: "Powerful mixer grinder suitable for Indian kitchens.",
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        title: "Very useful",
-        user: "Lakshmi",
-        date: "Aug, 2023",
-        location: "Salem",
-        likes: 4,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "Prestige mixer grinder is designed for Indian cooking needs. Powerful motor ensures smooth grinding and blending.",
+      highlights: [
+        "750W powerful motor",
+        "Multiple jars for different uses",
+        "Durable stainless steel blades",
+        "Overload protection"
+      ],
+      material: "ABS body with steel jars",
+      usage: "Grinding and blending",
+      care: "Clean jars after use",
+      warranty: "1 year manufacturer warranty"
+    },
+    reviews: []
   },
 
   {
@@ -306,26 +284,24 @@ const products = [
     price: 1299,
     mrp: 1999,
     discount: 35,
-    rating: 4.4,
-    reviewCount: 1450,
     stock: 90,
     images: [bedsheet1],
-    description: "Soft cotton bedsheet with matching pillow covers.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Comfortable",
-        user: "Nithya",
-        date: "Jul, 2023",
-        location: "Trichy",
-        likes: 3,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "Bombay Dyeing cotton bedsheet offers comfort and elegance. Soft fabric ensures a pleasant sleeping experience.",
+      highlights: [
+        "100% cotton fabric",
+        "Soft and breathable",
+        "Colorfast and durable",
+        "Includes pillow covers"
+      ],
+      material: "Pure cotton",
+      usage: "Daily home use",
+      care: "Machine wash cold",
+      warranty: "No warranty"
+    },
+    reviews: []
   },
-
-  /* -------- GROCERY -------- */
 
   {
     id: 11,
@@ -335,23 +311,23 @@ const products = [
     price: 699,
     mrp: 899,
     discount: 22,
-    rating: 4.6,
-    reviewCount: 3100,
     stock: 200,
     images: [rice1],
-    description: "Premium quality basmati rice with rich aroma.",
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        title: "Excellent quality",
-        user: "Ramesh",
-        date: "Jun, 2023",
-        location: "Erode",
-        likes: 9,
-        dislikes: 0,
-      },
-    ],
+    description: {
+      about:
+        "India Gate basmati rice is known for its long grains and rich aroma. Ideal for biryani and special meals.",
+      highlights: [
+        "Premium quality long grains",
+        "Rich aroma and taste",
+        "Non-sticky texture",
+        "Ideal for special dishes"
+      ],
+      material: "Natural basmati rice",
+      usage: "Cooking rice dishes",
+      care: "Store in a dry place",
+      warranty: "Not applicable"
+    },
+    reviews: []
   },
 
   {
@@ -362,24 +338,24 @@ const products = [
     price: 179,
     mrp: 220,
     discount: 19,
-    rating: 4.5,
-    reviewCount: 4200,
     stock: 300,
     images: [oil1],
-    description: "Healthy refined sunflower cooking oil.",
-    reviews: [
-      {
-        id: 1,
-        rating: 4,
-        title: "Good for daily use",
-        user: "Sathya",
-        date: "May, 2023",
-        location: "Karur",
-        likes: 6,
-        dislikes: 0,
-      },
-    ],
-  },
+    description: {
+      about:
+        "Fortune sunflower oil is a healthy choice for everyday cooking. Light and refined oil suitable for Indian cuisine.",
+      highlights: [
+        "Refined sunflower oil",
+        "Light and healthy",
+        "Maintains food taste",
+        "Suitable for daily cooking"
+      ],
+      material: "Refined sunflower oil",
+      usage: "Cooking and frying",
+      care: "Store in cool and dry place",
+      warranty: "Not applicable"
+    },
+    reviews: []
+  }
 ];
 
 export default products;

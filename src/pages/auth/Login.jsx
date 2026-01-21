@@ -12,23 +12,28 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError("");
 
     if (!email || !password) {
       setError("Please enter email and password");
       return;
     }
 
-    const success = login(email, password);
+    setLoading(true);
 
-    if (success) navigate(from, { replace: true });
-    else setError("Invalid credentials");
-  };
+    const success = login(email.trim(), password);
 
-  const socialAlert = () => {
-    alert("Social login will be available soon.");
+    if (!success) {
+      setError("Invalid email or password");
+      setLoading(false);
+      return;
+    }
+
+    navigate(from, { replace: true });
   };
 
   return (
@@ -37,14 +42,14 @@ export default function Login() {
         <div className="auth-left">
           <h1>Welcome to ShopVerse</h1>
           <p>
-            Shop smarter, faster, and better.  
-            Login to manage your orders and checkout securely.
+            Login to track orders, manage your account and enjoy seamless
+            shopping.
           </p>
         </div>
 
         <div className="auth-right">
-          <h2>Welcome Back</h2>
-          <p className="subtitle">Please login to your account</p>
+          <h2>Login</h2>
+          <p className="subtitle">Access your ShopVerse account</p>
 
           {error && <p className="error">{error}</p>}
 
@@ -62,19 +67,17 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <p className="signup-text">
+  <Link to="/forgot-password">Forgot password?</Link>
+</p>
 
-            <button className="btn-primary">Login</button>
+            <button className="btn-primary" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </button>
           </form>
 
-          <div className="divider">or login with</div>
-
-          <div className="social-login">
-            <button onClick={socialAlert}>Google</button>
-            <button onClick={socialAlert}>Facebook</button>
-          </div>
-
           <p className="signup-text">
-            Don’t have an account? <Link to="/signup">Sign up</Link>
+            Don’t have an account? <Link to="/signup">Create one</Link>
           </p>
         </div>
       </div>
