@@ -1,0 +1,12 @@
+/* whole admin background */
+.admin-app {
+  min-height: 100vh;
+  background: #f6f7f9;
+}
+
+/* center content like buyer & seller */
+.admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}

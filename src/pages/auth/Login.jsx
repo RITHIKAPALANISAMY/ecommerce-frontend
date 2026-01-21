@@ -25,15 +25,22 @@ export default function Login() {
 
     setLoading(true);
 
-    const success = login(email.trim(), password);
+    const loggedUser = login(email.trim(), password);
 
-    if (!success) {
+    if (!loggedUser) {
       setError("Invalid email or password");
       setLoading(false);
       return;
     }
 
-    navigate(from, { replace: true });
+    /* 🔀 ROLE-BASED REDIRECT (ONLY ADDITION) */
+    if (loggedUser.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    } else if (loggedUser.role === "seller") {
+      navigate("/seller/dashboard", { replace: true });
+    } else {
+      navigate(from, { replace: true });
+    }
   };
 
   return (
@@ -67,9 +74,10 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+
             <p className="signup-text">
-  <Link to="/forgot-password">Forgot password?</Link>
-</p>
+              <Link to="/forgot-password">Forgot password?</Link>
+            </p>
 
             <button className="btn-primary" disabled={loading}>
               {loading ? "Logging in..." : "Login"}

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 /* ================= ADMIN ================= */
 import AdminRoutes from "./routes/AdminRoutes";
+import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
@@ -41,24 +42,27 @@ import ResetPassword from "./pages/auth/ResetPassword";
 /* ================= COMMON ================= */
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import "./styles/adminLayout.css";
 
 export default function App() {
   return (
     <Routes>
 
-      {/* ================= ADMIN ROUTES ================= */}
-      <Route element={<AdminRoutes />}>
-        <Route path="/admin">
-          <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<Users />} />
-          <Route path="products" element={<Products />} />
-          <Route path="orders" element={<OrdersAdmin />} />
-          <Route path="coupons" element={<Coupons />} />
+      {/* ================= ADMIN (PROTECTED) ================= */}
+      <Route element={<AdminGuard />}>
+        <Route element={<AdminRoutes />}>
+          <Route path="/admin">
+            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<Users />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<OrdersAdmin />} />
+            <Route path="coupons" element={<Coupons />} />
+          </Route>
         </Route>
       </Route>
 
-      {/* ================= SELLER ROUTES ================= */}
+      {/* ================= SELLER ================= */}
       <Route element={<SellerRoutes />}>
         <Route element={<SellerLayout />}>
           <Route path="/seller/dashboard" element={<SellerDashboard />} />
@@ -66,7 +70,7 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* ================= BUYER ROUTES ================= */}
+      {/* ================= BUYER ================= */}
       <Route element={<BuyerLayout />}>
         <Route index element={<Home />} />
         <Route path="product/:id" element={<ProductDetails />} />
@@ -76,7 +80,6 @@ export default function App() {
         <Route path="orders" element={<Orders />} />
         <Route path="wishlist" element={<Wishlist />} />
 
-        {/* CHECKOUT FLOW */}
         <Route path="checkout" element={<Checkout />}>
           <Route index element={<Navigate to="address" />} />
           <Route path="address" element={<CheckoutAddress />} />
