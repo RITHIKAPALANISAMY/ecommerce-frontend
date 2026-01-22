@@ -30,7 +30,7 @@ export default function SellerAddProduct() {
       category: form.category,
       price: Number(form.price),
       stock: Number(form.stock),
-      images: [form.image],
+      images: form.image ? [form.image] : [],
       sellerId: user.email,
     });
 
@@ -56,19 +56,20 @@ export default function SellerAddProduct() {
           value={form.name}
           onChange={handleChange}
         />
+
         <select
-  name="category"
-  value={form.category}
-  onChange={handleChange}
->
-  <option value="">Select Category</option>
-  <option value="Mobiles">Mobiles</option>
-  <option value="Electronics">Electronics</option>
-  <option value="Fashion">Fashion</option>
-  <option value="Home">Home</option>
-  <option value="Beauty">Beauty</option>
-  <option value="Grocery">Grocery</option>
-</select>
+          name="category"
+          value={form.category}
+          onChange={handleChange}
+        >
+          <option value="">Select Category</option>
+          <option value="Mobiles">Mobiles</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Fashion">Fashion</option>
+          <option value="Home">Home</option>
+          <option value="Beauty">Beauty</option>
+          <option value="Grocery">Grocery</option>
+        </select>
 
         <input
           name="image"
@@ -76,12 +77,14 @@ export default function SellerAddProduct() {
           value={form.image}
           onChange={handleChange}
         />
+
         <input
           name="price"
           placeholder="Price *"
           value={form.price}
           onChange={handleChange}
         />
+
         <input
           name="stock"
           placeholder="Stock *"
@@ -90,7 +93,6 @@ export default function SellerAddProduct() {
         />
       </div>
 
-      {/* ACTION BUTTONS */}
       <div className="form-actions">
         <button className="save-btn" onClick={handleAddProduct}>
           Save Product

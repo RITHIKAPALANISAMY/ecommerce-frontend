@@ -1,14 +1,28 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const {
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+  } = useWishlist();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const toggleWishlist = (e) => {
+  const isBuyer = user && user.role === "buyer";
+
+  const handleWishlist = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
@@ -22,20 +36,30 @@ export default function ProductCard({ product }) {
     }
   };
 
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (!isBuyer) return;
+
+    addToCart(product);
+  };
+
   return (
     <div className="product-card">
-
-      {/* 🔥 DISCOUNT BADGE */}
+      {/* DISCOUNT */}
       {product.discount && (
         <span className="discount-badge">
           {product.discount}% OFF
         </span>
       )}
 
-      {/* ❤️ WISHLIST */}
+      {/* WISHLIST */}
       <button
         className="wishlist-btn"
-        onClick={toggleWishlist}
+        onClick={handleWishlist}
       >
         {isInWishlist(product.id) ? "❤️" : "🤍"}
       </button>
@@ -52,14 +76,14 @@ export default function ProductCard({ product }) {
 
       {/* INFO */}
       <div className="product-card-info">
-        <h4 className="product-title">{product.title}</h4>
+        <h4 className="product-title">
+          {product.title}
+        </h4>
 
-        {/* PRICE SECTION */}
         <div className="price-box">
           <span className="price-current">
             ₹{product.price}
           </span>
-
           {product.mrp && (
             <span className="price-mrp">
               ₹{product.mrp}
@@ -67,13 +91,15 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* ADD TO CART */}
-        <button
-          className="btn full"
-          onClick={() => addToCart(product)}
-        >
-          Add to Cart
-        </button>
+        {/* ADD TO CART — ONLY FOR BUYER */}
+        {isBuyer && (
+          <button
+            className="btn full"
+            onClick={handleAddToCart}
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </div>
   );

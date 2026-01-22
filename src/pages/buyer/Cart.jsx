@@ -2,7 +2,8 @@ import "../../styles/cart.css";
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Cart() {
   const {
@@ -12,8 +13,21 @@ export default function Cart() {
     removeCoupon
   } = useCart();
 
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  /* ================= AUTH & ROLE GUARD ================= */
+  useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    if (user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   // ✅ BUY NOW ITEM FROM PRODUCT PAGE
   const buyNowItem = location.state?.buyNowItem;
@@ -34,7 +48,9 @@ export default function Cart() {
 
   if (appliedCoupon) {
     if (appliedCoupon.type === "PERCENT") {
-      discount = Math.round(subtotal * (appliedCoupon.value / 100));
+      discount = Math.round(
+        subtotal * (appliedCoupon.value / 100)
+      );
     } else {
       discount = appliedCoupon.value;
     }
@@ -47,6 +63,8 @@ export default function Cart() {
     setError(msg || "");
   };
 
+  const isBuyer = user?.role === "buyer";
+
   return (
     <div className="cart-page">
       <h2 className="cart-title">
@@ -56,7 +74,7 @@ export default function Cart() {
       <div className="cart-container">
         {/* LEFT */}
         <div className="cart-left">
-          {itemsToShow.map(item => (
+          {itemsToShow.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
 
@@ -68,7 +86,9 @@ export default function Cart() {
                 <strong>WELCOME10</strong>
                 <p>10% OFF on orders above ₹500</p>
               </div>
-              <button onClick={() => setCouponInput("WELCOME10")}>
+              <button
+                onClick={() => setCouponInput("WELCOME10")}
+              >
                 Apply
               </button>
             </div>
@@ -78,7 +98,9 @@ export default function Cart() {
                 <strong>SAVE500</strong>
                 <p>₹500 OFF on orders above ₹2000</p>
               </div>
-              <button onClick={() => setCouponInput("SAVE500")}>
+              <button
+                onClick={() => setCouponInput("SAVE500")}
+              >
                 Apply
               </button>
             </div>
@@ -92,20 +114,29 @@ export default function Cart() {
           <div className="coupon-input">
             <input
               value={couponInput}
-              onChange={e => setCouponInput(e.target.value)}
+              onChange={(e) =>
+                setCouponInput(e.target.value)
+              }
               placeholder="Enter coupon code"
             />
-            <button onClick={handleApply}>Apply</button>
+            <button onClick={handleApply}>
+              Apply
+            </button>
           </div>
 
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && (
+            <p style={{ color: "red" }}>{error}</p>
+          )}
 
           {appliedCoupon && (
             <p style={{ color: "green" }}>
               {appliedCoupon.code} applied
               <button
                 onClick={removeCoupon}
-                style={{ marginLeft: 10, color: "red" }}
+                style={{
+                  marginLeft: 10,
+                  color: "red",
+                }}
               >
                 Remove
               </button>
@@ -128,7 +159,10 @@ export default function Cart() {
           </div>
 
           {discount > 0 && (
-            <div className="price-row" style={{ color: "green" }}>
+            <div
+              className="price-row"
+              style={{ color: "green" }}
+            >
               <span>Coupon Discount</span>
               <span>-₹{discount}</span>
             </div>
@@ -141,10 +175,16 @@ export default function Cart() {
             <span>₹{total}</span>
           </div>
 
-          <button onClick={() => navigate("/checkout/address")}>
-  Proceed to Checkout →
-</button>
-
+          {/* ✅ CHECKOUT — BUYER ONLY */}
+          {isBuyer && (
+            <button
+              onClick={() =>
+                navigate("/checkout/address")
+              }
+            >
+              Proceed to Checkout →
+            </button>
+          )}
         </div>
       </div>
     </div>

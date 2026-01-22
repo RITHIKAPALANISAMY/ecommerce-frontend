@@ -16,7 +16,9 @@ export function AuthProvider({ children }) {
         username: "Admin",
         email,
         role: "admin",
+        mode: "admin",
       };
+
       setUser(adminUser);
       localStorage.setItem("user", JSON.stringify(adminUser));
       return adminUser;
@@ -30,10 +32,12 @@ export function AuthProvider({ children }) {
 
     if (!found) return null;
 
+    // 🔑 IMPORTANT: DEFAULT MODE IS BUYER
     const loggedUser = {
       username: found.name,
       email: found.email,
-      role: found.role || "buyer",
+      role: found.role || "buyer", // capability
+      mode: "buyer",               // current usage
     };
 
     setUser(loggedUser);
@@ -59,34 +63,15 @@ export function AuthProvider({ children }) {
     return true;
   };
 
-  /* ================= FORGOT PASSWORD ================= */
-  const verifyEmail = (email) => {
-    if (email === "admin@shopverse.com") return true;
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    return users.some((u) => u.email === email);
-  };
-
-  /* ================= RESET PASSWORD ================= */
-  const resetPassword = (email, newPassword) => {
-    if (email === "admin@shopverse.com") return true;
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    users = users.map((u) =>
-      u.email === email ? { ...u, password: newPassword } : u
-    );
-
-    localStorage.setItem("users", JSON.stringify(users));
-    return true;
-  };
-
   /* ================= BECOME SELLER ================= */
-  const updateUserRole = (role, sellerData) => {
+  const updateUserRole = (sellerData) => {
     if (!user) return;
 
     const updatedUser = {
       ...user,
-      role,
+      role: "seller",
       sellerInfo: sellerData,
+      mode: "buyer", // 🔥 still buyer mode
     };
 
     setUser(updatedUser);
@@ -94,10 +79,35 @@ export function AuthProvider({ children }) {
 
     let users = JSON.parse(localStorage.getItem("users")) || [];
     users = users.map((u) =>
-      u.email === user.email ? { ...u, role } : u
+      u.email === user.email ? { ...u, role: "seller" } : u
     );
-
     localStorage.setItem("users", JSON.stringify(users));
+  };
+
+  /* ================= ENTER SELLER MODE ================= */
+  const enterSellerMode = () => {
+    if (!user || user.role !== "seller") return;
+
+    const updatedUser = {
+      ...user,
+      mode: "seller",
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  /* ================= EXIT SELLER MODE ================= */
+  const exitSellerMode = () => {
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      mode: "buyer",
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   /* ================= LOGOUT ================= */
@@ -112,9 +122,9 @@ export function AuthProvider({ children }) {
         user,
         login,
         signup,
-        verifyEmail,
-        resetPassword,
         updateUserRole,
+        enterSellerMode,
+        exitSellerMode,
         logout,
       }}
     >
