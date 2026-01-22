@@ -1,0 +1,31 @@
+.admin-sidebar {
+  width: 240px;
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #eee;
+  padding: 20px;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-logo {
+  margin-bottom: 30px;
+  color: #7b001c;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-nav a {
+  text-decoration: none;
+  color: #444;
+  font-weight: 500;
+}
+
+.sidebar-nav a.active {
+  color: #7b001c;
+  font-weight: bold;
+}

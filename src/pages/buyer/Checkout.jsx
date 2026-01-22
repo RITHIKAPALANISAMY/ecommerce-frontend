@@ -9,11 +9,25 @@ export default function Checkout() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    /* 🔐 NOT LOGGED IN */
     if (!user) {
       navigate("/login", { replace: true });
       return;
     }
 
+    /* 🔐 ADMIN → ADMIN DASHBOARD ONLY */
+    if (user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
+    /* 🔐 SELLER → NO CHECKOUT ACCESS */
+    if (user.role === "seller") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    /* 🔐 EMPTY CART → BACK TO CART */
     if (!cartItems || cartItems.length === 0) {
       navigate("/cart", { replace: true });
     }

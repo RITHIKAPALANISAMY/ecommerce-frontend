@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+import "../../styles/navbar.css";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -15,39 +17,52 @@ export default function Navbar() {
   const location = useLocation();
 
   const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
-  const isSeller = user?.role === "seller";
+
+  const role = user?.role; // buyer | seller | admin
+  const username = user?.username || "User";
 
   /* CLOSE DROPDOWN ON OUTSIDE CLICK */
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
         setOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () =>
+      document.removeEventListener("mousedown", handler);
   }, []);
 
+  /* SEARCH */
   const handleSearchKey = (e) => {
     if (e.key !== "Enter" || !search.trim()) return;
 
     const match = location.pathname.match(/^\/category\/(.+)/);
     if (match) {
-      navigate(`/category/${match[1]}?q=${encodeURIComponent(search)}`);
+      navigate(
+        `/category/${match[1]}?q=${encodeURIComponent(search)}`
+      );
     } else {
       navigate(`/search?q=${encodeURIComponent(search)}`);
     }
     setSearch("");
   };
 
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate("/");
+  };
+
   return (
     <nav className="navbar">
-      {/* LOGO */}
       <Link to="/" className="logo">
         ShopVerse
       </Link>
 
-      {/* SEARCH */}
       <input
         className="search"
         placeholder="Search for Products, Brands and More"
@@ -57,7 +72,7 @@ export default function Navbar() {
       />
 
       <div className="nav-actions">
-        {/* ================= BEFORE LOGIN ================= */}
+        {/* ================= NOT LOGGED IN ================= */}
         {!user && (
           <>
             <Link className="nav-link login-link" to="/login">
@@ -68,58 +83,92 @@ export default function Navbar() {
               className="nav-link seller-link"
               onClick={() => navigate("/become-seller")}
             >
-              🏬 <span>Become a Seller</span>
+              🏬 Become a Seller
             </div>
           </>
         )}
 
-        {/* ================= AFTER LOGIN ================= */}
+        {/* ================= LOGGED IN ================= */}
         {user && (
           <>
-            {/* SHOW ONLY IF USER IS NOT SELLER */}
-            {!isSeller && (
+            {/* BUYER ONLY */}
+            {role === "buyer" && (
               <div
                 className="nav-link seller-link"
                 onClick={() => navigate("/become-seller")}
               >
-                🏬 <span>Become a Seller</span>
+                🏬 Become a Seller
               </div>
             )}
 
-            {/* USER DROPDOWN */}
             <div className="user-wrapper" ref={dropdownRef}>
               <div
                 className="nav-link user-nav-link"
-                onClick={() => setOpen((o) => !o)}
+                onClick={() => setOpen(!open)}
               >
-                👤
-                <span className="user-name">
-                  {user.email.split("@")[0]}
-                </span>
+                👤 <span className="user-name">{username}</span>
               </div>
 
               {open && (
                 <div className="user-dropdown">
                   <div className="user-top">
-                    <strong>{user.email.split("@")[0]}</strong>
+                    <strong>{username}</strong>
                     <p>{user.email}</p>
                     <span className="user-role">
-                      {isSeller ? "Seller Account" : "Buyer Account"}
+                      {role === "buyer" && "Buyer Account"}
+                      {role === "seller" && "Seller Account"}
+                      {role === "admin" && "Admin Account"}
                     </span>
                   </div>
 
-                  <Link
-                    to={isSeller ? "/seller/dashboard" : "/orders"}
-                    className="dropdown-item"
-                  >
-                    ⬜ {isSeller ? "Seller Dashboard" : "My Dashboard"}
-                  </Link>
+                  {/* ===== BUYER MENU ===== */}
+                  {role === "buyer" && (
+                    <>
+                      <Link
+                        to="/orders"
+                        className="dropdown-item"
+                        onClick={() => setOpen(false)}
+                      >
+                        📦 My Orders
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        className="dropdown-item"
+                        onClick={() => setOpen(false)}
+                      >
+                        ❤️ Wishlist
+                      </Link>
+                    </>
+                  )}
+
+                  {/* ===== SELLER MENU ===== */}
+                  {role === "seller" && (
+                    <Link
+                      to="/seller/dashboard"
+                      className="dropdown-item"
+                      onClick={() => setOpen(false)}
+                    >
+                      🏪 Seller Dashboard
+                    </Link>
+                  )}
+
+                  {/* ===== ADMIN MENU ===== */}
+                  {role === "admin" && (
+                    <Link
+                      to="/admin/dashboard"
+                      className="dropdown-item"
+                      onClick={() => setOpen(false)}
+                    >
+                      🛠 Admin Dashboard
+                    </Link>
+                  )}
 
                   <button
                     className="dropdown-logout"
-                    onClick={logout}
+                    onClick={handleLogout}
                   >
-                    ➜ Logout
+                    🚪 Logout
                   </button>
                 </div>
               )}
@@ -127,9 +176,10 @@ export default function Navbar() {
           </>
         )}
 
-        {/* CART */}
+        {/* CART (VISIBLE FOR ALL) */}
         <div className="cart" onClick={() => navigate("/cart")}>
-          🛒 {cartCount > 0 && <span className="badge">{cartCount}</span>}
+          🛒
+          {cartCount > 0 && <span className="badge">{cartCount}</span>}
         </div>
       </div>
     </nav>

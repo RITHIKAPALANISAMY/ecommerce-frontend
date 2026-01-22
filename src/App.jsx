@@ -1,13 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 /* ================= ADMIN ================= */
+import AdminRoutes from "./routes/AdminRoutes";
+import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
 import OrdersAdmin from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
-import AdminRoutes from "./routes/AdminRoutes";
-import AdminGuard from "./guards/AdminGuard";
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";

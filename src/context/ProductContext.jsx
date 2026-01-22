@@ -40,17 +40,19 @@ export function ProductProvider({ children }) {
   }, [approvalMap]);
 
   /* ================= MERGED PRODUCTS ================= */
-  const products = [...baseProducts, ...sellerProducts].map((p) => ({
-    ...p,
-    name: p.name || p.title || "Unnamed Product",
-    image:
-      p.image ||
-      p.img ||
-      p.thumbnail ||
-      "https://via.placeholder.com/80",
-    status: approvalMap[p.id] || p.status || "Pending",
-    reviews: reviewsMap[p.id] || [],
-  }));
+  const products = [...baseProducts, ...sellerProducts].map(
+    (p) => ({
+      ...p,
+      name: p.name || p.title || "Unnamed Product",
+      image:
+        p.image ||
+        p.img ||
+        p.thumbnail ||
+        "https://via.placeholder.com/80",
+      status: approvalMap[p.id] || p.status || "Pending",
+      reviews: reviewsMap[p.id] || [],
+    })
+  );
 
   /* ================= ACTIONS ================= */
   const approveProduct = (id) => {

@@ -1,72 +1,61 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
+import { useAuth } from "../../context/AuthContext";
 import "../../styles/productDetails.css";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, setCartItems } = useCart();
+
   const { products } = useProducts();
+  const { addToCart, setCartItems } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { user } = useAuth();
 
   const product = products.find((p) => p.id === Number(id));
 
-  // ✅ SAFETY CHECK
   if (!product) {
     return <h2 style={{ padding: 40 }}>Product not found</h2>;
   }
 
-  // ✅ STATES
-  const [reviews, setReviews] = useState([]);
+  /* ---------------- STATES ---------------- */
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
 
-  // ✅ ENSURE REVIEWS UPDATE WHEN PRODUCT CHANGES
-  useEffect(() => {
-    setReviews(product.reviews || []);
-    setQty(1);
-    setActiveImg(0);
-  }, [product]);
+  const reviews = product.reviews || [];
 
-  // ✅ CART HANDLERS
+  const averageRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    return (
+      reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+    ).toFixed(1);
+  }, [reviews]);
+
+  /* ---------------- HANDLERS ---------------- */
   const handleAddToCart = () => {
     addToCart({ ...product, qty });
   };
 
   const handleBuyNow = () => {
-  setCartItems([
-    {
-      ...product,
-      qty: qty || 1,   // 👈 IMPORTANT
-    },
-  ]);
-  navigate("/cart");   // 👈 NOT checkout directly
-};
-
-
-
-  // ✅ REVIEW ACTIONS
-  const handleLike = (id) => {
-    setReviews((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, likes: r.likes + 1 } : r
-      )
-    );
+    setCartItems([{ ...product, qty }]);
+    navigate("/cart");
   };
 
-  const handleDislike = (id) => {
-    setReviews((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, dislikes: r.dislikes + 1 } : r
-      )
-    );
+  const toggleWishlist = () => {
+    isInWishlist(product.id)
+      ? removeFromWishlist(product.id)
+      : addToWishlist(product);
   };
 
+  /* ---------------- UI ---------------- */
   return (
     <div className="pd-page">
       <div className="pd-container">
-        {/* IMAGE GALLERY */}
+
+        {/* ================= IMAGES ================= */}
         <div className="pd-images">
           <img
             className="pd-main-img"
@@ -87,15 +76,29 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* PRODUCT INFO */}
+        {/* ================= INFO ================= */}
         <div className="pd-info">
           <p className="brand">{product.brand}</p>
-          <h1>{product.title}</h1>
+
+          <div className="pd-title-row">
+            <h1 className="pd-title">{product.title}</h1>
+
+            <button
+              className={`pd-wishlist-btn ${
+                isInWishlist(product.id) ? "active" : ""
+              }`}
+              onClick={toggleWishlist}
+            >
+              {isInWishlist(product.id) ? "❤️ Wishlisted" : "🤍 Wishlist"}
+            </button>
+          </div>
 
           <div className="rating">
-            <span className="badge-green">{product.rating} ★</span>
+            <span className="badge-green">
+              {averageRating || "New"} ★
+            </span>
             <span className="reviews">
-              {product.reviewCount} ratings & reviews
+              {reviews.length} ratings & reviews
             </span>
           </div>
 
@@ -120,7 +123,7 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* ACTION BUTTONS */}
+          {/* ACTIONS */}
           <div className="pd-actions">
             <button className="btn-cart" onClick={handleAddToCart}>
               🛒 Add to Cart
@@ -132,51 +135,46 @@ export default function ProductDetails() {
 
           <ul className="highlights">
             <li>🚚 Free Delivery</li>
-            <li>↩️ 7 Days Return & Exchange</li>
-            <li>🛡️ 1 Year Warranty</li>
+            <li>↩️ 7 Days Return</li>
+            <li>🛡️ Genuine Product</li>
           </ul>
         </div>
       </div>
 
-      {/* DESCRIPTION */}
+      {/* ================= DESCRIPTION ================= */}
       <div className="pd-desc">
-        <h3>Product Description</h3>
-        <p>{product.description}</p>
+        <h3>About this product</h3>
+        <p>{product.description?.about}</p>
+
+        <h4>Highlights</h4>
+        <ul>
+          {product.description?.highlights?.map((h, i) => (
+            <li key={i}>✔ {h}</li>
+          ))}
+        </ul>
+
+        <div className="pd-specs">
+          <p><strong>Material:</strong> {product.description?.material}</p>
+          <p><strong>Usage:</strong> {product.description?.usage}</p>
+          <p><strong>Care:</strong> {product.description?.care}</p>
+          <p><strong>Warranty:</strong> {product.description?.warranty}</p>
+        </div>
       </div>
 
-      {/* REVIEWS */}
+      {/* ================= REVIEWS ================= */}
       <div className="pd-reviews">
         <h3>Ratings & Reviews</h3>
 
-        <div className="review-summary">
-          <span className="avg-rating">{product.rating} ★</span>
-          <span className="total-reviews">
-            {product.reviewCount} Ratings & Reviews
-          </span>
-        </div>
-
         {reviews.length === 0 && <p>No reviews yet.</p>}
 
-        {reviews.map((review) => (
-          <div key={review.id} className="review-card">
-            <div className="review-top">
-              <span className="review-rating">{review.rating} ★</span>
-              <span className="review-title">{review.title}</span>
-            </div>
-
-            <p className="review-user">
-              {review.user} • {review.location}
-            </p>
-            <p className="review-date">{review.date}</p>
-
-            <div className="review-actions">
-              <button onClick={() => handleLike(review.id)}>
-                👍 {review.likes}
-              </button>
-              <button onClick={() => handleDislike(review.id)}>
-                👎 {review.dislikes}
-              </button>
-            </div>
+        {reviews.map((r) => (
+          <div key={r.id} className="review-card">
+            <span className="review-rating">{r.rating} ★</span>
+            <strong>{r.title}</strong>
+            <p>{r.comment || "Customer feedback"}</p>
+            <small>
+              {r.user} • {r.date}
+            </small>
           </div>
         ))}
       </div>
