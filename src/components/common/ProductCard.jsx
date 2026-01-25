@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useAuth } from "../../context/AuthContext";
@@ -11,19 +11,14 @@ export default function ProductCard({ product }) {
     isInWishlist,
   } = useWishlist();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
-  const isBuyer = user && user.role === "buyer";
+  const role = user?.role; // buyer | seller | admin
 
   const handleWishlist = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
+    // ✅ Guest wishlist allowed
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
     } else {
@@ -37,15 +32,14 @@ export default function ProductCard({ product }) {
   };
 
   const handleAddToCart = () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    // ❌ Block seller & admin
+    if (role === "seller" || role === "admin") return;
 
-    if (!isBuyer) return;
-
+    // ✅ Guest + buyer allowed
     addToCart(product);
   };
+
+  const isDisabled = role === "seller" || role === "admin";
 
   return (
     <div className="product-card">
@@ -91,15 +85,19 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* ADD TO CART — ONLY FOR BUYER */}
-        {isBuyer && (
-          <button
-            className="btn full"
-            onClick={handleAddToCart}
-          >
-            Add to Cart
-          </button>
-        )}
+        {/* ADD TO CART — GUEST + BUYER */}
+        <button
+          className="btn full"
+          onClick={handleAddToCart}
+          disabled={isDisabled}
+          title={
+            isDisabled
+              ? "Seller/Admin cannot purchase products"
+              : "Add to Cart"
+          }
+        >
+          Add to Cart
+        </button>
       </div>
     </div>
   );

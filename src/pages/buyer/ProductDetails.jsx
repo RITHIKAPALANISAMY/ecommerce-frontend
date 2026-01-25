@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
@@ -12,29 +12,71 @@ export default function ProductDetails() {
 
   const { products } = useProducts();
   const { addToCart, setCartItems } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isInWishlist } =
+    useWishlist();
   const { user } = useAuth();
 
-  const product = products.find((p) => p.id === Number(id));
+  /* ✅ SCROLL TO TOP */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [id]);
+
+  const product = products.find(
+    (p) => p.id === Number(id)
+  );
 
   if (!product) {
     return <h2 style={{ padding: 40 }}>Product not found</h2>;
   }
 
-  /* ---------------- STATES ---------------- */
+  /* ================= STOCK ================= */
+  const LOW_STOCK_LIMIT = 5;
+  const stock = product.stock ?? null;
+
+  const stockStatus =
+    stock === 0
+      ? "OUT"
+      : stock <= LOW_STOCK_LIMIT
+      ? "LOW"
+      : "IN";
+
+  /* ================= STATE ================= */
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
 
   const reviews = product.reviews || [];
 
   const averageRating = useMemo(() => {
-    if (!reviews.length) return 0;
+    if (!reviews.length) return null;
     return (
-      reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+      reviews.reduce((s, r) => s + r.rating, 0) /
+      reviews.length
     ).toFixed(1);
   }, [reviews]);
 
-  /* ---------------- HANDLERS ---------------- */
+  /* ================= DESCRIPTION ================= */
+  const desc = product.description || {};
+
+  const hasAbout =
+    desc.about && desc.about.trim().length > 0;
+
+  const hasHighlights =
+    Array.isArray(desc.highlights) &&
+    desc.highlights.length > 0;
+
+  const specs = [
+    { label: "Material", value: desc.material },
+    { label: "Usage", value: desc.usage },
+    { label: "Care Instructions", value: desc.care },
+    { label: "Warranty", value: desc.warranty },
+    { label: "Expiry Date", value: desc.expiryDate },
+  ].filter(
+    (s) =>
+      s.value &&
+      String(s.value).trim() !== ""
+  );
+
+  /* ================= HANDLERS ================= */
   const handleAddToCart = () => {
     addToCart({ ...product, qty });
   };
@@ -50,21 +92,20 @@ export default function ProductDetails() {
       : addToWishlist(product);
   };
 
-  /* ---------------- UI ---------------- */
+  /* ================= UI ================= */
   return (
     <div className="pd-page">
       <div className="pd-container">
-
-        {/* ================= IMAGES ================= */}
+        {/* IMAGES */}
         <div className="pd-images">
           <img
             className="pd-main-img"
-            src={product.images[activeImg]}
+            src={product.images?.[activeImg]}
             alt={product.title}
           />
 
           <div className="pd-thumbs">
-            {product.images.map((img, i) => (
+            {product.images?.map((img, i) => (
               <img
                 key={i}
                 src={img}
@@ -76,9 +117,11 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* ================= INFO ================= */}
+        {/* INFO */}
         <div className="pd-info">
-          <p className="brand">{product.brand}</p>
+          {product.brand && (
+            <p className="brand">{product.brand}</p>
+          )}
 
           <div className="pd-title-row">
             <h1 className="pd-title">{product.title}</h1>
@@ -89,7 +132,9 @@ export default function ProductDetails() {
               }`}
               onClick={toggleWishlist}
             >
-              {isInWishlist(product.id) ? "❤️ Wishlisted" : "🤍 Wishlist"}
+              {isInWishlist(product.id)
+                ? "❤️ Wishlisted"
+                : "🤍 Wishlist"}
             </button>
           </div>
 
@@ -104,8 +149,14 @@ export default function ProductDetails() {
 
           <div className="price">
             <span className="current">₹{product.price}</span>
-            <span className="old">₹{product.mrp}</span>
-            <span className="off">{product.discount}% off</span>
+            {product.mrp && (
+              <span className="old">₹{product.mrp}</span>
+            )}
+            {product.discount && (
+              <span className="off">
+                {product.discount}% off
+              </span>
+            )}
           </div>
 
           <p className="tax">Inclusive of all taxes</p>
@@ -113,25 +164,68 @@ export default function ProductDetails() {
           {/* QUANTITY */}
           <div className="qty">
             <span>Quantity</span>
+
             <div className="qty-box">
-              <button onClick={() => qty > 1 && setQty(qty - 1)}>-</button>
+              <button onClick={() => qty > 1 && setQty(qty - 1)}>
+                −
+              </button>
+
               <span>{qty}</span>
-              <button onClick={() => setQty(qty + 1)}>+</button>
-              <span className="stock">
-                ({product.stock} available)
-              </span>
+
+              <button
+                onClick={() =>
+                  stock !== null &&
+                  qty < stock &&
+                  setQty(qty + 1)
+                }
+                disabled={stock === 0}
+              >
+                +
+              </button>
+
+              {stock !== null && (
+                <span
+                  className={`stock ${
+                    stockStatus === "OUT"
+                      ? "out"
+                      : stockStatus === "LOW"
+                      ? "low"
+                      : "in"
+                  }`}
+                >
+                  {stockStatus === "OUT" && "Out of stock"}
+                  {stockStatus === "LOW" &&
+                    `Only ${stock} left`}
+                </span>
+              )}
             </div>
           </div>
 
           {/* ACTIONS */}
           <div className="pd-actions">
-            <button className="btn-cart" onClick={handleAddToCart}>
+            <button
+              className={`btn-cart ${
+                stockStatus === "OUT" ? "disabled" : ""
+              }`}
+              onClick={handleAddToCart}
+            >
               🛒 Add to Cart
             </button>
-            <button className="btn-buy" onClick={handleBuyNow}>
+
+            <button
+              className="btn-buy"
+              onClick={handleBuyNow}
+              disabled={stock === 0}
+            >
               Buy Now
             </button>
           </div>
+
+          {stockStatus === "OUT" && (
+            <button className="btn-notify">
+              🔔 Notify me when available
+            </button>
+          )}
 
           <ul className="highlights">
             <li>🚚 Free Delivery</li>
@@ -141,27 +235,44 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* ================= DESCRIPTION ================= */}
+      {/* DESCRIPTION */}
       <div className="pd-desc">
         <h3>About this product</h3>
-        <p>{product.description?.about}</p>
 
-        <h4>Highlights</h4>
-        <ul>
-          {product.description?.highlights?.map((h, i) => (
-            <li key={i}>✔ {h}</li>
-          ))}
-        </ul>
+        {hasAbout ? (
+          <p>{desc.about}</p>
+        ) : (
+          <p className="muted">
+            Detailed product information will be provided by the seller soon.
+          </p>
+        )}
 
-        <div className="pd-specs">
-          <p><strong>Material:</strong> {product.description?.material}</p>
-          <p><strong>Usage:</strong> {product.description?.usage}</p>
-          <p><strong>Care:</strong> {product.description?.care}</p>
-          <p><strong>Warranty:</strong> {product.description?.warranty}</p>
-        </div>
+        {hasHighlights && (
+          <>
+            <h4>Highlights</h4>
+            <ul>
+              {desc.highlights.map((h, i) => (
+                <li key={i}>✔ {h}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {specs.length > 0 && (
+          <>
+            <h4>Specifications</h4>
+            <div className="pd-specs">
+              {specs.map((s, i) => (
+                <p key={i}>
+                  <strong>{s.label}:</strong> {s.value}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* ================= REVIEWS ================= */}
+      {/* REVIEWS */}
       <div className="pd-reviews">
         <h3>Ratings & Reviews</h3>
 
@@ -170,11 +281,9 @@ export default function ProductDetails() {
         {reviews.map((r) => (
           <div key={r.id} className="review-card">
             <span className="review-rating">{r.rating} ★</span>
-            <strong>{r.title}</strong>
-            <p>{r.comment || "Customer feedback"}</p>
-            <small>
-              {r.user} • {r.date}
-            </small>
+            <strong>{r.user}</strong>
+            <p>{r.comment}</p>
+            <small>{r.date}</small>
           </div>
         ))}
       </div>

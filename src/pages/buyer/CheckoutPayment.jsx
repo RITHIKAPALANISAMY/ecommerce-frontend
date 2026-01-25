@@ -11,22 +11,31 @@ export default function CheckoutPayment() {
   const navigate = useNavigate();
   const { placeOrder } = useOrders();
   const { user } = useAuth();
-  const { cartItems, clearCart } = useCart();
-  const { hasSufficientStock, reduceStockAfterOrder } =
-    useSellerProducts();
+  const {
+    cartItems,
+    setCartItems, // ✅ IMPORTANT
+  } = useCart();
+  const { reduceStockAfterOrder } = useSellerProducts();
 
   const [method, setMethod] = useState("cod");
   const [error, setError] = useState("");
 
-  const subtotal = cartItems.reduce(
+  /* ✅ ONLY IN-STOCK ITEMS */
+  const checkoutItems = cartItems.filter(
+    (item) => item.stock === undefined || item.stock > 0
+  );
+
+  const subtotal = checkoutItems.reduce(
     (sum, i) => sum + i.price * i.qty,
     0
   );
-  const delivery = 99;
+
+  const delivery = subtotal > 0 ? 99 : 0;
   const gst = Math.round(subtotal * 0.18);
   const total = subtotal + delivery + gst;
 
-  const sellerItemsForStock = cartItems
+  /* ✅ SELLER STOCK REDUCTION */
+  const sellerItemsForStock = checkoutItems
     .filter((item) => item.sellerId)
     .map((item) => ({
       productId: item.id,
@@ -36,17 +45,13 @@ export default function CheckoutPayment() {
   const handlePlaceOrder = () => {
     setError("");
 
-    if (
-      sellerItemsForStock.length > 0 &&
-      !hasSufficientStock(sellerItemsForStock)
-    ) {
-      setError(
-        "Some seller items in your cart are out of stock or exceed available quantity."
-      );
+    if (checkoutItems.length === 0) {
+      setError("No available items to place order.");
       return;
     }
 
-    const orderItems = cartItems.map((item) => ({
+    /* ✅ BUILD ORDER ITEMS */
+    const orderItems = checkoutItems.map((item) => ({
       productId: item.id,
       title: item.title,
       price: item.price,
@@ -62,23 +67,30 @@ export default function CheckoutPayment() {
         JSON.parse(localStorage.getItem("checkoutAddress")) || null,
       total,
       date: new Date().toLocaleDateString(),
-      status: "Delivered", // simulate delivery for now
-
+      status: "Placed",
       paymentMethod: method,
     };
 
+    /* ✅ SAVE ORDER (CRITICAL) */
     placeOrder(order);
 
+    /* ✅ REDUCE SELLER STOCK */
     if (sellerItemsForStock.length > 0) {
       reduceStockAfterOrder(sellerItemsForStock);
     }
 
-    
+    /* ✅ REMOVE ONLY PURCHASED ITEMS FROM CART */
+    setCartItems((prev) =>
+      prev.filter(
+        (item) =>
+          !checkoutItems.some(
+            (p) => p.id === item.id
+          )
+      )
+    );
 
-    // ✅ FIXED NAVIGATION (THIS IS THE KEY)
+    /* ✅ NAVIGATE AFTER EVERYTHING IS DONE */
     navigate("/order-success");
-    clearCart();
-
   };
 
   return (
@@ -94,25 +106,21 @@ export default function CheckoutPayment() {
           )}
 
           <div
-            className={`payment-option ${method === "upi" ? "active" : ""}`}
+            className={`payment-option ${
+              method === "upi" ? "active" : ""
+            }`}
             onClick={() => setMethod("upi")}
           >
-            <span className="icon">📱</span>
-            <div>
-              <strong>UPI</strong>
-              <p>Google Pay, PhonePe, Paytm & more</p>
-            </div>
+            📱 <strong>UPI</strong>
           </div>
 
           <div
-            className={`payment-option ${method === "card" ? "active" : ""}`}
+            className={`payment-option ${
+              method === "card" ? "active" : ""
+            }`}
             onClick={() => setMethod("card")}
           >
-            <span className="icon">💳</span>
-            <div>
-              <strong>Credit / Debit Card</strong>
-              <p>Visa, MasterCard, RuPay & more</p>
-            </div>
+            💳 <strong>Card</strong>
           </div>
 
           <div
@@ -121,11 +129,7 @@ export default function CheckoutPayment() {
             }`}
             onClick={() => setMethod("netbanking")}
           >
-            <span className="icon">🏦</span>
-            <div>
-              <strong>Net Banking</strong>
-              <p>All major banks supported</p>
-            </div>
+            🏦 <strong>Net Banking</strong>
           </div>
 
           <div
@@ -134,22 +138,16 @@ export default function CheckoutPayment() {
             }`}
             onClick={() => setMethod("wallet")}
           >
-            <span className="icon">👛</span>
-            <div>
-              <strong>Wallets</strong>
-              <p>Paytm, PhonePe, Amazon Pay</p>
-            </div>
+            👛 <strong>Wallet</strong>
           </div>
 
           <div
-            className={`payment-option ${method === "cod" ? "active" : ""}`}
+            className={`payment-option ${
+              method === "cod" ? "active" : ""
+            }`}
             onClick={() => setMethod("cod")}
           >
-            <span className="icon">💵</span>
-            <div>
-              <strong>Cash on Delivery</strong>
-              <p>Pay when you receive</p>
-            </div>
+            💵 <strong>Cash on Delivery</strong>
           </div>
 
           <div className="payment-actions">
@@ -173,12 +171,12 @@ export default function CheckoutPayment() {
           <h3>Price Details</h3>
 
           <div className="price-row">
-            <span>Subtotal ({cartItems.length} item)</span>
+            <span>Subtotal ({checkoutItems.length} item)</span>
             <span>₹{subtotal}</span>
           </div>
 
           <div className="price-row">
-            <span>Delivery Charges</span>
+            <span>Delivery</span>
             <span>₹{delivery}</span>
           </div>
 

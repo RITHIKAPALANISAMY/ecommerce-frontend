@@ -47,11 +47,12 @@ export default function SellerProducts() {
         <div className="seller-product-grid">
           {myProducts.map((product) => (
             <SellerProductCard
-              key={product.id}
-              product={product}
-              lowStock={product.stock <= LOW_STOCK_LIMIT}
-              outOfStock={product.stock === 0}
-            />
+  key={product.id}
+  product={product}
+  lowStock={product.stock > 0 && product.stock <= LOW_STOCK_LIMIT}
+  outOfStock={product.stock === 0}
+/>
+
           ))}
         </div>
       )}

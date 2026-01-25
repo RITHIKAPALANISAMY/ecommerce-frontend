@@ -2,7 +2,7 @@ import "../../styles/cart.css";
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Cart() {
@@ -29,24 +29,41 @@ export default function Cart() {
     }
   }, [user, navigate]);
 
-  // ✅ BUY NOW ITEM FROM PRODUCT PAGE
+  /* ================= BUY NOW ================= */
   const buyNowItem = location.state?.buyNowItem;
-
-  // ✅ DECIDE WHAT TO SHOW
   const itemsToShow = buyNowItem ? [buyNowItem] : cartItems;
 
   const [couponInput, setCouponInput] = useState("");
   const [error, setError] = useState("");
 
-  const subtotal = itemsToShow.reduce(
-    (sum, i) => sum + i.price * i.qty,
+  /* ================= SPLIT STOCK ================= */
+  const inStockItems = useMemo(
+    () =>
+      itemsToShow.filter(
+        (item) => item.stock === undefined || item.stock > 0
+      ),
+    [itemsToShow]
+  );
+
+  const outOfStockItems = useMemo(
+    () =>
+      itemsToShow.filter(
+        (item) => item.stock !== undefined && item.stock === 0
+      ),
+    [itemsToShow]
+  );
+
+  /* ================= PRICE (ONLY IN STOCK) ================= */
+  const subtotal = inStockItems.reduce(
+    (sum, i) =>
+      sum + Number(i.price) * (Number(i.qty) || 1),
     0
   );
 
   const gst = Math.round(subtotal * 0.18);
   let discount = 0;
 
-  if (appliedCoupon) {
+  if (appliedCoupon && subtotal > 0) {
     if (appliedCoupon.type === "PERCENT") {
       discount = Math.round(
         subtotal * (appliedCoupon.value / 100)
@@ -56,7 +73,8 @@ export default function Cart() {
     }
   }
 
-  const total = subtotal + gst + 99 - discount;
+  const total =
+    subtotal > 0 ? subtotal + gst + 99 - discount : 0;
 
   const handleApply = () => {
     const msg = applyCoupon(couponInput.trim(), subtotal);
@@ -70,6 +88,15 @@ export default function Cart() {
       <h2 className="cart-title">
         Shopping Cart ({itemsToShow.length} items)
       </h2>
+
+      {/* 🟡 INFO MESSAGE — NOT BLOCKING */}
+      {outOfStockItems.length > 0 && (
+        <div className="cart-warning centered">
+          Some items are currently <strong>out of stock</strong>.
+          <br />
+          They won’t be included in checkout.
+        </div>
+      )}
 
       <div className="cart-container">
         {/* LEFT */}
@@ -119,29 +146,10 @@ export default function Cart() {
               }
               placeholder="Enter coupon code"
             />
-            <button onClick={handleApply}>
-              Apply
-            </button>
+            <button onClick={handleApply}>Apply</button>
           </div>
 
-          {error && (
-            <p style={{ color: "red" }}>{error}</p>
-          )}
-
-          {appliedCoupon && (
-            <p style={{ color: "green" }}>
-              {appliedCoupon.code} applied
-              <button
-                onClick={removeCoupon}
-                style={{
-                  marginLeft: 10,
-                  color: "red",
-                }}
-              >
-                Remove
-              </button>
-            </p>
-          )}
+          {error && <p style={{ color: "red" }}>{error}</p>}
 
           <div className="price-row">
             <span>Subtotal</span>
@@ -150,7 +158,7 @@ export default function Cart() {
 
           <div className="price-row">
             <span>Shipping</span>
-            <span>₹99</span>
+            <span>₹{subtotal > 0 ? 99 : 0}</span>
           </div>
 
           <div className="price-row">
@@ -175,14 +183,20 @@ export default function Cart() {
             <span>₹{total}</span>
           </div>
 
-          {/* ✅ CHECKOUT — BUYER ONLY */}
+          {/* ✅ CHECKOUT — ONLY IF IN-STOCK ITEMS EXIST */}
           {isBuyer && (
             <button
+              className="checkout-btn"
+              disabled={inStockItems.length === 0}
               onClick={() =>
-                navigate("/checkout/address")
+                navigate("/checkout/address", {
+                  state: { checkoutItems: inStockItems },
+                })
               }
             >
-              Proceed to Checkout →
+              {inStockItems.length === 0
+                ? "No available items to checkout"
+                : "Proceed to Checkout →"}
             </button>
           )}
         </div>

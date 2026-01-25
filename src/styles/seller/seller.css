@@ -655,3 +655,80 @@
   stroke: #e5e7eb;
   stroke-dasharray: 3 3;
 }
+.close-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: #d1d5db;
+}
+/* ================= ADD PRODUCT PRICE INFO ================= */
+.add-product-form p {
+  grid-column: span 2;
+  font-size: 14px;
+  color: #111827;
+  margin: 6px 0;
+}
+
+/* Image input row buttons */
+.add-product-form button {
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.add-product-form button:hover {
+  background: #e5e7eb;
+}
+.cart-warning {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #7c2d12;
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.cart-warning.centered {
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.checkout-btn {
+  width: 100%;
+  margin-top: 16px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkout-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.checkout-btn:active {
+  transform: scale(0.98);
+}
+
+.checkout-btn.disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+}

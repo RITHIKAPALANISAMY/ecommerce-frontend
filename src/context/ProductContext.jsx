@@ -1,24 +1,22 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
-
+import { createContext, useContext, useEffect, useState } from "react";
 import baseProducts from "../data/products";
-import { useSellerProducts } from "./SellerProductContext";
 
 const ProductContext = createContext();
 
 export function ProductProvider({ children }) {
-  const { sellerProducts } = useSellerProducts();
+  /* ================= LOAD SELLER PRODUCTS ================= */
+  const [sellerProducts, setSellerProducts] = useState(() => {
+    const saved = localStorage.getItem("products");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  /* ================= REVIEWS ================= */
+  /* ================= LOAD REVIEWS ================= */
   const [reviewsMap, setReviewsMap] = useState(() => {
     const saved = localStorage.getItem("productReviews");
     return saved ? JSON.parse(saved) : {};
   });
 
+  /* ================= SAVE REVIEWS ================= */
   useEffect(() => {
     localStorage.setItem(
       "productReviews",
@@ -26,63 +24,81 @@ export function ProductProvider({ children }) {
     );
   }, [reviewsMap]);
 
-  /* ================= APPROVAL STATUS ================= */
-  const [approvalMap, setApprovalMap] = useState(() => {
-    const saved = localStorage.getItem("productApproval");
-    return saved ? JSON.parse(saved) : {};
-  });
-
+  /* ================= WATCH PRODUCTS ================= */
   useEffect(() => {
-    localStorage.setItem(
-      "productApproval",
-      JSON.stringify(approvalMap)
-    );
-  }, [approvalMap]);
+    const syncProducts = () => {
+      const saved = localStorage.getItem("products");
+      setSellerProducts(saved ? JSON.parse(saved) : []);
+    };
 
-  /* ================= MERGED PRODUCTS ================= */
+    window.addEventListener("storage", syncProducts);
+    return () =>
+      window.removeEventListener("storage", syncProducts);
+  }, []);
+
+  /* ================= ADD REVIEW ================= */
+  const addReview = (productId, review) => {
+    setReviewsMap((prev) => {
+      const productReviews = prev[productId] || [];
+
+      // ❌ Prevent duplicate
+      if (productReviews.some((r) => r.user === review.user)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [productId]: [
+          ...productReviews,
+          {
+            ...review,
+            id: Date.now(),
+            date: new Date().toLocaleDateString(),
+          },
+        ],
+      };
+    });
+  };
+
+  /* ================= EDIT REVIEW ================= */
+  const editReview = (productId, reviewId, updated) => {
+    setReviewsMap((prev) => ({
+      ...prev,
+      [productId]: prev[productId].map((r) =>
+        r.id === reviewId
+          ? { ...r, ...updated, edited: true }
+          : r
+      ),
+    }));
+  };
+
+  /* ================= DELETE REVIEW ================= */
+  const deleteReview = (productId, reviewId) => {
+    setReviewsMap((prev) => ({
+      ...prev,
+      [productId]: prev[productId].filter(
+        (r) => r.id !== reviewId
+      ),
+    }));
+  };
+
+  /* ================= MERGE PRODUCTS ================= */
   const products = [...baseProducts, ...sellerProducts].map(
     (p) => ({
       ...p,
-      name: p.name || p.title || "Unnamed Product",
-      image:
-        p.image ||
-        p.img ||
-        p.thumbnail ||
-        "https://via.placeholder.com/80",
-      status: approvalMap[p.id] || p.status || "Pending",
-      reviews: reviewsMap[p.id] || [],
+      title: p.title || p.name || "Unnamed Product",
+      images: p.images || (p.image ? [p.image] : []),
+      reviews: reviewsMap[p.id] || p.reviews || [],
     })
   );
-
-  /* ================= ACTIONS ================= */
-  const approveProduct = (id) => {
-    setApprovalMap((prev) => ({
-      ...prev,
-      [id]: "Approved",
-    }));
-  };
-
-  const rejectProduct = (id) => {
-    setApprovalMap((prev) => ({
-      ...prev,
-      [id]: "Rejected",
-    }));
-  };
-
-  const addReview = (productId, review) => {
-    setReviewsMap((prev) => ({
-      ...prev,
-      [productId]: [...(prev[productId] || []), review],
-    }));
-  };
 
   return (
     <ProductContext.Provider
       value={{
         products,
-        approveProduct,
-        rejectProduct,
         addReview,
+        editReview,
+        deleteReview,
       }}
     >
       {children}
@@ -90,4 +106,5 @@ export function ProductProvider({ children }) {
   );
 }
 
-export const useProducts = () => useContext(ProductContext);
+export const useProducts = () =>
+  useContext(ProductContext);

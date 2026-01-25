@@ -270,4 +270,70 @@
   height: 2px;
   background: #e0e0e0;
 }
+.add-address-btn {
+  background: #b11226;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(177, 18, 38, 0.25);
+}
+
+.add-address-btn:hover {
+  background: #8b0015;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(177, 18, 38, 0.35);
+}
+
+.add-address-btn:active {
+  transform: scale(0.97);
+}
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* CANCEL BUTTON */
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background: #fff;
+  color: #b11226;
+  border: 2px solid #b11226;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cancel-btn:hover {
+  background: #fdecef;
+}
+
+/* SAVE BUTTON */
+.save-btn {
+  flex: 2;
+  padding: 12px;
+  background: linear-gradient(135deg, #d41443, #8b0015);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.save-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+
 

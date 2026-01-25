@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
 
   /* ================= LOGIN ================= */
   const login = (email, password) => {
-    // 🔐 ADMIN LOGIN
+    // ADMIN
     if (email === "admin@shopverse.com" && password === "admin123") {
       const adminUser = {
         username: "Admin",
@@ -18,13 +18,11 @@ export function AuthProvider({ children }) {
         role: "admin",
         mode: "admin",
       };
-
       setUser(adminUser);
       localStorage.setItem("user", JSON.stringify(adminUser));
       return adminUser;
     }
 
-    // 👤 BUYER / SELLER LOGIN
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const found = users.find(
       (u) => u.email === email && u.password === password
@@ -32,12 +30,13 @@ export function AuthProvider({ children }) {
 
     if (!found) return null;
 
-    // 🔑 IMPORTANT: DEFAULT MODE IS BUYER
+    // ✅ IMPORTANT: RESTORE sellerInfo FROM users
     const loggedUser = {
       username: found.name,
       email: found.email,
-      role: found.role || "buyer", // capability
-      mode: "buyer",               // current usage
+      role: found.role || "buyer",
+      sellerInfo: found.sellerInfo || null,
+      mode: "buyer",
     };
 
     setUser(loggedUser);
@@ -57,6 +56,7 @@ export function AuthProvider({ children }) {
       email,
       password,
       role: "buyer",
+      sellerInfo: null,
     });
 
     localStorage.setItem("users", JSON.stringify(users));
@@ -71,46 +71,37 @@ export function AuthProvider({ children }) {
       ...user,
       role: "seller",
       sellerInfo: sellerData,
-      mode: "buyer", // 🔥 still buyer mode
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    users = users.map((u) =>
-      u.email === user.email ? { ...u, role: "seller" } : u
-    );
-    localStorage.setItem("users", JSON.stringify(users));
-  };
-
-  /* ================= ENTER SELLER MODE ================= */
-  const enterSellerMode = () => {
-    if (!user || user.role !== "seller") return;
-
-    const updatedUser = {
-      ...user,
-      mode: "seller",
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-  };
-
-  /* ================= EXIT SELLER MODE ================= */
-  const exitSellerMode = () => {
-    if (!user) return;
-
-    const updatedUser = {
-      ...user,
       mode: "buyer",
     };
 
     setUser(updatedUser);
     localStorage.setItem("user", JSON.stringify(updatedUser));
+
+    // ✅ UPDATE USERS ARRAY PROPERLY
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    users = users.map((u) =>
+      u.email === user.email
+        ? { ...u, role: "seller", sellerInfo: sellerData }
+        : u
+    );
+
+    localStorage.setItem("users", JSON.stringify(users));
   };
 
-  /* ================= LOGOUT ================= */
+  const enterSellerMode = () => {
+    if (!user || user.role !== "seller") return;
+    const updatedUser = { ...user, mode: "seller" };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  const exitSellerMode = () => {
+    if (!user) return;
+    const updatedUser = { ...user, mode: "buyer" };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");

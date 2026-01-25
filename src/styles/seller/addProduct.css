@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
+* {
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* ===== OVERLAY ===== */
+.add-product-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* ===== MODAL CARD ===== */
+.add-product-container {
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.add-product-container h3 {
+  text-align: center;
+  padding: 18px;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ===== BODY ===== */
+.add-product-form {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.add-product-form h4 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.add-product-form input,
+.add-product-form select,
+.add-product-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5f5;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.add-product-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.add-product-form p {
+  font-weight: 600;
+  color: #e11d48;
+}
+
+/* ===== FOOTER ===== */
+/* ===== FOOTER ===== */
+.form-actions {
+  padding: 18px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: #ffffff;
+  align-items: center;   /* 🔥 hard alignment */
+}
+
+/* ===== BUTTONS (PIXEL PERFECT) ===== */
+.save-btn,
+.close-btn {
+  height: 48px;
+  width: 100%;
+  border-radius: 14px;
+
+  display: grid;         /* 🔥 key change */
+  place-items: center;   /* 🔥 perfect centering */
+
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;        /* 🔥 removes text offset */
+  padding: 0;            /* 🔥 no internal shift */
+
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* COLORS */
+.save-btn {
+  background: #e11d48;
+  color: #ffffff;
+  border: none;
+}
+
+.close-btn {
+  background: #e5e7eb;
+  color: #0f172a;
+  border: none;
+}
+
+
+/* ===== MOBILE ===== */
+@media (max-width: 600px) {
+  .add-product-container {
+    max-height: 95vh;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .save-btn,
+  .close-btn {
+    width: 100%;
+  }
+}

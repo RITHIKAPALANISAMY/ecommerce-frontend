@@ -16,7 +16,11 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+  // ✅ SAFE CART COUNT (NO NaN EVER)
+  const cartCount = cartItems.reduce(
+    (sum, item) => sum + (Number(item.qty) || 1),
+    0
+  );
 
   const role = user?.role; // buyer | seller | admin
   const username = user?.username || "User";
@@ -121,7 +125,7 @@ export default function Navbar() {
                     </span>
                   </div>
 
-                  {/* ===== BUYER MENU ===== */}
+                  {/* BUYER MENU */}
                   {role === "buyer" && (
                     <>
                       <Link
@@ -142,7 +146,7 @@ export default function Navbar() {
                     </>
                   )}
 
-                  {/* ===== SELLER MENU ===== */}
+                  {/* SELLER MENU */}
                   {role === "seller" && (
                     <Link
                       to="/seller/dashboard"
@@ -153,7 +157,7 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {/* ===== ADMIN MENU ===== */}
+                  {/* ADMIN MENU */}
                   {role === "admin" && (
                     <Link
                       to="/admin/dashboard"
@@ -176,10 +180,15 @@ export default function Navbar() {
           </>
         )}
 
-        {/* CART (VISIBLE FOR ALL) */}
-        <div className="cart" onClick={() => navigate("/cart")}>
+        {/* CART */}
+        <div
+          className="cart"
+          onClick={() => navigate("/cart")}
+        >
           🛒
-          {cartCount > 0 && <span className="badge">{cartCount}</span>}
+          {cartCount > 0 && (
+            <span className="badge">{cartCount}</span>
+          )}
         </div>
       </div>
     </nav>

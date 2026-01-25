@@ -68,15 +68,21 @@ export default function SellerDashboard() {
       </div>
 
       {/* SELLER INFO */}
-      {seller && (
-        <div className="seller-info-card">
-          <h3>{seller.storeName}</h3>
-          <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
-          <p><strong>Phone:</strong> {seller.phone}</p>
-          {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
-          <p className="seller-address">{seller.address}</p>
-        </div>
-      )}
+      {/* SELLER INFO */}
+{seller ? (
+  <div className="seller-info-card">
+    <h3>{seller.storeName}</h3>
+    <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
+    <p><strong>Phone:</strong> {seller.phone}</p>
+    {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
+    <p className="seller-address">{seller.address}</p>
+  </div>
+) : (
+  <div className="seller-info-card">
+    <p>Seller details not found. Please complete seller profile.</p>
+  </div>
+)}
+
 
       {/* TABS */}
       <div className="seller-tabs">
@@ -170,18 +176,19 @@ export default function SellerDashboard() {
             <SellerProducts />
 
             {showAddProduct && (
-              <div className="modal-overlay">
-                <div className="modal">
-                  <SellerAddProduct onClose={() => setShowAddProduct(false)} />
-                  <button
-                    className="close-btn"
-                    onClick={() => setShowAddProduct(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
+  <div className="modal-overlay">
+    <div className="modal">
+      <SellerAddProduct onClose={() => setShowAddProduct(false)} />
+      <button
+        className="close-btn"
+        onClick={() => setShowAddProduct(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
           </>
         )}
 
