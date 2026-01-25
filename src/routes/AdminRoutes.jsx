@@ -1,17 +1,21 @@
-import { Outlet } from "react-router-dom";
-import Sidebar from "../components/admin/Sidebar";
-import Navbar from "../components/admin/Navbar";
+import { Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AdminNavbar from "../components/admin/AdminNavbar";
 
 const AdminRoutes = () => {
-  return (
-    <div style={{ display: "flex" }}>
-      <Sidebar />
+  const { user } = useAuth();
 
-      <div style={{ flex: 1 }}>
-        <Navbar />
-        <div style={{ padding: "20px" }}>
-          <Outlet />
-        </div>
+  if (!user || user.role !== "admin") {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return (
+    <div className="admin-app">
+      <AdminNavbar />
+
+      {/* SAME CENTER ALIGNMENT AS BUYER & SELLER */}
+      <div className="admin-page">
+        <Outlet />
       </div>
     </div>
   );

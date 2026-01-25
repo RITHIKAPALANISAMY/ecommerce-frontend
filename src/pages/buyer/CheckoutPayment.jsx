@@ -62,7 +62,8 @@ export default function CheckoutPayment() {
         JSON.parse(localStorage.getItem("checkoutAddress")) || null,
       total,
       date: new Date().toLocaleDateString(),
-      status: "Placed",
+      status: "Delivered", // simulate delivery for now
+
       paymentMethod: method,
     };
 

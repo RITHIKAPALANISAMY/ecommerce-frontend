@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
-
+import { createContext, useContext, useEffect, useState } from "react";
 import baseProducts from "../data/products";
 import { useSellerProducts } from "./SellerProductContext";
 
@@ -26,7 +20,7 @@ export function ProductProvider({ children }) {
     );
   }, [reviewsMap]);
 
-  /* ================= APPROVAL STATUS ================= */
+  /* ================= APPROVAL STATUS (ADMIN) ================= */
   const [approvalMap, setApprovalMap] = useState(() => {
     const saved = localStorage.getItem("productApproval");
     return saved ? JSON.parse(saved) : {};

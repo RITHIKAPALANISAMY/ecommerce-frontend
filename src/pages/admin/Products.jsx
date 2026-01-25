@@ -1,48 +1,46 @@
-import React from "react";
 import { useProducts } from "../../context/ProductContext";
 import "./Products.css";
 
-export default function ProductsApproval() {
-  const { products, approveProduct, rejectProduct } = useProducts();
-
-  const handleAction = (id, action) => {
-    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
-    action === "Approve" ? approveProduct(id) : rejectProduct(id);
-  };
+export default function Products() {
+  
+  const {
+    products,
+    approveProduct,
+    rejectProduct,
+  } = useProducts();
 
   return (
-    <div className="products-approval">
-      <h2>Products Approval</h2>
+    <div className="admin-products">
+      <h2 className="section-title">Products Approval</h2>
 
-      <table className="orders-table">
+      <table className="products-table">
         <thead>
           <tr>
-            <th>Image</th>
             <th>Product</th>
             <th>Seller</th>
             <th>Category</th>
             <th>Price</th>
             <th>Status</th>
-            <th style={{ textAlign: "center" }}>Action</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
           {products.map((p) => (
             <tr key={p.id}>
-              {/* IMAGE */}
+              {/* PRODUCT (IMAGE + NAME) */}
               <td>
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="product-image"
-                />
+                <div className="product-cell">
+                  <img
+                    src={p.image || "https://via.placeholder.com/60"}
+                    alt={p.name}
+                    className="product-img"
+                  />
+                  <span className="product-name">{p.name}</span>
+                </div>
               </td>
 
-              {/* NAME */}
-              <td className="product-name">{p.name}</td>
-
-              <td>{p.seller || "Seller"}</td>
+              <td>Seller</td>
               <td>{p.category}</td>
               <td>₹{p.price}</td>
 
@@ -54,24 +52,24 @@ export default function ProductsApproval() {
               </td>
 
               {/* ACTION */}
-              <td style={{ textAlign: "center" }}>
+              <td>
                 {p.status === "Pending" ? (
-                  <div className="action-group">
+                  <div className="action-buttons">
                     <button
-                      className="btn approve"
-                      onClick={() => handleAction(p.id, "Approve")}
+                      className="approve-btn"
+                      onClick={() => approveProduct(p.id)}
                     >
                       Approve
                     </button>
                     <button
-                      className="btn reject"
-                      onClick={() => handleAction(p.id, "Reject")}
+                      className="reject-btn"
+                      onClick={() => rejectProduct(p.id)}
                     >
                       Reject
                     </button>
                   </div>
                 ) : (
-                  <button className="btn disabled" disabled>
+                  <button className="disabled-btn">
                     {p.status}
                   </button>
                 )}

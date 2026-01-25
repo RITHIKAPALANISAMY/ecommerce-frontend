@@ -112,3 +112,6 @@
   justify-content: flex-end;
   gap: 10px;
 }
+header .discount-badge {
+  display: none;
+}

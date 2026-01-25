@@ -16,12 +16,19 @@ export function OrderProvider({ children }) {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
-  /* ================= PLACE ORDER ================= */
+  /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
-    setOrders((prev) => [...prev, order]);
+    const newOrder = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      status: "Placed",
+      ...order,
+    };
+
+    setOrders((prev) => [...prev, newOrder]);
   };
 
-  /* ================= UPDATE ORDER STATUS ================= */
+  /* ================= UPDATE ORDER STATUS (SELLER) ================= */
   const updateSellerOrderStatus = (
     orderId,
     sellerId,
@@ -49,7 +56,7 @@ export function OrderProvider({ children }) {
               ? "Cancelled"
               : allDelivered
               ? "Delivered"
-              : newStatus,
+              : "Processing",
         };
       })
     );
@@ -111,6 +118,26 @@ export function OrderProvider({ children }) {
     );
   };
 
+  /* ================= ADMIN HELPERS ================= */
+  const totalOrders = orders.length;
+
+  const totalRevenue = orders.reduce(
+    (sum, order) =>
+      sum +
+      order.items.reduce(
+        (s, item) =>
+          item.status === "Cancelled"
+            ? s
+            : s + item.price * item.quantity,
+        0
+      ),
+    0
+  );
+
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+
   return (
     <OrderContext.Provider
       value={{
@@ -118,8 +145,15 @@ export function OrderProvider({ children }) {
         placeOrder,
         updateSellerOrderStatus,
         cancelOrderBySeller,
+
+        // seller
         getSellerOrders,
         getSellerRevenue,
+
+        // admin
+        totalOrders,
+        totalRevenue,
+        recentOrders,
       }}
     >
       {children}

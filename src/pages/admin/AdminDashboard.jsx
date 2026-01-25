@@ -1,134 +1,124 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+
 import "./AdminDashboard.css";
+
+import Users from "./Users";
 import Products from "./Products";
 import Orders from "./Orders";
 import Coupons from "./Coupons";
 import Analytics from "./Analytics";
 import Deals from "./Deals";
-import Users from "./Users";
+import Settings from "./Settings"; // ✅ REAL SETTINGS COMPONENT
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();                 // 🔐 clear admin session
+    navigate("/", { replace: true }); // 🏠 go to HOME
+  };
 
   return (
-    <div className="admin-container">
+    <>
+      {/* ================= HEADER ================= */}
+      <div
+        className="admin-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>Complete platform control and management</p>
+        </div>
 
-      {/* HEADER */}
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
-        <p>Complete platform control and management</p>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: "#e53935",
+            color: "#fff",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          Logout
+        </button>
       </div>
 
-      {/* TABS */}
+      {/* ================= TABS ================= */}
       <div className="admin-tabs">
-        <span
-          className={activeTab === "overview" ? "active" : ""}
-          onClick={() => setActiveTab("overview")}
-        >
-          Overview
-        </span>
-
-        <span
-          className={activeTab === "users" ? "active" : ""}
-          onClick={() => setActiveTab("users")}
-        >
-          Users
-        </span>
-
-       <span
-  className={activeTab === "products" ? "active" : ""}
-  onClick={() => setActiveTab("products")}
->
-  Products
-</span>
-
-        <span
-  className={activeTab === "orders" ? "active" : ""}
-  onClick={() => setActiveTab("orders")}
->
-  Orders
-</span>
-
-        <span
-  className={activeTab === "coupons" ? "active" : ""}
-  onClick={() => setActiveTab("coupons")}
->
-  Coupons
-</span>
-
-       <span
-  className={activeTab === "deals" ? "active" : ""}
-  onClick={() => setActiveTab("deals")}
->
-  Deals & Offers
-</span>
-
-
-        <span
-  className={activeTab === "analytics" ? "active" : ""}
-  onClick={() => setActiveTab("analytics")}
->
-  Analytics
-</span>
-
+        {[
+          "overview",
+          "users",
+          "products",
+          "orders",
+          "coupons",
+          "deals",
+          "analytics",
+          "settings", // ✅ SETTINGS TAB
+        ].map((tab) => (
+          <span
+            key={tab}
+            className={activeTab === tab ? "active" : ""}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab === "deals"
+              ? "Deals & Offers"
+              : tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </span>
+        ))}
       </div>
-      
 
-      {/* CONTENT SWITCH */}
+      {/* ================= CONTENT ================= */}
+
+      {/* OVERVIEW */}
       {activeTab === "overview" && (
         <>
-          {/* STATS */}
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="icon blue">👤</div>
-              <div>
-                <h2>150</h2>
-                <p>Total Users</p>
-              </div>
+              <h2>150</h2>
+              <p>Total Users</p>
             </div>
-
             <div className="stat-card">
-              <div className="icon purple">📦</div>
-              <div>
-                <h2>90</h2>
-                <p>Total Products</p>
-              </div>
+              <h2>90</h2>
+              <p>Total Products</p>
             </div>
-
             <div className="stat-card">
-              <div className="icon orange">🛒</div>
-              <div>
-                <h2>0</h2>
-                <p>Total Orders</p>
-              </div>
+              <h2>0</h2>
+              <p>Total Orders</p>
             </div>
-
             <div className="stat-card">
-              <div className="icon green">₹</div>
-              <div>
-                <h2>₹0</h2>
-                <p>Total Revenue</p>
-              </div>
+              <h2>₹0</h2>
+              <p>Total Revenue</p>
             </div>
           </div>
 
           <div className="recent-orders">
             <h3>Recent Orders</h3>
-            <div className="empty-box"></div>
           </div>
         </>
       )}
 
+      {/* OTHER PAGES */}
       {activeTab === "users" && <Users />}
       {activeTab === "products" && <Products />}
       {activeTab === "orders" && <Orders />}
-{activeTab === "coupons" && <Coupons />}
-
-{activeTab === "deals" && <Deals />}
-
+      {activeTab === "coupons" && <Coupons />}
+      {activeTab === "deals" && <Deals />}
       {activeTab === "analytics" && <Analytics />}
 
-    </div>
+      {/* ✅ SETTINGS – REAL COMPONENT */}
+      {activeTab === "settings" && <Settings />}
+    </>
   );
 };
 

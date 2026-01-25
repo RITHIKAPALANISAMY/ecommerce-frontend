@@ -2,6 +2,16 @@ import "../../styles/orders.css";
 
 export default function Orders() {
   const orders = JSON.parse(localStorage.getItem("orders")) || [];
+  const hasUserBoughtProduct = (productId, userEmail) => {
+  const orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+  return orders.some(
+    (o) =>
+      o.buyerEmail === userEmail &&
+      o.status === "Delivered" &&
+      o.items.some((i) => i.productId === productId)
+  );
+};
 
   return (
     <div className="orders-page">
