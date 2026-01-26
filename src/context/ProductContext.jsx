@@ -11,9 +11,16 @@ export function ProductProvider({ children }) {
   });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   /* ================= LOAD REVIEWS ================= */
 =======
   /* ================= REVIEWS ================= */
+>>>>>>> admin-safe
+=======
+  /* ================= REVIEWS ================= */
+=======
+  /* ================= LOAD REVIEWS ================= */
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
   const [reviewsMap, setReviewsMap] = useState(() => {
     const saved = localStorage.getItem("productReviews");
@@ -21,8 +28,14 @@ export function ProductProvider({ children }) {
   });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   /* ================= SAVE REVIEWS ================= */
 =======
+>>>>>>> admin-safe
+=======
+=======
+  /* ================= SAVE REVIEWS ================= */
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
   useEffect(() => {
     localStorage.setItem(
@@ -32,6 +45,58 @@ export function ProductProvider({ children }) {
   }, [reviewsMap]);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  /* ================= APPROVAL STATUS (ADMIN) ================= */
+  const [approvalMap, setApprovalMap] = useState(() => {
+    const saved = localStorage.getItem("productApproval");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "productApproval",
+      JSON.stringify(approvalMap)
+    );
+  }, [approvalMap]);
+
+  /* ================= MERGED PRODUCTS ================= */
+  const products = [...baseProducts, ...sellerProducts].map((p) => ({
+    ...p,
+    name: p.name || p.title || "Unnamed Product",
+    image:
+      p.image ||
+      p.img ||
+      p.thumbnail ||
+      "https://via.placeholder.com/80",
+    status: approvalMap[p.id] || p.status || "Pending",
+    reviews: reviewsMap[p.id] || [],
+  }));
+
+  /* ================= ACTIONS ================= */
+  const approveProduct = (id) => {
+    setApprovalMap((prev) => ({
+      ...prev,
+      [id]: "Approved",
+    }));
+  };
+
+  const rejectProduct = (id) => {
+    setApprovalMap((prev) => ({
+      ...prev,
+      [id]: "Rejected",
+    }));
+  };
+
+  const addReview = (productId, review) => {
+    setReviewsMap((prev) => ({
+      ...prev,
+      [productId]: [...(prev[productId] || []), review],
+    }));
+  };
+
+=======
+>>>>>>> admin-safe
   /* ================= WATCH PRODUCTS ================= */
   useEffect(() => {
     const syncProducts = () => {
@@ -100,6 +165,7 @@ export function ProductProvider({ children }) {
     })
   );
 
+<<<<<<< HEAD
 =======
   /* ================= APPROVAL STATUS (ADMIN) ================= */
   const [approvalMap, setApprovalMap] = useState(() => {
@@ -150,14 +216,24 @@ export function ProductProvider({ children }) {
   };
 
 >>>>>>> admin-safe
+=======
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
+>>>>>>> admin-safe
   return (
     <ProductContext.Provider
       value={{
         products,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         approveProduct,
         rejectProduct,
+>>>>>>> admin-safe
+=======
+        approveProduct,
+        rejectProduct,
+=======
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
         addReview,
         editReview,

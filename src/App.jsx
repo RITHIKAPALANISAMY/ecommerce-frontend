@@ -9,9 +9,16 @@ import Products from "./pages/admin/Products";
 import OrdersAdmin from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import Settings from "./pages/admin/Settings";
 
+>>>>>>> admin-safe
+=======
+import Settings from "./pages/admin/Settings";
+
+=======
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
 
 /* ================= SELLER ================= */

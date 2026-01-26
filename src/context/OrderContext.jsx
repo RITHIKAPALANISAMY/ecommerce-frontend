@@ -18,6 +18,7 @@ export function OrderProvider({ children }) {
   /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
     setOrders((prev) => [
       ...prev,
       {
@@ -36,6 +37,8 @@ export function OrderProvider({ children }) {
     setOrders((prev) =>
       prev.map((order) => {
 =======
+=======
+>>>>>>> admin-safe
     const newOrder = {
       id: Date.now(),
       date: new Date().toISOString(),
@@ -54,6 +57,28 @@ export function OrderProvider({ children }) {
   ) => {
     setOrders((prevOrders) =>
       prevOrders.map((order) => {
+<<<<<<< HEAD
+>>>>>>> admin-safe
+=======
+=======
+    setOrders((prev) => [
+      ...prev,
+      {
+        ...order,
+        status: "Placed", // 🔥 FIXED
+        items: order.items.map((i) => ({
+          ...i,
+          status: "Placed",
+        })),
+      },
+    ]);
+  };
+
+  /* ================= UPDATE ORDER STATUS ================= */
+  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
         if (order.id !== orderId) return order;
 
@@ -67,14 +92,23 @@ export function OrderProvider({ children }) {
           ...order,
           items: updatedItems,
 <<<<<<< HEAD
+<<<<<<< HEAD
           status: newStatus,
 =======
+=======
+>>>>>>> admin-safe
           status:
             newStatus === "Cancelled"
               ? "Cancelled"
               : allDelivered
               ? "Delivered"
               : "Processing",
+<<<<<<< HEAD
+>>>>>>> admin-safe
+=======
+=======
+          status: newStatus,
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 >>>>>>> admin-safe
         };
       })
