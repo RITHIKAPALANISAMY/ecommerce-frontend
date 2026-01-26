@@ -17,19 +17,16 @@ export default function CategoryPage() {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
 
-  /* ✅ FIX 1: case-insensitive category match */
+  /* CATEGORY MATCH */
   const categoryProducts = products.filter(
     (p) =>
       p.category &&
       p.category.toLowerCase() === category.toLowerCase()
   );
 
-  /* ✅ FIX 2: ignore undefined brands (seller products) */
   const allBrands = [
     ...new Set(
-      categoryProducts
-        .map((p) => p.brand)
-        .filter(Boolean)
+      categoryProducts.map((p) => p.brand).filter(Boolean)
     ),
   ];
 
@@ -37,7 +34,6 @@ export default function CategoryPage() {
     .filter((p) =>
       p.title.toLowerCase().includes(query.toLowerCase())
     )
-    /* ✅ FIX 3: safe rating filter */
     .filter((p) =>
       minRating === 0 ? true : (p.rating || 0) >= minRating
     )
@@ -81,7 +77,9 @@ export default function CategoryPage() {
       <aside className="filters-panel">
         <div className="filters-header">
           <h3>Filters</h3>
-          <button onClick={clearFilters}>Clear All</button>
+          <button className="clear-btn" onClick={clearFilters}>
+            Clear All
+          </button>
         </div>
 
         <div className="filter-block">
@@ -91,18 +89,23 @@ export default function CategoryPage() {
             min="0"
             max="100000"
             value={maxPrice}
-            onChange={(e) => setMaxPrice(Number(e.target.value))}
+            onChange={(e) =>
+              setMaxPrice(Number(e.target.value))
+            }
           />
-          <div className="price-values">₹0 - ₹{maxPrice}</div>
+          <div className="price-values">
+            ₹0 – ₹{maxPrice}
+          </div>
         </div>
 
         <div className="filter-block">
           <h4>Minimum Rating</h4>
           {[4, 3, 2].map((r) => (
-            <label key={r}>
+            <label key={r} className="filter-option">
               <input
                 type="radio"
                 name="rating"
+                checked={minRating === r}
                 onChange={() => setMinRating(r)}
               />
               {r} ★ & above
@@ -113,7 +116,7 @@ export default function CategoryPage() {
         <div className="filter-block">
           <h4>Brand</h4>
           {allBrands.map((b) => (
-            <label key={b}>
+            <label key={b} className="filter-option">
               <input
                 type="checkbox"
                 checked={brands.includes(b)}
@@ -130,12 +133,20 @@ export default function CategoryPage() {
         <div className="products-header">
           <h2>{category}</h2>
 
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            className="sort-dropdown"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="FEATURED">Featured</option>
             <option value="LOW_HIGH">Price: Low to High</option>
             <option value="HIGH_LOW">Price: High to Low</option>
-            <option value="RATING_HIGH">Rating: High to Low</option>
-            <option value="RATING_LOW">Rating: Low to High</option>
+            <option value="RATING_HIGH">
+              Rating: High to Low
+            </option>
+            <option value="RATING_LOW">
+              Rating: Low to High
+            </option>
           </select>
         </div>
 

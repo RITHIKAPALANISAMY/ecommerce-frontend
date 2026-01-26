@@ -3,10 +3,9 @@ import { useOrders } from "../../context/OrderContext";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/seller/sellerRevenue.css";
 
-
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -14,16 +13,18 @@ import {
 } from "recharts";
 
 export default function SellerRevenueReport() {
-  const { orders } = useOrders();
+  const { orders = [] } = useOrders();
   const { user } = useAuth();
 
-  const [view, setView] = useState("weekly"); // weekly | monthly
-  const sellerId = user.email;
+  const [view, setView] = useState("weekly");
+  const sellerId = user?.email;
 
   /* ================= FILTER SELLER ORDERS ================= */
   const sellerOrders = useMemo(() => {
+    if (!sellerId) return [];
+
     return orders.filter((order) =>
-      order.items.some(
+      order.items?.some(
         (item) =>
           item.sellerId === sellerId &&
           item.status !== "Cancelled"
@@ -31,57 +32,52 @@ export default function SellerRevenueReport() {
     );
   }, [orders, sellerId]);
 
-  /* ================= AGGREGATE DATA ================= */
+  /* ================= CHART DATA ================= */
   const chartData = useMemo(() => {
     const map = {};
 
     sellerOrders.forEach((order) => {
       let key;
 
-      // order.date is already formatted (DD/MM/YYYY)
       if (view === "weekly") {
-        key = order.date; // show per day (safe)
+        key = order.date;
       } else {
-        // Monthly grouping from DD/MM/YYYY
-        const parts = order.date.split("/");
-        const month = parts[1];
-        const year = parts[2];
+        const [, month, year] = order.date.split("/");
         key = `${month}/${year}`;
       }
 
       const revenue = order.items
         .filter(
-          (item) =>
-            item.sellerId === sellerId &&
-            item.status !== "Cancelled"
+          (i) =>
+            i.sellerId === sellerId &&
+            i.status !== "Cancelled"
         )
         .reduce(
-          (sum, item) =>
-            sum + item.price * item.quantity,
+          (sum, i) => sum + i.price * i.quantity,
           0
         );
 
       map[key] = (map[key] || 0) + revenue;
     });
 
-    return Object.entries(map).map(([key, value]) => ({
-      period: key,
-      revenue: value,
+    return Object.entries(map).map(([k, v]) => ({
+      label: k,
+      revenue: v,
     }));
   }, [sellerOrders, sellerId, view]);
 
-  /* ================= TOTAL REVENUE ================= */
   const totalRevenue = chartData.reduce(
-    (sum, d) => sum + d.revenue,
+    (s, d) => s + d.revenue,
     0
   );
 
   return (
-    <div className="seller-revenue-card">
-      <div className="revenue-header">
-        <h3>Revenue Report</h3>
+    <div className="seller-revenue-modern">
+      {/* HEADER */}
+      <div className="revenue-top">
+        <h3>Revenue Overview</h3>
 
-        <div className="revenue-toggle">
+        <div className="toggle">
           <button
             className={view === "weekly" ? "active" : ""}
             onClick={() => setView("weekly")}
@@ -97,44 +93,80 @@ export default function SellerRevenueReport() {
         </div>
       </div>
 
-      <div className="revenue-summary">
-        <p>Total Revenue</p>
-        <h2>₹{totalRevenue}</h2>
+      {/* METRICS */}
+      <div className="revenue-metrics">
+        <div>
+          <span>Total Revenue</span>
+          <strong>₹{totalRevenue}</strong>
+        </div>
+        <div>
+          <span>Avg Order Value</span>
+          <strong>
+            ₹
+            {chartData.length
+              ? Math.round(
+                  totalRevenue / chartData.length
+                )
+              : 0}
+          </strong>
+        </div>
       </div>
 
-      <div className="revenue-chart">
+      {/* CHART */}
+      <div className="revenue-chart-modern">
         {chartData.length === 0 ? (
-          <p className="empty">No sales data available.</p>
+          <p className="empty">No revenue data yet</p>
         ) : (
-<ResponsiveContainer width="100%" height={280}>
-  <BarChart
-    data={chartData}
-    barCategoryGap={6}   // 🔥 REDUCES HUGE SPACES
-    barGap={2}
-    margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
-  >
-    <XAxis
-      dataKey="period"
-      tick={{ fontSize: 12 }}
-      axisLine={false}
-      tickLine={false}
-    />
-    <YAxis hide />
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient
+                  id="revenueGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor="#22c55e"
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="#22c55e"
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
 
-    <Tooltip formatter={(v) => `₹${v}`} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12 }}
+              />
 
-    <Bar
-  dataKey="revenue"
-  barSize={36}     // 👈 looks better with fewer bars
-  radius={[8, 8, 0, 0]}
-  fill="#16a34a"
-/>
+              <YAxis
+                hide
+              />
 
-  </BarChart>
-</ResponsiveContainer>
+              <Tooltip
+                formatter={(v) => `₹${v}`}
+                labelStyle={{ fontWeight: 600 }}
+              />
 
-
-
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#22c55e"
+                strokeWidth={3}
+                fill="url(#revenueGradient)"
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>

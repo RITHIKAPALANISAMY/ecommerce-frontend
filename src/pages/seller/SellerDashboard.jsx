@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../context/ProductContext";
 import { useOrders } from "../../context/OrderContext";
@@ -25,7 +25,7 @@ export default function SellerDashboard() {
   const { getSellerOrders, getSellerRevenue } = useOrders();
 
   const [tab, setTab] = useState("overview");
-  const [showAddProduct, setShowAddProduct] = useState(false);
+  
 
   const sellerId = user?.email;
   const seller = user?.sellerInfo;
@@ -58,6 +58,23 @@ export default function SellerDashboard() {
     }, {})
   );
 
+  /* ================= NEW DASHBOARD METRICS ================= */
+  const pendingOrdersCount = useMemo(() => {
+    return sellerOrders.filter(
+      (o) => o.status === "Placed" || o.status === "Shipped"
+    ).length;
+  }, [sellerOrders]);
+
+  const LOW_STOCK_LIMIT = 5;
+
+  const lowStockCount = sellerProducts.filter(
+    (p) => p.stock > 0 && p.stock <= LOW_STOCK_LIMIT
+  ).length;
+
+  const outOfStockCount = sellerProducts.filter(
+    (p) => p.stock === 0
+  ).length;
+
   return (
     <div className="seller-dashboard">
 
@@ -68,13 +85,17 @@ export default function SellerDashboard() {
       </div>
 
       {/* SELLER INFO */}
-      {seller && (
+      {seller ? (
         <div className="seller-info-card">
           <h3>{seller.storeName}</h3>
           <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
           <p><strong>Phone:</strong> {seller.phone}</p>
           {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
           <p className="seller-address">{seller.address}</p>
+        </div>
+      ) : (
+        <div className="seller-info-card">
+          <p>Seller details not found. Please complete seller profile.</p>
         </div>
       )}
 
@@ -145,6 +166,48 @@ export default function SellerDashboard() {
                 )}
               </div>
 
+              {/* ✅ NEW KPI CARDS */}
+              <div className="analytics-card pending">
+                <span className="card-icon">⏳</span>
+                <p className="card-title">Pending Orders</p>
+                <h3>{pendingOrdersCount}</h3>
+              </div>
+
+              <div className="analytics-card low-stock">
+                <span className="card-icon">⚠️</span>
+                <p className="card-title">Low Stock</p>
+                <h3>{lowStockCount}</h3>
+              </div>
+
+              <div className="analytics-card out-stock">
+                <span className="card-icon">❌</span>
+                <p className="card-title">Out of Stock</p>
+                <h3>{outOfStockCount}</h3>
+              </div>
+
+            </div>
+
+            {/* 🔔 NOTIFICATIONS */}
+            <div className="seller-notifications">
+              <h4>Notifications</h4>
+
+              {pendingOrdersCount > 0 && (
+                <p>🆕 You have orders waiting for processing</p>
+              )}
+
+              {outOfStockCount > 0 && (
+                <p>❗ Some products are out of stock</p>
+              )}
+
+              {lowStockCount > 0 && (
+                <p>⚠️ Low stock items need restocking</p>
+              )}
+
+              {pendingOrdersCount === 0 &&
+                lowStockCount === 0 &&
+                outOfStockCount === 0 && (
+                  <p>✅ All operations running smoothly</p>
+                )}
             </div>
 
             {/* 🔹 ROW 2: FULL WIDTH REVENUE REPORT */}
@@ -155,35 +218,8 @@ export default function SellerDashboard() {
         )}
 
         {/* ================= PRODUCTS ================= */}
-        {tab === "products" && (
-          <>
-            <div className="products-top-bar">
-              <h3>My Products</h3>
-              <button
-                className="add-product-btn"
-                onClick={() => setShowAddProduct(true)}
-              >
-                + Add Product
-              </button>
-            </div>
+{tab === "products" && <SellerProducts />}
 
-            <SellerProducts />
-
-            {showAddProduct && (
-              <div className="modal-overlay">
-                <div className="modal">
-                  <SellerAddProduct onClose={() => setShowAddProduct(false)} />
-                  <button
-                    className="close-btn"
-                    onClick={() => setShowAddProduct(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
 
         {/* ================= ORDERS ================= */}
         {tab === "orders" && <SellerOrders />}

@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  // ✅ LOAD CART FROM LOCAL STORAGE
+  // ✅ LOAD CART
   const [cartItems, setCartItems] = useState(() => {
     const saved = localStorage.getItem("cart");
     return saved ? JSON.parse(saved) : [];
@@ -11,38 +11,63 @@ export function CartProvider({ children }) {
 
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // ✅ SAVE CART TO LOCAL STORAGE
+  // ✅ SAVE CART
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // ✅ ADD TO CART (MERGE QTY)
+  // ✅ ADD TO CART (STOCK-SAFE)
   const addToCart = (product) => {
     setCartItems((prev) => {
-      const exists = prev.find((i) => i.id === product.id);
+      const existing = prev.find((i) => i.id === product.id);
 
-      if (exists) {
+      const stock =
+        product.stock !== undefined
+          ? Number(product.stock)
+          : 0; // 🔴 DEFAULT SAFE
+
+      const qtyToAdd = Number(product.qty) || 1;
+
+      if (existing) {
+        // ❌ DO NOT ADD IF OUT OF STOCK
+        if (stock === 0) return prev;
+
         return prev.map((i) =>
           i.id === product.id
-            ? { ...i, qty: i.qty + (product.qty || 1) }
+            ? {
+                ...i,
+                qty: Math.min(i.qty + qtyToAdd, stock),
+                stock, // ✅ KEEP UPDATED
+              }
             : i
         );
       }
 
-      return [...prev, { ...product, qty: product.qty || 1 }];
+      return [
+        ...prev,
+        {
+          ...product,
+          image: product.image || product.images?.[0],
+          qty: stock === 0 ? 1 : Math.min(qtyToAdd, stock),
+          stock, // ✅ CRITICAL FIX
+        },
+      ];
     });
   };
 
-  // ✅ INCREASE QTY
+  // ✅ INCREASE QTY (BLOCK OOS)
   const addQty = (id) => {
     setCartItems((items) =>
-      items.map((i) =>
-        i.id === id ? { ...i, qty: i.qty + 1 } : i
-      )
+      items.map((i) => {
+        if (i.id !== id) return i;
+        if (i.stock === 0) return i;
+        if (i.stock !== null && i.qty >= i.stock) return i;
+        return { ...i, qty: i.qty + 1 };
+      })
     );
   };
 
-  // ✅ DECREASE QTY (MIN 1)
+  // ✅ DECREASE QTY
   const reduceQty = (id) => {
     setCartItems((items) =>
       items.map((i) =>
@@ -75,7 +100,6 @@ export function CartProvider({ children }) {
     return "Invalid coupon code";
   };
 
-  // ✅ REMOVE COUPON
   const removeCoupon = () => setAppliedCoupon(null);
 
   return (

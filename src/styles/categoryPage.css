@@ -1,102 +1,86 @@
-.category-page {
-  display: flex;
-  padding: 20px;
-  background: #f1f3f6;
-}
-
-/* FILTERS */
-.filters-panel {
-  width: 260px;
-  background: #fff;
-  padding: 16px;
-  border-radius: 4px;
-  margin-right: 20px;
-}
-
-.filter-block {
-  margin-bottom: 16px;
-}
-
-.filter-block label {
-  font-weight: 600;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.filter-block input,
-.filter-block select {
-  width: 100%;
-  padding: 6px;
-}
-
-/* PRODUCTS */
-.products-panel {
-  flex: 1;
-}
-
-.products-header {
-  background: #fff;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-  display: flex;
-  justify-content: space-between;
-  border-radius: 4px;
-}
-
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-}
+/* ================= CATEGORY PAGE ================= */
 .category-page {
   display: flex;
   background: #f1f3f6;
   padding: 16px;
 }
 
-/* FILTERS */
+/* ================= FILTER PANEL ================= */
 .filters-panel {
   width: 270px;
   background: #fff;
   padding: 16px;
-  border-radius: 4px;
+  border-radius: 12px;
   margin-right: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
+/* HEADER */
 .filters-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.filters-header button {
+.clear-btn {
   background: none;
-  color: #2874f0;
   border: none;
+  color: #2563eb;
+  font-size: 13px;
   cursor: pointer;
 }
 
+.clear-btn:hover {
+  text-decoration: underline;
+}
+
+/* ================= FILTER BLOCK ================= */
 .filter-block {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .filter-block h4 {
-  margin-bottom: 8px;
   font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
+/* ✅ FIX: INLINE RADIO & CHECKBOX ALIGNMENT */
+.filter-option {
+  display: flex;
+  align-items: center;   /* 🔥 KEY FIX */
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+/* ✅ FIX: DO NOT FORCE BLOCK LABELS */
 .filter-block label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 6px;
+  font-weight: normal;
+}
+
+/* INPUTS */
+.filter-option input {
+  margin: 0;            /* 🔥 prevents vertical jump */
+  cursor: pointer;
+  accent-color: #dc2626;
+}
+
+/* ================= RANGE ================= */
+.filter-block input[type="range"] {
+  width: 100%;
+  accent-color: #7c3aed;
 }
 
 .price-values {
   font-size: 13px;
-  margin-top: 4px;
+  margin-top: 6px;
+  color: #374151;
 }
 
-/* PRODUCTS */
+/* ================= PRODUCTS ================= */
 .products-panel {
   flex: 1;
 }
@@ -111,6 +95,14 @@
   align-items: center;
 }
 
+/* SORT */
+.sort-dropdown {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+/* GRID */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

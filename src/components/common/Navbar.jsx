@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useWishlist } from "../../context/WishlistContext";
 import "../../styles/navbar.css";
 
 export default function Navbar() {
@@ -17,10 +16,13 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
-  const isSeller = user?.role === "seller";
+  // ✅ SAFE CART COUNT (NO NaN EVER)
+  const cartCount = cartItems.reduce(
+    (sum, item) => sum + (Number(item.qty) || 1),
+    0
+  );
 
-  // ✅ ONLY USERNAME (NO EMAIL FALLBACK)
+  const role = user?.role; // buyer | seller | admin
   const username = user?.username || "User";
 
   /* CLOSE DROPDOWN ON OUTSIDE CLICK */
@@ -53,6 +55,12 @@ export default function Navbar() {
     setSearch("");
   };
 
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate("/");
+  };
+
   return (
     <nav className="navbar">
       <Link to="/" className="logo">
@@ -68,6 +76,7 @@ export default function Navbar() {
       />
 
       <div className="nav-actions">
+        {/* ================= NOT LOGGED IN ================= */}
         {!user && (
           <>
             <Link className="nav-link login-link" to="/login">
@@ -83,9 +92,11 @@ export default function Navbar() {
           </>
         )}
 
+        {/* ================= LOGGED IN ================= */}
         {user && (
           <>
-            {!isSeller && (
+            {/* BUYER ONLY */}
+            {role === "buyer" && (
               <div
                 className="nav-link seller-link"
                 onClick={() => navigate("/become-seller")}
@@ -108,32 +119,58 @@ export default function Navbar() {
                     <strong>{username}</strong>
                     <p>{user.email}</p>
                     <span className="user-role">
-                      {isSeller ? "Seller Account" : "Buyer Account"}
+                      {role === "buyer" && "Buyer Account"}
+                      {role === "seller" && "Seller Account"}
+                      {role === "admin" && "Admin Account"}
                     </span>
                   </div>
 
-                  <Link
-                    to={isSeller ? "/seller/dashboard" : "/orders"}
-                    className="dropdown-item"
-                    onClick={() => setOpen(false)}
-                  >
-                    📦 My Orders
-                  </Link>
+                  {/* BUYER MENU */}
+                  {role === "buyer" && (
+                    <>
+                      <Link
+                        to="/orders"
+                        className="dropdown-item"
+                        onClick={() => setOpen(false)}
+                      >
+                        📦 My Orders
+                      </Link>
 
-                  <Link
-                    to="/wishlist"
-                    className="dropdown-item"
-                    onClick={() => setOpen(false)}
-                  >
-                    ❤️ Wishlist
-                  </Link>
+                      <Link
+                        to="/wishlist"
+                        className="dropdown-item"
+                        onClick={() => setOpen(false)}
+                      >
+                        ❤️ Wishlist
+                      </Link>
+                    </>
+                  )}
+
+                  {/* SELLER MENU */}
+                  {role === "seller" && (
+                    <Link
+                      to="/seller/dashboard"
+                      className="dropdown-item"
+                      onClick={() => setOpen(false)}
+                    >
+                      🏪 Seller Dashboard
+                    </Link>
+                  )}
+
+                  {/* ADMIN MENU */}
+                  {role === "admin" && (
+                    <Link
+                      to="/admin/dashboard"
+                      className="dropdown-item"
+                      onClick={() => setOpen(false)}
+                    >
+                      🛠 Admin Dashboard
+                    </Link>
+                  )}
 
                   <button
                     className="dropdown-logout"
-                    onClick={() => {
-                      logout();
-                      navigate("/");
-                    }}
+                    onClick={handleLogout}
                   >
                     🚪 Logout
                   </button>
@@ -143,9 +180,15 @@ export default function Navbar() {
           </>
         )}
 
-        <div className="cart" onClick={() => navigate("/cart")}>
+        {/* CART */}
+        <div
+          className="cart"
+          onClick={() => navigate("/cart")}
+        >
           🛒
-          {cartCount > 0 && <span className="badge">{cartCount}</span>}
+          {cartCount > 0 && (
+            <span className="badge">{cartCount}</span>
+          )}
         </div>
       </div>
     </nav>

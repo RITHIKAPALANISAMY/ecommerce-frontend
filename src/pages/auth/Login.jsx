@@ -33,12 +33,11 @@ export default function Login() {
       return;
     }
 
-    /* 🔀 ROLE-BASED REDIRECT (ONLY ADDITION) */
+    /* 🔀 REDIRECT LOGIC (FINAL & CORRECT) */
     if (loggedUser.role === "admin") {
       navigate("/admin/dashboard", { replace: true });
-    } else if (loggedUser.role === "seller") {
-      navigate("/seller/dashboard", { replace: true });
     } else {
+      // 🔥 EVERYONE ELSE ENTERS BUYER PAGE
       navigate(from, { replace: true });
     }
   };
@@ -49,8 +48,7 @@ export default function Login() {
         <div className="auth-left">
           <h1>Welcome to ShopVerse</h1>
           <p>
-            Login to track orders, manage your account and enjoy seamless
-            shopping.
+            Login to shop, place orders, or manage your seller account.
           </p>
         </div>
 

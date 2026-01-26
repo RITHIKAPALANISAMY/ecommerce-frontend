@@ -8,8 +8,11 @@ import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
 import OrdersAdmin from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
+<<<<<<< HEAD
 import Settings from "./pages/admin/Settings";
 
+=======
+>>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";

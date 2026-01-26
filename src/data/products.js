@@ -41,7 +41,8 @@ const products = [
     price: 899,
     mrp: 1499,
     discount: 40,
-    stock: 150,
+    stock: 3, // ⚠️ LOW STOCK
+    notifySubscribers: [],
     images: [sunscreen1, sunscreen2, sunscreen3],
     description: {
       about:
@@ -69,10 +70,11 @@ const products = [
     mrp: 399,
     discount: 25,
     stock: 200,
+    notifySubscribers: [],
     images: [facewash1],
     description: {
       about:
-        "GlowCare Herbal Face Wash gently cleanses the skin while maintaining natural moisture. Enriched with herbal extracts, it removes dirt and excess oil without drying the skin.",
+        "GlowCare Herbal Face Wash gently cleanses the skin while maintaining natural moisture.",
       highlights: [
         "Gentle herbal formulation",
         "Removes dirt and impurities",
@@ -96,10 +98,11 @@ const products = [
     mrp: 4999,
     discount: 40,
     stock: 80,
+    notifySubscribers: [],
     images: [sneakers1, sneakers2, sneakers3],
     description: {
       about:
-        "Nike running sneakers are designed for maximum comfort and performance. Ideal for running, walking, and gym workouts, they provide excellent cushioning and grip.",
+        "Nike running sneakers are designed for maximum comfort and performance.",
       highlights: [
         "Breathable mesh upper",
         "Shock-absorbing cushioned sole",
@@ -107,7 +110,7 @@ const products = [
         "Lightweight and durable design"
       ],
       material: "Mesh upper with rubber sole",
-      usage: "Suitable for sports and daily wear",
+      usage: "Sports and daily wear",
       care: "Clean with dry cloth only",
       warranty: "6 months manufacturer warranty"
     },
@@ -123,18 +126,19 @@ const products = [
     mrp: 1299,
     discount: 38,
     stock: 120,
+    notifySubscribers: [],
     images: [tshirt1],
     description: {
       about:
-        "This Puma cotton T-shirt offers comfort and style for everyday wear. Designed with breathable fabric, it keeps you comfortable throughout the day.",
+        "Puma cotton T-shirt offers comfort and style for everyday wear.",
       highlights: [
         "100% soft cotton fabric",
-        "Regular fit for daily comfort",
+        "Regular fit",
         "Colorfast and durable",
         "Ideal for casual wear"
       ],
       material: "Pure cotton",
-      usage: "Casual and daily wear",
+      usage: "Daily wear",
       care: "Machine wash cold",
       warranty: "No warranty"
     },
@@ -149,19 +153,20 @@ const products = [
     price: 1499,
     mrp: 2999,
     discount: 50,
-    stock: 90,
+    stock: 0, // ❌ OUT OF STOCK
+    notifySubscribers: [],
     images: [headphone1],
     description: {
       about:
-        "Boat wireless headphones deliver immersive sound quality with deep bass. Designed for music, calls, and gaming, they provide long-lasting comfort.",
+        "Boat wireless headphones deliver immersive sound quality.",
       highlights: [
         "High-quality sound output",
-        "Built-in microphone for calls",
+        "Built-in microphone",
         "Long battery life",
         "Comfortable ear cushions"
       ],
-      material: "ABS body with cushioned ear pads",
-      usage: "Music, calls, and entertainment",
+      material: "ABS body",
+      usage: "Music and calls",
       care: "Keep away from water",
       warranty: "1 year manufacturer warranty"
     },
@@ -176,20 +181,21 @@ const products = [
     price: 52999,
     mrp: 64999,
     discount: 18,
-    stock: 40,
+    stock: 2, // ⚠️ LOW STOCK
+    notifySubscribers: [],
     images: [laptop1],
     description: {
       about:
-        "This HP laptop is designed for performance and productivity. With SSD storage and fast processing, it is ideal for office work, studies, and entertainment.",
+        "HP laptop designed for performance and productivity.",
       highlights: [
         "15.6-inch Full HD display",
         "Fast SSD storage",
-        "Smooth multitasking performance",
-        "Lightweight and portable design"
+        "Smooth multitasking",
+        "Portable design"
       ],
       material: "Metallic body",
-      usage: "Office, education, and entertainment",
-      care: "Use laptop bag for protection",
+      usage: "Office and education",
+      care: "Use laptop bag",
       warranty: "1 year manufacturer warranty"
     },
     reviews: []
@@ -204,18 +210,19 @@ const products = [
     mrp: 29999,
     discount: 17,
     stock: 70,
+    notifySubscribers: [],
     images: [mobile1],
     description: {
       about:
-        "Samsung 5G smartphone offers powerful performance, stunning display, and advanced camera features. Built for multitasking and entertainment.",
+        "Samsung 5G smartphone with powerful performance.",
       highlights: [
         "5G connectivity",
         "AMOLED display",
-        "High-quality camera system",
-        "Long-lasting battery"
+        "Advanced camera",
+        "Long battery life"
       ],
-      material: "Glass front with metal frame",
-      usage: "Daily use, photography, and gaming",
+      material: "Glass & metal",
+      usage: "Daily use",
       care: "Use protective case",
       warranty: "1 year manufacturer warranty"
     },
@@ -231,18 +238,18 @@ const products = [
     mrp: 14999,
     discount: 20,
     stock: 100,
+    notifySubscribers: [],
     images: [mobile2],
     description: {
       about:
-        "Redmi budget smartphone delivers reliable performance at an affordable price. Suitable for daily tasks, calls, and media consumption.",
+        "Redmi budget smartphone for daily tasks.",
       highlights: [
         "Long battery life",
-        "Smooth daily performance",
-        "Value for money",
-        "User-friendly interface"
+        "Smooth performance",
+        "Value for money"
       ],
       material: "Polycarbonate body",
-      usage: "Daily communication and apps",
+      usage: "Daily communication",
       care: "Avoid water exposure",
       warranty: "1 year manufacturer warranty"
     },
@@ -258,19 +265,19 @@ const products = [
     mrp: 4999,
     discount: 30,
     stock: 60,
+    notifySubscribers: [],
     images: [mixer1],
     description: {
       about:
-        "Prestige mixer grinder is designed for Indian cooking needs. Powerful motor ensures smooth grinding and blending.",
+        "Prestige mixer grinder for Indian cooking.",
       highlights: [
-        "750W powerful motor",
-        "Multiple jars for different uses",
-        "Durable stainless steel blades",
-        "Overload protection"
+        "750W motor",
+        "Multiple jars",
+        "Durable blades"
       ],
-      material: "ABS body with steel jars",
+      material: "ABS body",
       usage: "Grinding and blending",
-      care: "Clean jars after use",
+      care: "Clean after use",
       warranty: "1 year manufacturer warranty"
     },
     reviews: []
@@ -285,19 +292,19 @@ const products = [
     mrp: 1999,
     discount: 35,
     stock: 90,
+    notifySubscribers: [],
     images: [bedsheet1],
     description: {
       about:
-        "Bombay Dyeing cotton bedsheet offers comfort and elegance. Soft fabric ensures a pleasant sleeping experience.",
+        "Soft and breathable cotton bedsheet.",
       highlights: [
-        "100% cotton fabric",
-        "Soft and breathable",
-        "Colorfast and durable",
+        "100% cotton",
+        "Colorfast",
         "Includes pillow covers"
       ],
       material: "Pure cotton",
       usage: "Daily home use",
-      care: "Machine wash cold",
+      care: "Machine wash",
       warranty: "No warranty"
     },
     reviews: []
@@ -312,19 +319,18 @@ const products = [
     mrp: 899,
     discount: 22,
     stock: 200,
+    notifySubscribers: [],
     images: [rice1],
     description: {
       about:
-        "India Gate basmati rice is known for its long grains and rich aroma. Ideal for biryani and special meals.",
+        "Premium basmati rice with long grains.",
       highlights: [
-        "Premium quality long grains",
-        "Rich aroma and taste",
-        "Non-sticky texture",
-        "Ideal for special dishes"
+        "Rich aroma",
+        "Non-sticky texture"
       ],
       material: "Natural basmati rice",
-      usage: "Cooking rice dishes",
-      care: "Store in a dry place",
+      usage: "Cooking",
+      care: "Store dry",
       warranty: "Not applicable"
     },
     reviews: []
@@ -339,19 +345,18 @@ const products = [
     mrp: 220,
     discount: 19,
     stock: 300,
+    notifySubscribers: [],
     images: [oil1],
     description: {
       about:
-        "Fortune sunflower oil is a healthy choice for everyday cooking. Light and refined oil suitable for Indian cuisine.",
+        "Healthy refined sunflower oil.",
       highlights: [
-        "Refined sunflower oil",
         "Light and healthy",
-        "Maintains food taste",
-        "Suitable for daily cooking"
+        "Ideal for daily cooking"
       ],
       material: "Refined sunflower oil",
-      usage: "Cooking and frying",
-      care: "Store in cool and dry place",
+      usage: "Cooking",
+      care: "Store cool",
       warranty: "Not applicable"
     },
     reviews: []

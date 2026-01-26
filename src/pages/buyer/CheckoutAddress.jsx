@@ -79,7 +79,13 @@ export default function CheckoutAddress() {
 
           <div className="address-header">
             <h2>Select Delivery Address</h2>
-            <button onClick={() => setShowForm(true)}>+ Add New Address</button>
+            <button
+  className="add-address-btn"
+  onClick={() => setShowForm(true)}
+>
+  + Add New Address
+</button>
+
           </div>
 
           {showForm && (
@@ -103,7 +109,13 @@ export default function CheckoutAddress() {
                 onChange={e => setForm({ ...form, pincode: e.target.value })} />
 
               <div className="form-actions">
-                <button onClick={() => setShowForm(false)}>Cancel</button>
+                <button
+  className="cancel-btn"
+  onClick={() => setShowForm(false)}
+>
+  Cancel
+</button>
+
                 <button className="save-btn" onClick={handleSaveAddress}>
                   Save Address
                 </button>

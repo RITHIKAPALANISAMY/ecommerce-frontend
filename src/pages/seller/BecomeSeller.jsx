@@ -28,7 +28,9 @@ export default function BecomeSeller() {
       return;
     }
 
-    updateUserRole("seller", form);
+    // ✅ FIX: pass ONLY seller data object
+    updateUserRole(form);
+
     navigate("/seller/dashboard");
   };
 
@@ -44,9 +46,9 @@ export default function BecomeSeller() {
           <label>Store Name *</label>
           <input
             name="storeName"
-            placeholder="Your Store Name"
             value={form.storeName}
             onChange={handleChange}
+            placeholder="Your Store Name"
           />
         </div>
 
@@ -54,24 +56,24 @@ export default function BecomeSeller() {
           <label>Owner Name</label>
           <input
             name="ownerName"
-            placeholder="Owner Full Name"
             value={form.ownerName}
             onChange={handleChange}
+            placeholder="Owner Full Name"
           />
         </div>
 
         <div className="form-group">
           <label>Email</label>
-          <input name="email" value={form.email} disabled />
+          <input value={form.email} disabled />
         </div>
 
         <div className="form-group">
           <label>Phone Number *</label>
           <input
             name="phone"
-            placeholder="10-digit mobile number"
             value={form.phone}
             onChange={handleChange}
+            placeholder="10-digit mobile number"
           />
         </div>
 
@@ -79,9 +81,9 @@ export default function BecomeSeller() {
           <label>GST Number (optional)</label>
           <input
             name="gst"
-            placeholder="GSTIN"
             value={form.gst}
             onChange={handleChange}
+            placeholder="GSTIN"
           />
         </div>
 
@@ -89,9 +91,9 @@ export default function BecomeSeller() {
           <label>Business Address *</label>
           <textarea
             name="address"
-            placeholder="Complete business address"
             value={form.address}
             onChange={handleChange}
+            placeholder="Complete business address"
           />
         </div>
 

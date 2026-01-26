@@ -1,60 +1,70 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
 
 const SellerProductContext = createContext();
 
 export function SellerProductProvider({ children }) {
-  const [sellerProducts, setSellerProducts] = useState(() => {
-    const saved = localStorage.getItem("sellerProducts");
+  const { user } = useAuth();
+
+  /* ================= LOAD FROM STORAGE ================= */
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem("products");
     return saved ? JSON.parse(saved) : [];
   });
 
-  /* SAVE TO LOCAL STORAGE */
+  /* ================= SAVE TO STORAGE ================= */
   useEffect(() => {
-    localStorage.setItem(
-      "sellerProducts",
-      JSON.stringify(sellerProducts)
-    );
-  }, [sellerProducts]);
+    localStorage.setItem("products", JSON.stringify(products));
+  }, [products]);
 
-  /* ADD PRODUCT */
+  /* ================= ADD PRODUCT ================= */
   const addSellerProduct = (product) => {
-    setSellerProducts((prev) => [...prev, product]);
+    if (!user) return;
+
+    const productWithSeller = {
+      ...product,
+      sellerEmail: user.email, // 🔑 link product to seller
+    };
+
+    setProducts((prev) => [...prev, productWithSeller]);
   };
 
-  /* DELETE PRODUCT */
+  /* ================= DELETE PRODUCT ================= */
   const deleteSellerProduct = (id) => {
-    setSellerProducts((prev) =>
-      prev.filter((p) => p.id !== id)
-    );
+    setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  /* EDIT PRODUCT */
+  /* ================= UPDATE PRODUCT ================= */
   const updateSellerProduct = (updatedProduct) => {
-    setSellerProducts((prev) =>
+    setProducts((prev) =>
       prev.map((p) =>
         p.id === updatedProduct.id ? updatedProduct : p
       )
     );
   };
 
-  /* ================= STOCK VALIDATION ================= */
+  /* ================= SELLER VIEW ================= */
+  const sellerProducts = user
+    ? products.filter((p) => p.sellerEmail === user.email)
+    : [];
+
+  /* ================= BUYER VIEW ================= */
+  const buyerProducts = products;
+
+  /* ================= STOCK CHECK ================= */
   const hasSufficientStock = (items) => {
-  return items.every((item) => {
-    const product = sellerProducts.find(
-      (p) => p.id === item.productId
-    );
-
-    // ✅ If product is NOT a seller product, ignore stock check
-    if (!product) return true;
-
-    return product.stock >= item.quantity;
-  });
-};
-
+    return items.every((item) => {
+      const product = products.find(
+        (p) => p.id === item.productId
+      );
+      if (!product) return true;
+      return product.stock >= item.quantity;
+    });
+  };
 
   /* ================= REDUCE STOCK ================= */
   const reduceStockAfterOrder = (items) => {
-    setSellerProducts((prev) =>
+    setProducts((prev) =>
       prev.map((product) => {
         const orderedItem = items.find(
           (i) => i.productId === product.id
@@ -69,9 +79,9 @@ export function SellerProductProvider({ children }) {
     );
   };
 
-  /* ================= RESTORE STOCK (ON CANCEL) ================= */
+  /* ================= RESTORE STOCK ================= */
   const restoreStockAfterCancel = (items) => {
-    setSellerProducts((prev) =>
+    setProducts((prev) =>
       prev.map((product) => {
         const cancelledItem = items.find(
           (i) => i.productId === product.id
@@ -89,7 +99,8 @@ export function SellerProductProvider({ children }) {
   return (
     <SellerProductContext.Provider
       value={{
-        sellerProducts,
+        products: buyerProducts,     // 👈 buyer uses this
+        sellerProducts,              // 👈 seller dashboard uses this
         addSellerProduct,
         deleteSellerProduct,
         updateSellerProduct,

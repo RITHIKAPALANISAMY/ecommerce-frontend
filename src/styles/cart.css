@@ -197,3 +197,59 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.cart-warning {
+  background: #fff1f2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-disabled {
+  background: #d1d5db !important;
+  cursor: not-allowed;
+}
+.stock-label {
+  font-size: 13px;
+  margin: 6px 0;
+  font-weight: 500;
+}
+
+.stock-label.out {
+  color: #b91c1c;
+}
+
+.stock-label.low {
+  color: #d97706;
+}
+
+.stock-label.in {
+  color: #15803d;
+}
+
+.notify-wrapper {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.notify-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notify-btn:hover {
+  text-decoration: underline;
+}
+.stock-label.out {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.stock-label.low {
+  color: #d97706;
+  font-weight: 500;
+}

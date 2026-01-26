@@ -1,26 +1,119 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "../../context/CartContext";
+import { useSellerProducts } from "../../context/SellerProductContext";
+import { jsPDF } from "jspdf";
 import "../../styles/orderSuccess.css";
 
 export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const navigate = useNavigate();
 
+  const { removeItem } = useCart();
+  const { reduceStockAfterOrder } = useSellerProducts();
+
+  const processedRef = useRef(false);
+
   useEffect(() => {
     const orders =
       JSON.parse(localStorage.getItem("orders")) || [];
 
-    // 🔒 If no orders, redirect to home
     if (orders.length === 0) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
 
-    // ✅ Always show the latest order
-    setOrder(orders[orders.length - 1]);
-  }, [navigate]);
+    const latestOrder = orders[orders.length - 1];
+    setOrder(latestOrder);
+
+    if (processedRef.current) return;
+    processedRef.current = true;
+
+    // ✅ ADDED: CLEAR ORDER FLAG (CRITICAL)
+    localStorage.removeItem("orderPlaced");
+
+    // ✅ Reduce stock
+    reduceStockAfterOrder(latestOrder.items);
+
+    // ✅ Remove purchased items from cart
+    latestOrder.items.forEach((item) => {
+      removeItem(item.productId);
+    });
+  }, [navigate, removeItem, reduceStockAfterOrder]);
 
   if (!order) return null;
+
+  /* ================= PDF INVOICE ================= */
+  const downloadInvoice = () => {
+    const doc = new jsPDF();
+
+    let y = 20;
+
+    doc.setFontSize(18);
+    doc.text("SHOPVERSE INVOICE", 14, y);
+
+    y += 10;
+    doc.setFontSize(11);
+    doc.text(`Order ID: ${order.id}`, 14, y);
+    y += 6;
+    doc.text(`Order Date: ${order.date}`, 14, y);
+
+    y += 10;
+    doc.setFontSize(13);
+    doc.text("Delivery Address", 14, y);
+
+    y += 6;
+    doc.setFontSize(11);
+    doc.text(order.address?.name || "", 14, y);
+    y += 5;
+    doc.text(order.address?.phone || "", 14, y);
+    y += 5;
+    doc.text(
+      `${order.address?.address}, ${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}`,
+      14,
+      y
+    );
+
+    y += 10;
+    doc.setFontSize(13);
+    doc.text("Order Items", 14, y);
+
+    y += 6;
+    doc.setFontSize(11);
+
+    order.items.forEach((item) => {
+      doc.text(
+        `${item.title} | Qty: ${item.quantity} | ₹${item.price * item.quantity}`,
+        14,
+        y
+      );
+      y += 6;
+    });
+
+    y += 6;
+    doc.line(14, y, 195, y);
+
+    y += 8;
+    doc.setFontSize(12);
+    doc.text(`Total Paid: ₹${order.total}`, 14, y);
+
+    y += 6;
+    doc.text(
+      `Payment Method: ${order.paymentMethod || "Cash on Delivery"}`,
+      14,
+      y
+    );
+
+    y += 10;
+    doc.setFontSize(10);
+    doc.text(
+      "Thank you for shopping with ShopVerse!",
+      14,
+      y
+    );
+
+    doc.save(`Invoice_${order.id}.pdf`);
+  };
 
   return (
     <div className="order-success-page">
@@ -28,6 +121,22 @@ export default function OrderSuccess() {
 
       <h2>Order Placed Successfully!</h2>
       <p>Thank you for shopping with ShopVerse</p>
+
+      <button
+        onClick={downloadInvoice}
+        style={{
+          margin: "16px 0",
+          padding: "10px 18px",
+          background: "#8b0020",
+          color: "#fff",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: "600",
+        }}
+      >
+        ⬇ Download Invoice (PDF)
+      </button>
 
       <div className="order-card">
         <div className="row">

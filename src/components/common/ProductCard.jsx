@@ -1,15 +1,24 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const {
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+  } = useWishlist();
+  const { user } = useAuth();
 
-  const toggleWishlist = (e) => {
+  const role = user?.role; // buyer | seller | admin
+
+  const handleWishlist = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    // ✅ Guest wishlist allowed
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
     } else {
@@ -22,20 +31,29 @@ export default function ProductCard({ product }) {
     }
   };
 
+  const handleAddToCart = () => {
+    // ❌ Block seller & admin
+    if (role === "seller" || role === "admin") return;
+
+    // ✅ Guest + buyer allowed
+    addToCart(product);
+  };
+
+  const isDisabled = role === "seller" || role === "admin";
+
   return (
     <div className="product-card">
-
-      {/* 🔥 DISCOUNT BADGE */}
+      {/* DISCOUNT */}
       {product.discount && (
         <span className="discount-badge">
           {product.discount}% OFF
         </span>
       )}
 
-      {/* ❤️ WISHLIST */}
+      {/* WISHLIST */}
       <button
         className="wishlist-btn"
-        onClick={toggleWishlist}
+        onClick={handleWishlist}
       >
         {isInWishlist(product.id) ? "❤️" : "🤍"}
       </button>
@@ -52,14 +70,14 @@ export default function ProductCard({ product }) {
 
       {/* INFO */}
       <div className="product-card-info">
-        <h4 className="product-title">{product.title}</h4>
+        <h4 className="product-title">
+          {product.title}
+        </h4>
 
-        {/* PRICE SECTION */}
         <div className="price-box">
           <span className="price-current">
             ₹{product.price}
           </span>
-
           {product.mrp && (
             <span className="price-mrp">
               ₹{product.mrp}
@@ -67,10 +85,16 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* ADD TO CART */}
+        {/* ADD TO CART — GUEST + BUYER */}
         <button
           className="btn full"
-          onClick={() => addToCart(product)}
+          onClick={handleAddToCart}
+          disabled={isDisabled}
+          title={
+            isDisabled
+              ? "Seller/Admin cannot purchase products"
+              : "Add to Cart"
+          }
         >
           Add to Cart
         </button>
