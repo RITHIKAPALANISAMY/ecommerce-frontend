@@ -12,7 +12,6 @@ export default function OrderSuccess() {
   const { removeItem } = useCart();
   const { reduceStockAfterOrder } = useSellerProducts();
 
-  // 🔒 Prevent double execution
   const processedRef = useRef(false);
 
   useEffect(() => {
@@ -20,7 +19,7 @@ export default function OrderSuccess() {
       JSON.parse(localStorage.getItem("orders")) || [];
 
     if (orders.length === 0) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
 
@@ -29,6 +28,9 @@ export default function OrderSuccess() {
 
     if (processedRef.current) return;
     processedRef.current = true;
+
+    // ✅ ADDED: CLEAR ORDER FLAG (CRITICAL)
+    localStorage.removeItem("orderPlaced");
 
     // ✅ Reduce stock
     reduceStockAfterOrder(latestOrder.items);
@@ -81,9 +83,7 @@ export default function OrderSuccess() {
 
     order.items.forEach((item) => {
       doc.text(
-        `${item.title} | Qty: ${item.quantity} | ₹${
-          item.price * item.quantity
-        }`,
+        `${item.title} | Qty: ${item.quantity} | ₹${item.price * item.quantity}`,
         14,
         y
       );
@@ -99,9 +99,7 @@ export default function OrderSuccess() {
 
     y += 6;
     doc.text(
-      `Payment Method: ${
-        order.paymentMethod || "Cash on Delivery"
-      }`,
+      `Payment Method: ${order.paymentMethod || "Cash on Delivery"}`,
       14,
       y
     );
@@ -124,7 +122,6 @@ export default function OrderSuccess() {
       <h2>Order Placed Successfully!</h2>
       <p>Thank you for shopping with ShopVerse</p>
 
-      {/* ✅ PDF DOWNLOAD */}
       <button
         onClick={downloadInvoice}
         style={{

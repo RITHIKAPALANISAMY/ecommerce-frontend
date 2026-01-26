@@ -17,6 +17,15 @@ export default function Cart() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  /* ================= BLOCK CART AFTER ORDER ================= */
+  useEffect(() => {
+    const orderPlaced = localStorage.getItem("orderPlaced");
+    if (orderPlaced === "true") {
+      navigate("/order-success", { replace: true });
+    }
+  }, [navigate]);
+  /* ========================================================== */
+
   /* ================= AUTH & ROLE GUARD ================= */
   useEffect(() => {
     if (!user) {
@@ -89,7 +98,6 @@ export default function Cart() {
         Shopping Cart ({itemsToShow.length} items)
       </h2>
 
-      {/* 🟡 INFO MESSAGE — NOT BLOCKING */}
       {outOfStockItems.length > 0 && (
         <div className="cart-warning centered">
           Some items are currently <strong>out of stock</strong>.
@@ -99,7 +107,6 @@ export default function Cart() {
       )}
 
       <div className="cart-container">
-        {/* LEFT */}
         <div className="cart-left">
           {itemsToShow.map((item) => (
             <CartItem key={item.id} item={item} />
@@ -134,7 +141,6 @@ export default function Cart() {
           </div>
         </div>
 
-        {/* RIGHT */}
         <div className="cart-right">
           <h4>Price Details</h4>
 
@@ -183,7 +189,6 @@ export default function Cart() {
             <span>₹{total}</span>
           </div>
 
-          {/* ✅ CHECKOUT — ONLY IF IN-STOCK ITEMS EXIST */}
           {isBuyer && (
             <button
               className="checkout-btn"
