@@ -2,6 +2,18 @@ import { useEffect, useState, useRef } from "react";
 import "./Settings.css";
 
 const Settings = () => {
+  /* ===== TOAST (MUST BE ON TOP) ===== */
+  const showToast = (message, type = "success") => {
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  };
+
   /* ===== DARK MODE ===== */
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
@@ -12,17 +24,17 @@ const Settings = () => {
     localStorage.getItem("notifications") !== "false"
   );
 
-  /* 🔑 store previous value */
+  /* store previous value */
   const prevNotifications = useRef(notifications);
 
-  /* ===== CHANGE PASSWORD FORM ===== */
+  /* ===== CHANGE PASSWORD ===== */
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  /* 👁️ SHOW / HIDE PASSWORD STATES */
+  /* 👁️ show / hide */
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -50,11 +62,10 @@ const Settings = () => {
     }
   }, [darkMode]);
 
-  /* ===== NOTIFICATIONS (ONLY ON USER TOGGLE) ===== */
+  /* ===== NOTIFICATION TOAST (ONLY ON TOGGLE) ===== */
   useEffect(() => {
     localStorage.setItem("notifications", notifications);
 
-    // ✅ show toast only if value actually changed
     if (prevNotifications.current !== notifications) {
       showToast(
         notifications
@@ -66,15 +77,6 @@ const Settings = () => {
 
     prevNotifications.current = notifications;
   }, [notifications]);
-
-  /* ===== TOAST ===== */
-  const showToast = (message, type = "success") => {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  };
 
   /* ===== PASSWORD HANDLERS ===== */
   const handleChange = (e) => {
@@ -99,7 +101,7 @@ const Settings = () => {
       return;
     }
 
-    alert("Password changed successfully");
+    showToast("Password updated successfully 🔐", "success");
 
     setForm({
       currentPassword: "",
@@ -122,7 +124,7 @@ const Settings = () => {
     <div className="settings-container">
       <h2>⚙️ Settings</h2>
 
-      {/* ===== APPEARANCE ===== */}
+      {/* APPEARANCE */}
       <div className="settings-card">
         <h3>Appearance</h3>
 
@@ -145,7 +147,7 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* ===== NOTIFICATIONS ===== */}
+      {/* NOTIFICATIONS */}
       <div className="settings-card">
         <h3>Notifications</h3>
 
@@ -168,35 +170,23 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* ===== ADMIN PROFILE (SAFE) ===== */}
+      {/* ADMIN PROFILE */}
       <div className="settings-card">
         <h3>👤 Admin Profile</h3>
 
         <div className="form-group">
           <label>Name</label>
-          <input
-            name="name"
-            value={profile.name}
-            onChange={handleProfileChange}
-          />
+          <input name="name" value={profile.name} onChange={handleProfileChange} />
         </div>
 
         <div className="form-group">
           <label>Email</label>
-          <input
-            name="email"
-            value={profile.email}
-            onChange={handleProfileChange}
-          />
+          <input name="email" value={profile.email} onChange={handleProfileChange} />
         </div>
 
         <div className="form-group">
           <label>Phone</label>
-          <input
-            name="phone"
-            value={profile.phone}
-            onChange={handleProfileChange}
-          />
+          <input name="phone" value={profile.phone} onChange={handleProfileChange} />
         </div>
 
         <button className="save-btn" onClick={saveProfile}>
@@ -204,7 +194,7 @@ const Settings = () => {
         </button>
       </div>
 
-      {/* ===== CHANGE PASSWORD (SAFE + 👁️) ===== */}
+      {/* CHANGE PASSWORD */}
       <div className="settings-card">
         <h3>Change Password</h3>
 
