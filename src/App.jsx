@@ -8,6 +8,11 @@ import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
 import OrdersAdmin from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
+<<<<<<< HEAD
+=======
+import Settings from "./pages/admin/Settings";
+
+>>>>>>> admin-safe
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
@@ -52,13 +57,15 @@ export default function App() {
       <Route element={<AdminGuard />}>
         <Route element={<AdminRoutes />}>
           <Route path="/admin">
-            <Route index element={<Navigate to="dashboard" />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="products" element={<Products />} />
-            <Route path="orders" element={<OrdersAdmin />} />
-            <Route path="coupons" element={<Coupons />} />
-          </Route>
+  <Route index element={<Navigate to="dashboard" />} />
+  <Route path="dashboard" element={<AdminDashboard />} />
+  <Route path="users" element={<Users />} />
+  <Route path="products" element={<Products />} />
+  <Route path="orders" element={<OrdersAdmin />} />
+  <Route path="coupons" element={<Coupons />} />
+  <Route path="settings" element={<Settings />} />   
+</Route>
+
         </Route>
       </Route>
 

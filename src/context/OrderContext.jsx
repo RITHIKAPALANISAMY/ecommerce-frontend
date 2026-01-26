@@ -15,8 +15,9 @@ export function OrderProvider({ children }) {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
-  /* ================= PLACE ORDER ================= */
+  /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
+<<<<<<< HEAD
     setOrders((prev) => [
       ...prev,
       {
@@ -34,6 +35,26 @@ export function OrderProvider({ children }) {
   const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
     setOrders((prev) =>
       prev.map((order) => {
+=======
+    const newOrder = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      status: "Placed",
+      ...order,
+    };
+
+    setOrders((prev) => [...prev, newOrder]);
+  };
+
+  /* ================= UPDATE ORDER STATUS (SELLER) ================= */
+  const updateSellerOrderStatus = (
+    orderId,
+    sellerId,
+    newStatus
+  ) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+>>>>>>> admin-safe
         if (order.id !== orderId) return order;
 
         const updatedItems = order.items.map((item) =>
@@ -45,7 +66,16 @@ export function OrderProvider({ children }) {
         return {
           ...order,
           items: updatedItems,
+<<<<<<< HEAD
           status: newStatus,
+=======
+          status:
+            newStatus === "Cancelled"
+              ? "Cancelled"
+              : allDelivered
+              ? "Delivered"
+              : "Processing",
+>>>>>>> admin-safe
         };
       })
     );
@@ -100,6 +130,26 @@ export function OrderProvider({ children }) {
       0
     );
 
+  /* ================= ADMIN HELPERS ================= */
+  const totalOrders = orders.length;
+
+  const totalRevenue = orders.reduce(
+    (sum, order) =>
+      sum +
+      order.items.reduce(
+        (s, item) =>
+          item.status === "Cancelled"
+            ? s
+            : s + item.price * item.quantity,
+        0
+      ),
+    0
+  );
+
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+
   return (
     <OrderContext.Provider
       value={{
@@ -107,8 +157,15 @@ export function OrderProvider({ children }) {
         placeOrder,
         updateSellerOrderStatus,
         cancelOrderBySeller,
+
+        // seller
         getSellerOrders,
         getSellerRevenue,
+
+        // admin
+        totalOrders,
+        totalRevenue,
+        recentOrders,
       }}
     >
       {children}
