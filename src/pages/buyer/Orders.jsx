@@ -4,9 +4,7 @@ import { useProducts } from "../../context/ProductContext";
 import { useState } from "react";
 
 export default function Orders() {
-  const orders =
-    JSON.parse(localStorage.getItem("orders")) || [];
-
+  const orders = JSON.parse(localStorage.getItem("orders")) || [];
   const { user } = useAuth();
   const { addReview, products } = useProducts();
 
@@ -16,7 +14,7 @@ export default function Orders() {
 
   const hasReviewed = (productId) => {
     const product = products.find((p) => p.id === productId);
-    return product?.reviews.some(
+    return product?.reviews?.some(
       (r) => r.user === user.email
     );
   };
@@ -46,30 +44,34 @@ export default function Orders() {
           <p><strong>Order ID:</strong> {order.id}</p>
           <p><strong>Status:</strong> {order.status}</p>
 
-          {order.items.map((item) => (
-            <div key={item.productId} className="order-item">
-              <p>{item.title}</p>
+          {order.items.map((item) => {
+            const reviewed = hasReviewed(item.productId);
+            const delivered = order.status === "Delivered";
 
-              {order.status === "Delivered" &&
-                !hasReviewed(item.productId) && (
+            return (
+              <div key={item.productId} className="order-item">
+                <p>{item.title}</p>
+
+                {/* ✅ WRITE REVIEW */}
+                {delivered && !reviewed && (
                   <button
                     onClick={() =>
-                      setActiveReview({
-                        productId: item.productId,
-                      })
+                      setActiveReview({ productId: item.productId })
                     }
                   >
                     ✍ Write Review
                   </button>
                 )}
 
-              {hasReviewed(item.productId) && (
-                <span style={{ color: "green" }}>
-                  ✔ Reviewed
-                </span>
-              )}
-            </div>
-          ))}
+                {/* ✅ REVIEWED BADGE */}
+                {delivered && reviewed && (
+                  <span className="reviewed-badge">
+                    ✔ Reviewed
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       ))}
 
@@ -78,9 +80,8 @@ export default function Orders() {
         <div className="review-modal">
           <h3>Write Review</h3>
 
-          {/* ⭐ STAR RATING */}
           <div className="stars">
-            {[1,2,3,4,5].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <span
                 key={s}
                 onClick={() => setRating(s)}
@@ -102,12 +103,8 @@ export default function Orders() {
           />
 
           <div className="review-actions">
-            <button onClick={submitReview}>
-              Submit
-            </button>
-            <button
-              onClick={() => setActiveReview(null)}
-            >
+            <button onClick={submitReview}>Submit</button>
+            <button onClick={() => setActiveReview(null)}>
               Cancel
             </button>
           </div>

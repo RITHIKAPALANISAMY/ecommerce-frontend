@@ -1,39 +1,48 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useOrders } from "../../context/OrderContext";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/seller/sellerOrders.css";
 
 export default function SellerOrders() {
-  const { orders, updateSellerOrderStatus } = useOrders();
+  const { orders = [], updateSellerOrderStatus } = useOrders();
   const { user } = useAuth();
+  const sellerId = user?.email || "";
 
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [confirmCancel, setConfirmCancel] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
-
-  const sellerId = user.email;
+  const [search, setSearch] = useState("");
 
   /* ================= SELLER ORDERS ONLY ================= */
-  const sellerOrders = orders
-    .map((order) => {
-      const sellerItems = order.items.filter(
-        (item) => item.sellerId === sellerId
-      );
-      if (sellerItems.length === 0) return null;
-      return { ...order, items: sellerItems };
-    })
-    .filter(Boolean);
+  const sellerOrders = useMemo(() => {
+    if (!sellerId) return [];
 
-  /* ================= STATUS FILTER ================= */
+    return orders
+      .map(order => {
+        const items = order.items?.filter(
+          item => item.sellerId === sellerId
+        );
+        return items?.length ? { ...order, items } : null;
+      })
+      .filter(Boolean);
+  }, [orders, sellerId]);
+
+  /* ================= FILTER ================= */
   const filteredOrders =
     statusFilter === "ALL"
       ? sellerOrders
-      : sellerOrders.filter(
-          (order) => order.status === statusFilter
-        );
+      : sellerOrders.filter(order => order.status === statusFilter);
 
-  /* ================= REVENUE ================= */
-  const totalRevenue = filteredOrders.reduce(
+  /* ================= SEARCH ================= */
+  const searchedOrders = filteredOrders.filter(order => {
+    const q = search.toLowerCase();
+    return (
+      String(order.id).includes(q) ||
+      String(order.buyerEmail || "").toLowerCase().includes(q)
+    );
+  });
+
+  /* ================= METRICS ================= */
+  const totalRevenue = searchedOrders.reduce(
     (sum, order) =>
       sum +
       order.items.reduce(
@@ -43,33 +52,24 @@ export default function SellerOrders() {
     0
   );
 
-  /* ================= HANDLERS ================= */
-  const handleStatusChange = (orderId, newStatus) => {
-    updateSellerOrderStatus(orderId, sellerId, newStatus);
-  };
+  const deliveredCount = searchedOrders.filter(
+    o => o.status === "Delivered"
+  ).length;
 
-  const confirmCancelOrder = () => {
-    if (confirmCancel) {
-      updateSellerOrderStatus(confirmCancel, sellerId, "Cancelled");
-      setConfirmCancel(null);
-    }
-  };
+  const cancelledCount = searchedOrders.filter(
+    o => o.status === "Cancelled"
+  ).length;
 
-  const toggleExpand = (orderId) => {
-    setExpandedOrderId(
-      expandedOrderId === orderId ? null : orderId
-    );
-  };
-
+  /* ================= RENDER ================= */
   return (
     <div className="seller-orders">
       <h2>My Orders</h2>
 
-      {/* FILTER */}
-      <div className="orders-filter">
+      {/* FILTER BAR */}
+      <div className="orders-filter-bar">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={e => setStatusFilter(e.target.value)}
         >
           <option value="ALL">All Orders</option>
           <option value="Placed">Placed</option>
@@ -77,123 +77,142 @@ export default function SellerOrders() {
           <option value="Delivered">Delivered</option>
           <option value="Cancelled">Cancelled</option>
         </select>
+
+        <input
+          type="text"
+          placeholder="Search by Order ID or Buyer"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
       {/* STATS */}
       <div className="seller-stats">
         <div>
-          <strong>{filteredOrders.length}</strong>
+          <strong>{searchedOrders.length}</strong>
           <span>Total Orders</span>
         </div>
         <div>
           <strong>₹{totalRevenue}</strong>
           <span>Total Revenue</span>
         </div>
+        <div>
+          <strong>{deliveredCount}</strong>
+          <span>Delivered</span>
+        </div>
+        <div>
+          <strong>{cancelledCount}</strong>
+          <span>Cancelled</span>
+        </div>
       </div>
 
-      {filteredOrders.length === 0 && (
-        <p>No orders found.</p>
-      )}
-
-      {filteredOrders.map((order) => {
-        const isExpanded = expandedOrderId === order.id;
+      {/* ORDERS LIST */}
+      {searchedOrders.map(order => {
+        const expanded = expandedOrderId === order.id;
+        const status = order.status?.toLowerCase();
+        const amount = order.items.reduce(
+          (s, i) => s + i.price * i.quantity,
+          0
+        );
 
         return (
-          <div key={order.id} className="order-card">
-            <div className="order-header">
-              <span>Order ID: {order.id}</span>
-              <span>{order.date}</span>
-              <span>Buyer: {order.buyerEmail}</span>
+          <div className="order-card" key={order.id}>
+            <div className="order-row">
+              <div className="order-left">
+                <strong>ID: {order.id}</strong>
+                <span>{order.date}</span>
+                <span>{order.buyerEmail}</span>
+              </div>
 
-              <span className="order-status">
-                Status:
-                <span
-                  className={`status-badge ${order.status.toLowerCase()}`}
-                >
+              <div className="order-right">
+                <span className={`status-badge ${status}`}>
                   {order.status}
                 </span>
-              </span>
 
-              <button
-                className="view-toggle"
-                onClick={() => toggleExpand(order.id)}
-              >
-                {isExpanded ? "Hide Details" : "View Details"}
-              </button>
+                <span className="order-amount">₹{amount}</span>
+
+                <button
+                  className="view-btn"
+                  onClick={() =>
+                    setExpandedOrderId(
+                      expanded ? null : order.id
+                    )
+                  }
+                >
+                  {expanded ? "Hide" : "View"}
+                </button>
+              </div>
             </div>
 
-            {isExpanded && (
+            {/* EXPANDED DETAILS */}
+            {expanded && (
               <>
-                {order.items.map((item) => (
-                  <div key={item.productId} className="order-item">
-                    <strong>{item.title}</strong>
+                {order.items.map(item => (
+                  <div
+                    className="order-item"
+                    key={item.productId}
+                  >
+                    <span>{item.title}</span>
                     <span>Qty: {item.quantity}</span>
                     <span>₹{item.price}</span>
                   </div>
                 ))}
 
                 <div className="order-actions">
-                  {order.status === "Placed" && (
+
+                  {/* PLACED → SHIPPED */}
+                  {status === "placed" && (
                     <>
                       <button
-                        className="status-btn ship"
+                        className="btn ship"
                         onClick={() =>
-                          handleStatusChange(order.id, "Shipped")
+                          updateSellerOrderStatus(
+                            order.id,
+                            sellerId,
+                            "Shipped"
+                          )
                         }
                       >
-                        Mark as Shipped
+                        Mark Shipped
                       </button>
 
                       <button
-                        className="status-btn cancel"
-                        onClick={() => setConfirmCancel(order.id)}
+                        className="btn cancel"
+                        onClick={() =>
+                          updateSellerOrderStatus(
+                            order.id,
+                            sellerId,
+                            "Cancelled"
+                          )
+                        }
                       >
-                        Cancel Order
+                        Cancel
                       </button>
                     </>
                   )}
 
-                  {order.status === "Shipped" && (
+                  {/* SHIPPED → DELIVERED */}
+                  {status === "shipped" && (
                     <button
-                      className="status-btn deliver"
+                      className="btn deliver"
                       onClick={() =>
-                        handleStatusChange(order.id, "Delivered")
+                        updateSellerOrderStatus(
+                          order.id,
+                          sellerId,
+                          "Delivered"
+                        )
                       }
                     >
-                      Mark as Delivered
+                      Mark Delivered
                     </button>
                   )}
+
                 </div>
               </>
             )}
           </div>
         );
       })}
-
-      {/* CANCEL CONFIRM MODAL */}
-      {confirmCancel && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Cancel Order?</h3>
-            <p>This action cannot be undone.</p>
-
-            <div className="modal-actions">
-              <button
-                className="status-btn cancel"
-                onClick={confirmCancelOrder}
-              >
-                Yes, Cancel
-              </button>
-              <button
-                className="status-btn"
-                onClick={() => setConfirmCancel(null)}
-              >
-                No
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

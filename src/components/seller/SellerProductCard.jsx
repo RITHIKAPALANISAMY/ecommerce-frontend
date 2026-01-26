@@ -18,30 +18,53 @@ export default function SellerProductCard({
           ${lowStock && !outOfStock ? "low-stock" : ""}
         `}
       >
-        {/* BADGE */}
+        {/* STOCK BADGES */}
         {outOfStock && (
           <span className="stock-badge out">
             Out of Stock
           </span>
         )}
+
         {!outOfStock && lowStock && (
           <span className="stock-badge low">
             Low Stock
           </span>
         )}
 
+        {/* PRODUCT IMAGE */}
         <img
           src={product.images?.[0]}
           alt={product.title}
           className="seller-product-image"
         />
 
+        {/* PRODUCT INFO */}
         <div className="seller-product-info">
           <h4>{product.title}</h4>
-          <p>{product.category}</p>
-          <p>₹{product.price}</p>
-          <p>Stock: {product.stock}</p>
+          <p className="category">{product.category}</p>
 
+          <div className="price-row">
+  <span className="price">₹{product.price}</span>
+  <span className="stock">
+    Stock: {product.stock}
+  </span>
+</div>
+
+
+          {/* 🔥 BUSINESS METRICS (NEW) */}
+          <div className="product-metrics">
+            <span>
+              Sold: <strong>{product.sold || 0}</strong>
+            </span>
+            <span>
+              Revenue:{" "}
+              <strong>
+                ₹{product.revenue || 0}
+              </strong>
+            </span>
+          </div>
+
+          {/* ACTIONS */}
           <div className="card-actions">
             <button
               className="edit-btn"

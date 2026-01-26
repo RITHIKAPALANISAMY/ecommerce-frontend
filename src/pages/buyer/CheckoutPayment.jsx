@@ -13,14 +13,13 @@ export default function CheckoutPayment() {
   const { user } = useAuth();
   const {
     cartItems,
-    setCartItems, // ✅ IMPORTANT
+    setCartItems,
   } = useCart();
   const { reduceStockAfterOrder } = useSellerProducts();
 
   const [method, setMethod] = useState("cod");
   const [error, setError] = useState("");
 
-  /* ✅ ONLY IN-STOCK ITEMS */
   const checkoutItems = cartItems.filter(
     (item) => item.stock === undefined || item.stock > 0
   );
@@ -34,7 +33,6 @@ export default function CheckoutPayment() {
   const gst = Math.round(subtotal * 0.18);
   const total = subtotal + delivery + gst;
 
-  /* ✅ SELLER STOCK REDUCTION */
   const sellerItemsForStock = checkoutItems
     .filter((item) => item.sellerId)
     .map((item) => ({
@@ -50,7 +48,6 @@ export default function CheckoutPayment() {
       return;
     }
 
-    /* ✅ BUILD ORDER ITEMS */
     const orderItems = checkoutItems.map((item) => ({
       productId: item.id,
       title: item.title,
@@ -71,26 +68,24 @@ export default function CheckoutPayment() {
       paymentMethod: method,
     };
 
-    /* ✅ SAVE ORDER (CRITICAL) */
     placeOrder(order);
 
-    /* ✅ REDUCE SELLER STOCK */
     if (sellerItemsForStock.length > 0) {
       reduceStockAfterOrder(sellerItemsForStock);
     }
 
-    /* ✅ REMOVE ONLY PURCHASED ITEMS FROM CART */
     setCartItems((prev) =>
       prev.filter(
         (item) =>
-          !checkoutItems.some(
-            (p) => p.id === item.id
-          )
+          !checkoutItems.some((p) => p.id === item.id)
       )
     );
 
-    /* ✅ NAVIGATE AFTER EVERYTHING IS DONE */
-    navigate("/order-success");
+    // ✅ ADDED: ORDER FLAG (IMPORTANT)
+    localStorage.setItem("orderPlaced", "true");
+
+    // ✅ ADDED: REPLACE NAVIGATION (BLOCK BACK TO CART)
+    navigate("/order-success", { replace: true });
   };
 
   return (

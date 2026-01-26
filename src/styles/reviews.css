@@ -1,25 +1,32 @@
+/* ================= REVIEWS ================= */
 .reviews {
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
+/* REVIEW ITEM */
 .review-item {
-  padding: 16px 0;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 14px;
 }
 
+/* LEFT */
 .review-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 6px;
 }
 
 .star-badge {
-  background: #16a34a;
-  color: #fff;
+  background: #facc15;
+  color: #78350f;
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .review-title {
@@ -27,42 +34,40 @@
   font-size: 14px;
 }
 
+/* META */
 .review-meta {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #374151;
-}
-
-.review-meta .user {
-  font-weight: 500;
-}
-
-.review-meta .date {
-  margin-left: 10px;
-  color: #6b7280;
-}
-
-.review-sub {
-  margin-top: 4px;
   font-size: 12px;
-  color: #6b7280;
+  color: #64748b;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
 }
 
-.review-sub .verified {
+/* SUB */
+.review-sub {
+  font-size: 12px;
+  color: #475569;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.verified {
   color: #16a34a;
-  margin-right: 6px;
+  font-weight: 600;
 }
 
+/* ACTIONS */
 .review-actions {
-  margin-top: 6px;
   font-size: 13px;
-  color: #6b7280;
+  color: #334155;
 }
 
+/* ALL REVIEWS LINK */
 .all-reviews {
-  margin-top: 14px;
-  color: #2563eb;
+  margin-top: 12px;
+  font-weight: 600;
   font-size: 14px;
-  font-weight: 500;
+  color: #2563eb;
   cursor: pointer;
 }
