@@ -17,69 +17,24 @@ export function OrderProvider({ children }) {
 
   /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    setOrders((prev) => [
-      ...prev,
-      {
-        ...order,
-        status: "Placed", // 🔥 FIXED
-        items: order.items.map((i) => ({
-          ...i,
-          status: "Placed",
-        })),
-      },
-    ]);
-  };
-
-  /* ================= UPDATE ORDER STATUS ================= */
-  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-=======
-=======
->>>>>>> admin-safe
     const newOrder = {
       id: Date.now(),
       date: new Date().toISOString(),
       status: "Placed",
       ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        status: "Placed",
+      })),
     };
 
     setOrders((prev) => [...prev, newOrder]);
   };
 
   /* ================= UPDATE ORDER STATUS (SELLER) ================= */
-  const updateSellerOrderStatus = (
-    orderId,
-    sellerId,
-    newStatus
-  ) => {
+  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
     setOrders((prevOrders) =>
       prevOrders.map((order) => {
-<<<<<<< HEAD
->>>>>>> admin-safe
-=======
-=======
-    setOrders((prev) => [
-      ...prev,
-      {
-        ...order,
-        status: "Placed", // 🔥 FIXED
-        items: order.items.map((i) => ({
-          ...i,
-          status: "Placed",
-        })),
-      },
-    ]);
-  };
-
-  /* ================= UPDATE ORDER STATUS ================= */
-  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) => {
->>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
->>>>>>> admin-safe
         if (order.id !== orderId) return order;
 
         const updatedItems = order.items.map((item) =>
@@ -88,51 +43,42 @@ export function OrderProvider({ children }) {
             : item
         );
 
+        const allDelivered = updatedItems.every(
+          (item) => item.status === "Delivered"
+        );
+
         return {
           ...order,
           items: updatedItems,
-<<<<<<< HEAD
-<<<<<<< HEAD
-          status: newStatus,
-=======
-=======
->>>>>>> admin-safe
           status:
             newStatus === "Cancelled"
               ? "Cancelled"
               : allDelivered
               ? "Delivered"
               : "Processing",
-<<<<<<< HEAD
->>>>>>> admin-safe
-=======
-=======
-          status: newStatus,
->>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
->>>>>>> admin-safe
         };
       })
     );
   };
 
-  /* ================= CANCEL ORDER ================= */
+  /* ================= CANCEL ORDER (SELLER) ================= */
   const cancelOrderBySeller = (orderId, sellerId) => {
-    setOrders((prev) =>
-      prev.map((order) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
         if (order.id !== orderId) return order;
 
         const cancelledItems = order.items.filter(
-          (i) => i.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
 
         restoreStockAfterCancel(cancelledItems);
 
         return {
           ...order,
-          items: order.items.map((i) =>
-            i.sellerId === sellerId
-              ? { ...i, status: "Cancelled" }
-              : i
+          items: order.items.map((item) =>
+            item.sellerId === sellerId
+              ? { ...item, status: "Cancelled" }
+              : item
           ),
           status: "Cancelled",
         };
@@ -145,7 +91,7 @@ export function OrderProvider({ children }) {
     orders
       .map((order) => {
         const sellerItems = order.items.filter(
-          (i) => i.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
         if (!sellerItems.length) return null;
         return { ...order, items: sellerItems };
@@ -157,8 +103,10 @@ export function OrderProvider({ children }) {
       (sum, order) =>
         sum +
         order.items.reduce(
-          (s, i) =>
-            i.status === "Cancelled" ? s : s + i.price * i.quantity,
+          (s, item) =>
+            item.status === "Cancelled"
+              ? s
+              : s + item.price * item.quantity,
           0
         ),
       0
