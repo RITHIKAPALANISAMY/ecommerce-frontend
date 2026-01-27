@@ -17,11 +17,14 @@ export function OrderProvider({ children }) {
 
   /* ================= PLACE ORDER ================= */
   const placeOrder = (order) => {
+    const today = new Date().toISOString().split("T")[0];
+
     setOrders((prev) => [
       ...prev,
       {
         ...order,
-        status: "Placed", // 🔥 FIXED
+        status: "Placed",
+        placedDate: today,
         items: order.items.map((i) => ({
           ...i,
           status: "Placed",
@@ -31,7 +34,12 @@ export function OrderProvider({ children }) {
   };
 
   /* ================= UPDATE ORDER STATUS ================= */
-  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
+  const updateSellerOrderStatus = (
+    orderId,
+    sellerId,
+    newStatus,
+    meta = {}
+  ) => {
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id !== orderId) return order;
@@ -44,8 +52,9 @@ export function OrderProvider({ children }) {
 
         return {
           ...order,
-          items: updatedItems,
           status: newStatus,
+          ...meta, // 🔥 attach shippedDate, deliveredDate, etc
+          items: updatedItems,
         };
       })
     );
@@ -53,6 +62,8 @@ export function OrderProvider({ children }) {
 
   /* ================= CANCEL ORDER ================= */
   const cancelOrderBySeller = (orderId, sellerId) => {
+    const today = new Date().toISOString().split("T")[0];
+
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id !== orderId) return order;
@@ -65,12 +76,13 @@ export function OrderProvider({ children }) {
 
         return {
           ...order,
+          status: "Cancelled",
+          cancelledDate: today,
           items: order.items.map((i) =>
             i.sellerId === sellerId
               ? { ...i, status: "Cancelled" }
               : i
           ),
-          status: "Cancelled",
         };
       })
     );
@@ -94,11 +106,29 @@ export function OrderProvider({ children }) {
         sum +
         order.items.reduce(
           (s, i) =>
-            i.status === "Cancelled" ? s : s + i.price * i.quantity,
+            i.status === "Cancelled"
+              ? s
+              : s + i.price * i.quantity,
           0
         ),
       0
     );
+
+  /* ================= BUYER HELPERS (NEW – SAFE) ================= */
+  const getBuyerOrders = (buyerEmail) =>
+    orders.filter((o) => o.buyerEmail === buyerEmail);
+
+ const canReviewProduct = (buyerEmail, productId) =>
+  orders.some(
+    (o) =>
+      o.buyerEmail === buyerEmail &&
+      o.items.some(
+        (i) =>
+          i.productId === productId &&
+          i.status === "Delivered"
+      )
+  );
+
 
   return (
     <OrderContext.Provider
@@ -109,6 +139,10 @@ export function OrderProvider({ children }) {
         cancelOrderBySeller,
         getSellerOrders,
         getSellerRevenue,
+
+        // 🔥 NEW (used next)
+        getBuyerOrders,
+        canReviewProduct,
       }}
     >
       {children}

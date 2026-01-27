@@ -42,6 +42,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 /* ================= COMMON ================= */
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import ProfilePage from "./components/common/ProfilePage";
 
 import "./styles/adminLayout.css";
 
@@ -95,11 +96,12 @@ export default function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-
+      <Route path="/profile" element={<ProfilePage />} />
       {/* ================= COMMON ================= */}
       <Route path="/become-seller" element={<BecomeSeller />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
+      
     </Routes>
   );
 }

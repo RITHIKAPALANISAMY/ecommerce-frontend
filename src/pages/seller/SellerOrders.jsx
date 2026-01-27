@@ -4,7 +4,12 @@ import { useAuth } from "../../context/AuthContext";
 import "../../styles/seller/sellerOrders.css";
 
 export default function SellerOrders() {
-  const { orders = [], updateSellerOrderStatus } = useOrders();
+  const {
+    orders = [],
+    updateSellerOrderStatus,
+    cancelOrderBySeller, // ✅ IMPORTANT
+  } = useOrders();
+
   const { user } = useAuth();
   const sellerId = user?.email || "";
 
@@ -17,9 +22,9 @@ export default function SellerOrders() {
     if (!sellerId) return [];
 
     return orders
-      .map(order => {
+      .map((order) => {
         const items = order.items?.filter(
-          item => item.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
         return items?.length ? { ...order, items } : null;
       })
@@ -30,10 +35,10 @@ export default function SellerOrders() {
   const filteredOrders =
     statusFilter === "ALL"
       ? sellerOrders
-      : sellerOrders.filter(order => order.status === statusFilter);
+      : sellerOrders.filter((order) => order.status === statusFilter);
 
   /* ================= SEARCH ================= */
-  const searchedOrders = filteredOrders.filter(order => {
+  const searchedOrders = filteredOrders.filter((order) => {
     const q = search.toLowerCase();
     return (
       String(order.id).includes(q) ||
@@ -46,21 +51,33 @@ export default function SellerOrders() {
     (sum, order) =>
       sum +
       order.items.reduce(
-        (s, i) => s + i.price * i.quantity,
+        (s, i) =>
+          i.status === "Cancelled"
+            ? s
+            : s + i.price * i.quantity,
         0
       ),
     0
   );
 
   const deliveredCount = searchedOrders.filter(
-    o => o.status === "Delivered"
+    (o) => o.status === "Delivered"
   ).length;
 
   const cancelledCount = searchedOrders.filter(
-    o => o.status === "Cancelled"
+    (o) => o.status === "Cancelled"
   ).length;
 
-  /* ================= RENDER ================= */
+  /* ================= DATE HELPERS ================= */
+  const today = () => new Date().toISOString().split("T")[0];
+
+  const expectedDelivery = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 4);
+    return d.toISOString().split("T")[0];
+  };
+
+  /* ================= UI ================= */
   return (
     <div className="seller-orders">
       <h2>My Orders</h2>
@@ -69,7 +86,7 @@ export default function SellerOrders() {
       <div className="orders-filter-bar">
         <select
           value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
+          onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="ALL">All Orders</option>
           <option value="Placed">Placed</option>
@@ -82,7 +99,7 @@ export default function SellerOrders() {
           type="text"
           placeholder="Search by Order ID or Buyer"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
@@ -107,11 +124,15 @@ export default function SellerOrders() {
       </div>
 
       {/* ORDERS LIST */}
-      {searchedOrders.map(order => {
+      {searchedOrders.map((order) => {
         const expanded = expandedOrderId === order.id;
         const status = order.status?.toLowerCase();
+
         const amount = order.items.reduce(
-          (s, i) => s + i.price * i.quantity,
+          (s, i) =>
+            i.status === "Cancelled"
+              ? s
+              : s + i.price * i.quantity,
           0
         );
 
@@ -120,7 +141,7 @@ export default function SellerOrders() {
             <div className="order-row">
               <div className="order-left">
                 <strong>ID: {order.id}</strong>
-                <span>{order.date}</span>
+                <span>{order.placedDate}</span>
                 <span>{order.buyerEmail}</span>
               </div>
 
@@ -129,7 +150,9 @@ export default function SellerOrders() {
                   {order.status}
                 </span>
 
-                <span className="order-amount">₹{amount}</span>
+                <span className="order-amount">
+                  ₹{amount}
+                </span>
 
                 <button
                   className="view-btn"
@@ -144,10 +167,10 @@ export default function SellerOrders() {
               </div>
             </div>
 
-            {/* EXPANDED DETAILS */}
+            {/* EXPANDED */}
             {expanded && (
               <>
-                {order.items.map(item => (
+                {order.items.map((item) => (
                   <div
                     className="order-item"
                     key={item.productId}
@@ -158,9 +181,27 @@ export default function SellerOrders() {
                   </div>
                 ))}
 
-                <div className="order-actions">
+                {/* TRACKING */}
+                <div className="order-tracking">
+                  {order.shippedDate && (
+                    <p>📦 Shipped: {order.shippedDate}</p>
+                  )}
+                  {order.expectedDeliveryDate && (
+                    <p>
+                      🚚 Expected:{" "}
+                      {order.expectedDeliveryDate}
+                    </p>
+                  )}
+                  {order.deliveredDate && (
+                    <p>✅ Delivered: {order.deliveredDate}</p>
+                  )}
+                  {order.cancelledDate && (
+                    <p>❌ Cancelled: {order.cancelledDate}</p>
+                  )}
+                </div>
 
-                  {/* PLACED → SHIPPED */}
+                {/* ACTIONS */}
+                <div className="order-actions">
                   {status === "placed" && (
                     <>
                       <button
@@ -169,7 +210,12 @@ export default function SellerOrders() {
                           updateSellerOrderStatus(
                             order.id,
                             sellerId,
-                            "Shipped"
+                            "Shipped",
+                            {
+                              shippedDate: today(),
+                              expectedDeliveryDate:
+                                expectedDelivery(),
+                            }
                           )
                         }
                       >
@@ -179,10 +225,9 @@ export default function SellerOrders() {
                       <button
                         className="btn cancel"
                         onClick={() =>
-                          updateSellerOrderStatus(
+                          cancelOrderBySeller(
                             order.id,
-                            sellerId,
-                            "Cancelled"
+                            sellerId
                           )
                         }
                       >
@@ -191,7 +236,6 @@ export default function SellerOrders() {
                     </>
                   )}
 
-                  {/* SHIPPED → DELIVERED */}
                   {status === "shipped" && (
                     <button
                       className="btn deliver"
@@ -199,14 +243,14 @@ export default function SellerOrders() {
                         updateSellerOrderStatus(
                           order.id,
                           sellerId,
-                          "Delivered"
+                          "Delivered",
+                          { deliveredDate: today() }
                         )
                       }
                     >
                       Mark Delivered
                     </button>
                   )}
-
                 </div>
               </>
             )}

@@ -11,10 +11,7 @@ export default function CheckoutPayment() {
   const navigate = useNavigate();
   const { placeOrder } = useOrders();
   const { user } = useAuth();
-  const {
-    cartItems,
-    setCartItems,
-  } = useCart();
+  const { cartItems, setCartItems } = useCart();
   const { reduceStockAfterOrder } = useSellerProducts();
 
   const [method, setMethod] = useState("cod");
@@ -56,6 +53,14 @@ export default function CheckoutPayment() {
       sellerId: item.sellerId || "admin",
     }));
 
+    // ✅ ADDED: tracking id
+    const trackingId = `TRK-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
+
+    // ✅ ADDED: date helpers
+    const today = new Date().toISOString().split("T")[0];
+
     const order = {
       id: Date.now(),
       buyerEmail: user.email,
@@ -63,9 +68,20 @@ export default function CheckoutPayment() {
       address:
         JSON.parse(localStorage.getItem("checkoutAddress")) || null,
       total,
+
+      // existing
       date: new Date().toLocaleDateString(),
       status: "Placed",
       paymentMethod: method,
+
+      // ✅ ADDED (required by Orders & Seller pages)
+      placedDate: today,
+      trackingId,
+
+      shippedDate: null,
+      expectedDeliveryDate: null,
+      deliveredDate: null,
+      cancelledDate: null,
     };
 
     placeOrder(order);
@@ -81,10 +97,7 @@ export default function CheckoutPayment() {
       )
     );
 
-    // ✅ ADDED: ORDER FLAG (IMPORTANT)
     localStorage.setItem("orderPlaced", "true");
-
-    // ✅ ADDED: REPLACE NAVIGATION (BLOCK BACK TO CART)
     navigate("/order-success", { replace: true });
   };
 
@@ -101,45 +114,35 @@ export default function CheckoutPayment() {
           )}
 
           <div
-            className={`payment-option ${
-              method === "upi" ? "active" : ""
-            }`}
+            className={`payment-option ${method === "upi" ? "active" : ""}`}
             onClick={() => setMethod("upi")}
           >
             📱 <strong>UPI</strong>
           </div>
 
           <div
-            className={`payment-option ${
-              method === "card" ? "active" : ""
-            }`}
+            className={`payment-option ${method === "card" ? "active" : ""}`}
             onClick={() => setMethod("card")}
           >
             💳 <strong>Card</strong>
           </div>
 
           <div
-            className={`payment-option ${
-              method === "netbanking" ? "active" : ""
-            }`}
+            className={`payment-option ${method === "netbanking" ? "active" : ""}`}
             onClick={() => setMethod("netbanking")}
           >
             🏦 <strong>Net Banking</strong>
           </div>
 
           <div
-            className={`payment-option ${
-              method === "wallet" ? "active" : ""
-            }`}
+            className={`payment-option ${method === "wallet" ? "active" : ""}`}
             onClick={() => setMethod("wallet")}
           >
             👛 <strong>Wallet</strong>
           </div>
 
           <div
-            className={`payment-option ${
-              method === "cod" ? "active" : ""
-            }`}
+            className={`payment-option ${method === "cod" ? "active" : ""}`}
             onClick={() => setMethod("cod")}
           >
             💵 <strong>Cash on Delivery</strong>

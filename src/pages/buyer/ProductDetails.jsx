@@ -16,7 +16,7 @@ export default function ProductDetails() {
     useWishlist();
   const { user } = useAuth();
 
-  /* ✅ SCROLL TO TOP */
+  /* SCROLL TO TOP */
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
@@ -44,8 +44,16 @@ export default function ProductDetails() {
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
 
-  const reviews = product.reviews || [];
+  /* ================= REVIEWS ================= */
+  const allReviews = product.reviews || [];
 
+  // ✅ ONLY VERIFIED REVIEWS (DELIVERED ORDERS)
+  const reviews = useMemo(
+    () => allReviews.filter((r) => r.verified === true),
+    [allReviews]
+  );
+
+  // ✅ AVERAGE RATING FROM VERIFIED REVIEWS ONLY
   const averageRating = useMemo(() => {
     if (!reviews.length) return null;
     return (
@@ -143,7 +151,7 @@ export default function ProductDetails() {
               {averageRating || "New"} ★
             </span>
             <span className="reviews">
-              {reviews.length} ratings & reviews
+              {reviews.length} verified ratings
             </span>
           </div>
 
@@ -276,14 +284,19 @@ export default function ProductDetails() {
       <div className="pd-reviews">
         <h3>Ratings & Reviews</h3>
 
-        {reviews.length === 0 && <p>No reviews yet.</p>}
+        {reviews.length === 0 && (
+          <p>No verified reviews yet.</p>
+        )}
 
-        {reviews.map((r) => (
-          <div key={r.id} className="review-card">
+        {reviews.map((r, i) => (
+          <div key={i} className="review-card">
             <span className="review-rating">{r.rating} ★</span>
             <strong>{r.user}</strong>
             <p>{r.comment}</p>
             <small>{r.date}</small>
+            <span className="verified-badge">
+              ✔ Verified Buyer
+            </span>
           </div>
         ))}
       </div>
