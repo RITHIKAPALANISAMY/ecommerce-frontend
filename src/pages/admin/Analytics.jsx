@@ -13,6 +13,7 @@ import {
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { useOrders } from "../../context/OrderContext";
+import { useState } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -28,12 +29,32 @@ ChartJS.register(
 export default function Analytics() {
   const { orders } = useOrders();
 
+  /* ================= DATE FILTER ================= */
+  const [filter, setFilter] = useState("month"); // today | week | month
+
+  const now = new Date();
+
+  const filteredOrders = orders.filter((o) => {
+    if (!o.createdAt) return false;
+    const orderDate = new Date(o.createdAt);
+
+    if (filter === "today") {
+      return orderDate.toDateString() === now.toDateString();
+    }
+
+    if (filter === "week") {
+      const diff = (now - orderDate) / (1000 * 60 * 60 * 24);
+      return diff <= 7;
+    }
+
+    return true; // month (default)
+  });
+
   /* ================= SALES TREND ================= */
   const salesByDate = {};
-  orders.forEach((o) => {
-    const date = o.createdAt
-      ? new Date(o.createdAt).toLocaleDateString()
-      : "Unknown";
+
+  filteredOrders.forEach((o) => {
+    const date = new Date(o.createdAt).toLocaleDateString();
     salesByDate[date] = (salesByDate[date] || 0) + (o.totalAmount || 0);
   });
 
@@ -51,6 +72,20 @@ export default function Analytics() {
     ],
   };
 
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 1200,
+      easing: "easeInOutQuart",
+    },
+    plugins: {
+      legend: {
+        position: "top",
+      },
+    },
+  };
+
   /* ================= ORDER STATUS ================= */
   const statusCount = {
     Pending: 0,
@@ -59,7 +94,7 @@ export default function Analytics() {
     Cancelled: 0,
   };
 
-  orders.forEach((o) => {
+  filteredOrders.forEach((o) => {
     if (statusCount[o.status] !== undefined) {
       statusCount[o.status]++;
     }
@@ -81,15 +116,37 @@ export default function Analytics() {
     ],
   };
 
+  const donutOptions = {
+    maintainAspectRatio: false,
+    animation: {
+      animateRotate: true,
+      duration: 1200,
+      easing: "easeInOutCubic",
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+      },
+    },
+  };
+
   /* ================= ORDERS vs REVENUE ================= */
+  const barOptions = {
+    maintainAspectRatio: false,
+    animation: {
+      duration: 1000,
+      easing: "easeOutQuart",
+    },
+  };
+
   const barData = {
     labels: ["Orders", "Revenue"],
     datasets: [
       {
         label: "Performance",
         data: [
-          orders.length,
-          orders.reduce((s, o) => s + (o.totalAmount || 0), 0),
+          filteredOrders.length,
+          filteredOrders.reduce((s, o) => s + (o.totalAmount || 0), 0),
         ],
         backgroundColor: ["#6c63ff", "#00c853"],
         borderRadius: 10,
@@ -97,10 +154,10 @@ export default function Analytics() {
     ],
   };
 
-  /* ================= SELLER WISE ANALYTICS ================= */
+  /* ================= SELLER WISE ================= */
   const sellerMap = {};
 
-  orders.forEach((order) => {
+  filteredOrders.forEach((order) => {
     order.items?.forEach((item) => {
       const seller = item.sellerName || "Unknown Seller";
 
@@ -109,7 +166,6 @@ export default function Analytics() {
       }
 
       sellerMap[seller].orders += 1;
-
       sellerMap[seller].revenue +=
         item.price && item.quantity
           ? item.price * item.quantity
@@ -143,7 +199,7 @@ export default function Analytics() {
     ],
   };
 
-  const totalRevenue = orders.reduce(
+  const totalRevenue = filteredOrders.reduce(
     (s, o) => s + (o.totalAmount || 0),
     0
   );
@@ -152,65 +208,73 @@ export default function Analytics() {
   return (
     <div className="analytics-page">
 
-      {/* SALES TREND */}
+      {/* ===== SALES TREND + FILTER ===== */}
       <div className="analytics-card small">
-        <h3>📈 Sales Trend</h3>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <h3>📈 Sales Trend</h3>
+
+          <div className="date-filter">
+            {["today", "week", "month"].map((f) => (
+              <button
+                key={f}
+                className={filter === f ? "active" : ""}
+                onClick={() => setFilter(f)}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="chart-sm">
-          <Line data={salesTrendData} />
+          <Line data={salesTrendData} options={lineOptions} />
         </div>
       </div>
 
-      {/* MAIN GRID */}
+      {/* ===== MAIN GRID ===== */}
       <div className="analytics-grid">
 
-        {/* ORDERS vs REVENUE */}
         <div className="analytics-card">
           <h3>📊 Orders vs Revenue</h3>
           <div className="chart-md">
-            <Bar data={barData} />
+            <Bar data={barData} options={barOptions} />
           </div>
         </div>
-         
-        {/* ORDER STATUS */}
+
         <div className="analytics-card">
           <h3>🟢 Order Status</h3>
           <div className="chart-md donut">
-            <Doughnut data={statusData} />
+            <Doughnut data={statusData} options={donutOptions} />
             <div className="donut-center">
-              <h2>{orders.length}</h2>
+              <h2>{filteredOrders.length}</h2>
               <p>Total Orders</p>
             </div>
           </div>
         </div>
-        
 
-        {/* SUMMARY */}
         <div className="analytics-card stats">
           <h3>📦 Summary</h3>
           <div className="stat-box">
             <p>Total Orders</p>
-            <h2>{orders.length}</h2>
+            <h2>{filteredOrders.length}</h2>
           </div>
           <div className="stat-box">
             <p>Total Revenue</p>
             <h2>₹{totalRevenue}</h2>
           </div>
         </div>
-        
 
-        {/* SELLER WISE REVENUE */}
         <div className="analytics-card">
           <h3>🏪 Seller-wise Revenue</h3>
           <div className="chart-md">
-            <Bar data={sellerRevenueData} />
+            <Bar data={sellerRevenueData} options={barOptions} />
           </div>
         </div>
 
-        {/* SELLER WISE ORDERS */}
         <div className="analytics-card">
           <h3>📦 Seller-wise Orders</h3>
           <div className="chart-md">
-            <Bar data={sellerOrdersData} />
+            <Bar data={sellerOrdersData} options={barOptions} />
           </div>
         </div>
 

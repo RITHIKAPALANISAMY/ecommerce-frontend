@@ -6,8 +6,10 @@ import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-import OrdersAdmin from "./pages/admin/Orders";
+import OrdersAdmin from "./pages/admin/AdminOrders";
 import Coupons from "./pages/admin/Coupons";
+import Settings from "./pages/admin/Settings";
+
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
@@ -43,8 +45,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./components/common/ProfilePage";
-
-import "./styles/adminLayout.css";
+import SettingsPage from "./components/common/SettingsPage";
 
 export default function App() {
   return (
@@ -59,6 +60,8 @@ export default function App() {
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<OrdersAdmin />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="settings" element={<Settings />} />
+
           </Route>
         </Route>
       </Route>
@@ -101,6 +104,7 @@ export default function App() {
       <Route path="/become-seller" element={<BecomeSeller />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/settings" element={<SettingsPage />} />
       
     </Routes>
   );

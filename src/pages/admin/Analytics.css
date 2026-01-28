@@ -1,43 +1,54 @@
+/* ===== PAGE ===== */
 .analytics-page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 28px; /* ⬅ more breathing space */
 }
 
-/* CARD */
+/* ===== COMMON CARD ===== */
 .analytics-card {
   background: #fff;
-  padding: 20px;
-  border-radius: 14px;
+  padding: 24px;              /* ⬅ was 20 */
+  border-radius: 18px;        /* ⬅ smoother */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
 }
 
-/* SALES TREND SMALL */
+/* ===== SALES TREND (BIG) ===== */
 .analytics-card.small {
-  height: 280px;
+  height: 380px;              /* 🔥 BIG CHART */
 }
 
 .chart-sm {
-  height: 200px;
+  height: 300px;              /* 🔥 chart area bigger */
+  position: relative;
 }
 
-/* GRID */
+/* ===== GRID (BOTTOM SECTION) ===== */
 .analytics-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(4, 1fr); /* 🔥 4 cards neat */
+  gap: 24px;
 }
 
-/* CHART SIZES */
+/* ===== ALL GRID CARDS SAME HEIGHT ===== */
+.analytics-grid .analytics-card {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ===== CHART SIZES ===== */
 .chart-md {
-  height: 240px;
+  height: 260px;              /* 🔥 was 240 */
   position: relative;
 }
 
 .chart-md.donut {
-  height: 220px;
+  height: 250px;              /* 🔥 donut bigger */
 }
 
-/* DONUT CENTER */
+/* ===== DONUT CENTER ===== */
 .donut-center {
   position: absolute;
   inset: 0;
@@ -50,20 +61,96 @@
 
 .donut-center h2 {
   margin: 0;
-  font-size: 26px;
+  font-size: 30px;            /* ⬅ more focus */
+  font-weight: 700;
 }
 
 .donut-center p {
   margin: 0;
-  font-size: 13px;
-  color: #777;
+  font-size: 14px;
+  color: #666;
 }
 
-/* STATS */
+/* ===== STATS / SUMMARY ===== */
+.stats {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+}
+
 .stats .stat-box {
   background: #f7f7f7;
-  padding: 14px;
-  border-radius: 10px;
-  margin-top: 12px;
+  padding: 18px;              /* ⬅ was 14 */
+  border-radius: 14px;
   text-align: center;
+}
+
+.stats .stat-box h3 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.stats .stat-box p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* ===== HEADINGS ===== */
+.analytics-card h3,
+.analytics-card h4 {
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+/* ===== CANVAS FIX ===== */
+canvas {
+  max-width: 100% !important;
+}
+.date-filter {
+  display: flex;
+  gap: 8px;
+}
+
+.date-filter button {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.date-filter button.active {
+  background: #7b001c;
+  color: #fff;
+  border-color: #7b001c;
+}
+/* ===== SALES TREND HEADER ALIGNMENT ===== */
+.sales-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;     /* 🔥 space between header & chart */
+}
+
+/* LEFT SIDE TITLE */
+.sales-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;               /* 🔥 icon & text gap */
+}
+
+.sales-title h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* PUSH FILTERS A BIT RIGHT */
+.date-filter {
+  margin-left: auto;       /* 🔥 key fix */
+  gap: 12px;               /* override previous 8px */
 }

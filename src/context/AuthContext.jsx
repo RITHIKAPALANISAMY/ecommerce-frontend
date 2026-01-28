@@ -10,12 +10,14 @@ export function AuthProvider({ children }) {
 
   /* ================= LOGIN ================= */
   const login = (email, password) => {
-    // ADMIN
     if (email === "admin@shopverse.com" && password === "admin123") {
       const adminUser = {
         username: "Admin",
         email,
         role: "admin",
+        phone: "",
+        address: "",
+        sellerInfo: null,
         mode: "admin",
       };
       setUser(adminUser);
@@ -27,14 +29,14 @@ export function AuthProvider({ children }) {
     const found = users.find(
       (u) => u.email === email && u.password === password
     );
-
     if (!found) return null;
 
-    // ✅ IMPORTANT: RESTORE sellerInfo FROM users
     const loggedUser = {
       username: found.name,
       email: found.email,
       role: found.role || "buyer",
+      phone: found.phone || "",
+      address: found.address || "",
       sellerInfo: found.sellerInfo || null,
       mode: "buyer",
     };
@@ -44,62 +46,42 @@ export function AuthProvider({ children }) {
     return loggedUser;
   };
 
-  /* ================= SIGNUP ================= */
-  const signup = ({ name, email, password }) => {
+  /* ================= VERIFY EMAIL ================= */
+  const verifyEmail = (email) => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
-
-    if (users.some((u) => u.email === email)) return false;
-
-    users.push({
-      id: Date.now(),
-      name,
-      email,
-      password,
-      role: "buyer",
-      sellerInfo: null,
-    });
-
-    localStorage.setItem("users", JSON.stringify(users));
-    return true;
+    return users.some((u) => u.email === email);
   };
 
-  /* ================= BECOME SELLER ================= */
-  const updateUserRole = (sellerData) => {
-    if (!user) return;
-
-    const updatedUser = {
-      ...user,
-      role: "seller",
-      sellerInfo: sellerData,
-      mode: "buyer",
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-
-    // ✅ UPDATE USERS ARRAY PROPERLY
+  /* ================= RESET PASSWORD ================= */
+  const resetPassword = (email, newPassword) => {
     let users = JSON.parse(localStorage.getItem("users")) || [];
+
     users = users.map((u) =>
-      u.email === user.email
-        ? { ...u, role: "seller", sellerInfo: sellerData }
-        : u
+      u.email === email ? { ...u, password: newPassword } : u
     );
 
     localStorage.setItem("users", JSON.stringify(users));
   };
 
-  const enterSellerMode = () => {
-    if (!user || user.role !== "seller") return;
-    const updatedUser = { ...user, mode: "seller" };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-  };
-
-  const exitSellerMode = () => {
+  /* ================= DELETE ACCOUNT ================= */
+  const deleteAccount = () => {
     if (!user) return;
-    const updatedUser = { ...user, mode: "buyer" };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+
+    const email = user.email;
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    users = users.filter((u) => u.email !== email);
+    localStorage.setItem("users", JSON.stringify(users));
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("cart");
+    localStorage.removeItem("wishlist");
+
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+    orders = orders.filter((o) => o.buyerEmail !== email);
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    setUser(null);
   };
 
   const logout = () => {
@@ -112,10 +94,9 @@ export function AuthProvider({ children }) {
       value={{
         user,
         login,
-        signup,
-        updateUserRole,
-        enterSellerMode,
-        exitSellerMode,
+        verifyEmail,     // ✅ added
+        resetPassword,   // ✅ added
+        deleteAccount,
         logout,
       }}
     >

@@ -55,9 +55,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="logo">
-        ShopVerse
-      </Link>
+      <Link to="/" className="logo">ShopVerse</Link>
 
       <input
         className="search"
@@ -68,13 +66,10 @@ export default function Navbar() {
       />
 
       <div className="nav-actions">
-        {/* NOT LOGGED IN */}
+        {/* ================= NOT LOGGED IN ================= */}
         {!user && (
           <>
-            <Link className="nav-link login-link" to="/login">
-              Login
-            </Link>
-
+            <Link className="nav-link login-link" to="/login">Login</Link>
             <div
               className="nav-link seller-link"
               onClick={() => navigate("/become-seller")}
@@ -84,7 +79,7 @@ export default function Navbar() {
           </>
         )}
 
-        {/* LOGGED IN */}
+        {/* ================= LOGGED IN ================= */}
         {user && (
           <div className="user-wrapper" ref={dropdownRef}>
             {role === "buyer" && (
@@ -115,6 +110,7 @@ export default function Navbar() {
                   </span>
                 </div>
 
+                {/* COMMON */}
                 <Link
                   to="/profile"
                   className="dropdown-item"
@@ -123,6 +119,15 @@ export default function Navbar() {
                   👤 My Profile
                 </Link>
 
+                <Link
+                  to="/settings"
+                  className="dropdown-item"
+                  onClick={() => setOpen(false)}
+                >
+                  ⚙️ Settings
+                </Link>
+
+                {/* BUYER */}
                 {role === "buyer" && (
                   <>
                     <Link
@@ -143,6 +148,7 @@ export default function Navbar() {
                   </>
                 )}
 
+                {/* SELLER */}
                 {role === "seller" && (
                   <Link
                     to="/seller/dashboard"
@@ -153,6 +159,7 @@ export default function Navbar() {
                   </Link>
                 )}
 
+                {/* ADMIN */}
                 {role === "admin" && (
                   <Link
                     to="/admin/dashboard"
@@ -163,7 +170,10 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                <button className="dropdown-logout" onClick={handleLogout}>
+                <button
+                  className="dropdown-logout"
+                  onClick={handleLogout}
+                >
                   🚪 Logout
                 </button>
               </div>

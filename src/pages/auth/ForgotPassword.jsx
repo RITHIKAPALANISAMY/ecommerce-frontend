@@ -26,7 +26,11 @@ export default function ForgotPassword() {
       return;
     }
 
-    navigate("/reset-password", { state: { email } });
+    // ✅ Save email for reset page
+    localStorage.setItem("resetEmail", email);
+
+    // ✅ GO TO RESET PASSWORD PAGE
+    navigate("/reset-password");
   };
 
   return (
@@ -34,9 +38,7 @@ export default function ForgotPassword() {
       <div className="auth-card">
         <div className="auth-left">
           <h1>Forgot Password?</h1>
-          <p>
-            Enter your registered email and we’ll help you reset your password.
-          </p>
+          <p>Enter your registered email and we’ll help you reset your password.</p>
         </div>
 
         <div className="auth-right">

@@ -6,7 +6,7 @@ import "./AdminDashboard.css";
 
 import Users from "./Users";
 import Products from "./Products";
-import Orders from "./Orders";
+import Orders from "./AdminOrders";
 import Coupons from "./Coupons";
 import Analytics from "./Analytics";
 import Deals from "./Deals";

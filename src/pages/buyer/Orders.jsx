@@ -15,13 +15,13 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [openOrderId, setOpenOrderId] = useState(null);
 
-  const deliveredCount = orders.filter(
-    o => o.status === "Delivered"
-  ).length;
+  // REVIEW STATES
+  const [reviewProduct, setReviewProduct] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
 
-  const cancelledCount = orders.filter(
-    o => o.status === "Cancelled"
-  ).length;
+  const deliveredCount = orders.filter(o => o.status === "Delivered").length;
+  const cancelledCount = orders.filter(o => o.status === "Cancelled").length;
 
   const filteredOrders = orders.filter(order => {
     const matchSearch = order.items.some(i =>
@@ -38,6 +38,36 @@ export default function Orders() {
       products.find(p => p.id === item.productId)?.image ||
       "/placeholder.png"
     );
+  };
+
+  // ===== REVIEW HELPERS =====
+  const getReviews = () =>
+    JSON.parse(localStorage.getItem("reviews") || "[]");
+
+  const hasReviewed = (productId) => {
+    const reviews = getReviews();
+    return reviews.some(
+      r => r.productId === productId && r.userEmail === user.email
+    );
+  };
+
+  const submitReview = () => {
+    const reviews = getReviews();
+
+    reviews.push({
+      id: Date.now(),
+      productId: reviewProduct.productId,
+      userEmail: user.email,
+      rating,
+      comment,
+      createdAt: new Date().toISOString()
+    });
+
+    localStorage.setItem("reviews", JSON.stringify(reviews));
+
+    setReviewProduct(null);
+    setRating(0);
+    setComment("");
   };
 
   return (
@@ -137,6 +167,22 @@ export default function Orders() {
                       <p className="detail-status info">
                         Status: {order.status}
                       </p>
+
+                      {/* REVIEW BUTTON */}
+                      {order.status === "Delivered" && (
+                        hasReviewed(item.productId) ? (
+                          <span className="reviewed-badge">
+                            Reviewed ✓
+                          </span>
+                        ) : (
+                          <button
+                            className="review-btn"
+                            onClick={() => setReviewProduct(item)}
+                          >
+                            Write Review
+                          </button>
+                        )
+                      )}
                     </div>
 
                     <p className="detail-price">
@@ -149,6 +195,48 @@ export default function Orders() {
           </div>
         );
       })}
+
+      {/* REVIEW MODAL */}
+      {reviewProduct && (
+        <div className="review-modal-overlay">
+          <div className="review-modal">
+            <h3>Review {reviewProduct.title}</h3>
+
+            <div className="stars">
+              {[1, 2, 3, 4, 5].map(n => (
+                <span
+                  key={n}
+                  className={n <= rating ? "star active" : "star"}
+                  onClick={() => setRating(n)}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <textarea
+              placeholder="Write your experience..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+
+            <div className="review-actions">
+              <button
+                disabled={rating === 0 || comment.trim() === ""}
+                onClick={submitReview}
+              >
+                Submit Review
+              </button>
+              <button
+                className="cancel"
+                onClick={() => setReviewProduct(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

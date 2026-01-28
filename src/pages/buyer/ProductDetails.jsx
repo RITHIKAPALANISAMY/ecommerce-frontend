@@ -47,10 +47,32 @@ export default function ProductDetails() {
   /* ================= REVIEWS ================= */
   const allReviews = product.reviews || [];
 
+  /* ========= ✅ ADDED (Orders page reviews - READ ONLY) ========= */
+  const orderReviews = useMemo(() => {
+    const stored = JSON.parse(localStorage.getItem("reviews") || "[]");
+
+    return stored
+      .filter(r => r.productId === product.id)
+      .map(r => ({
+        rating: r.rating,
+        comment: r.comment,
+        user: r.userEmail,
+        date: new Date(r.createdAt).toLocaleDateString(),
+        verified: true
+      }));
+  }, [product.id]);
+
+  // ✅ SAFE MERGE (NO mutation)
+  const mergedReviews = useMemo(
+    () => [...allReviews, ...orderReviews],
+    [allReviews, orderReviews]
+  );
+  /* ========= ✅ END OF ADDED CODE ========= */
+
   // ✅ ONLY VERIFIED REVIEWS (DELIVERED ORDERS)
   const reviews = useMemo(
-    () => allReviews.filter((r) => r.verified === true),
-    [allReviews]
+    () => mergedReviews.filter((r) => r.verified === true),
+    [mergedReviews]
   );
 
   // ✅ AVERAGE RATING FROM VERIFIED REVIEWS ONLY

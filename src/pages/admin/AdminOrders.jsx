@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./Orders.css";
+import "./AdminOrders.css";
 import { useOrders } from "../../context/OrderContext";
 
 const sampleOrders = [

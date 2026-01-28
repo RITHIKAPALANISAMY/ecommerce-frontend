@@ -1,137 +1,643 @@
+/* ================= PROFILE PAGE ================= */
+
 .profile-page {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 40px auto;
-  padding: 0 20px;
+  padding: 0 20px 60px;
 }
 
+/* TITLE */
 .profile-title {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  color: #111827;
 }
 
-.profile-card {
+/* ================= HEADER CARD ================= */
+
+.profile-header-card {
   background: #ffffff;
   border-radius: 18px;
-  padding: 30px;
+  padding: 28px 30px;
   display: flex;
-  gap: 24px;
   align-items: center;
+  gap: 26px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  margin-bottom: 34px;
 }
 
-.profile-avatar {
+/* AVATAR */
+.profile-avatar-lg {
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #b11226, #e11d48);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
   font-size: 36px;
+  font-weight: 700;
 }
 
-.profile-info {
-  flex: 1;
+/* HEADER INFO */
+.profile-header-info h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.profile-header-info p {
+  margin: 6px 0 12px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* TAGS */
+.profile-tags {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
-.profile-row {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 8px;
-  font-size: 15px;
-}
-
-.profile-row span {
-  color: #64748b;
-}
-
-.profile-row strong {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-/* ROLE BADGES */
-.role-badge {
-  padding: 4px 14px;
-  border-radius: 999px;
+.tag {
   font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
   font-weight: 600;
-  text-transform: capitalize;
 }
 
-.role-badge.buyer {
-  background: #dbeafe;
-  color: #1e40af;
+.tag.buyer {
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
-.role-badge.seller {
+.tag.seller {
   background: #dcfce7;
   color: #166534;
 }
 
-.role-badge.admin {
+.tag.admin {
   background: #fee2e2;
   color: #991b1b;
 }
 
-/* ERROR */
-.profile-error {
-  text-align: center;
-  margin-top: 100px;
-  font-size: 18px;
+.tag.verified {
+  background: #e0f2fe;
+  color: #075985;
 }
 
-/* MOBILE */
+.tag.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ACTION BUTTON */
+.btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.btn.primary {
+  background: #b11226;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #8f0f1e;
+}
+
+.btn.secondary {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* ================= STATS ================= */
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin-bottom: 36px;
+}
+
+.stat-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.stat-box strong {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-box span {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  letter-spacing: 0.3px;
+}
+
+/* ================= DETAILS GRID ================= */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  margin-bottom: 30px;
+}
+
+/* CARD */
+.profile-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.profile-card h4 {
+  margin-bottom: 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* ROW */
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.profile-row span {
+  color: #6b7280;
+}
+
+.profile-row strong {
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ================= MODAL ================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 460px;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+.modal-card h3 {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.modal-field input,
+.modal-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.modal-field textarea {
+  resize: none;
+  min-height: 70px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+/* ================= ERROR ================= */
+
+.profile-error {
+  text-align: center;
+  margin-top: 120px;
+  font-size: 18px;
+  color: #b11226;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 900px) {
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
-  .profile-card {
+  .profile-header-card {
     flex-direction: column;
     text-align: center;
   }
 
-  .profile-row {
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
+  .profile-tags {
+    justify-content: center;
   }
 }
-/* ACTION BUTTONS */
-.profile-actions {
-  display: flex;
-  gap: 14px;
-  margin-top: 20px;
+/* ===== SETTINGS LAYOUT ===== */
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
 }
 
-.profile-btn {
-  padding: 10px 18px;
+.settings-sidebar {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-link {
+  padding: 12px 14px;
   border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  color: #374151;
+}
+
+.side-link.active {
+  background: #fee2e2;
+  color: #b11226;
+}
+
+.settings-content {
+  width: 100%;
+}
+
+.profile-card.danger {
+  margin-top: 24px;
+  border: 1px solid #fee2e2;
+  background: #fff5f5;
+}
+/* ================= SETTINGS LAYOUT ================= */
+
+.settings-layout {
+  display: flex;
+  gap: 32px;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 20px 60px;
+}
+
+/* SIDEBAR */
+.settings-sidebar {
+  width: 220px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  height: fit-content;
+}
+
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
   font-size: 14px;
   font-weight: 600;
-  border: none;
+  color: #374151;
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+}
+
+.side-link:hover {
+  background: #f3f4f6;
+}
+
+.side-link.active {
+  background: #fee2e2;
+  color: #b11226;
+}
+
+/* CONTENT */
+.settings-content {
+  flex: 1;
+}
+
+/* SETTINGS CARD SPACING */
+.settings-content .profile-card {
+  margin-bottom: 26px;
+}
+
+/* PREFERENCE BUTTON ALIGNMENT */
+.settings-content .profile-row button {
+  min-width: 100px;
+}
+
+/* DANGER ZONE */
+.profile-card.danger {
+  border: 1px solid #fee2e2;
+  background: #fff5f5;
+}
+
+/* ================= TOGGLE ================= */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  height: 34px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
 }
 
-.profile-btn.primary {
-  background: #2563eb;
-  color: white;
+.toggle.on {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.profile-btn.secondary {
-  background: #f1f5f9;
-  color: #0f172a;
+.toggle.off {
+  background: #f3f4f6;
+  color: #374151;
 }
 
-/* PAGE BACKGROUND POLISH */
+/* ================= SETTINGS PAGE ================= */
+
 .profile-page {
-  background: linear-gradient(
-    to bottom,
-    #f8fafc,
-    #ffffff
-  );
-  min-height: calc(100vh - 80px);
-  padding-top: 40px;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 20px 80px;
+}
+
+/* SECTION SPACING */
+.profile-page .profile-card {
+  margin-bottom: 26px;
+}
+
+/* SETTINGS HEADINGS */
+.profile-card h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #111827;
+}
+
+/* ================= PREFERENCE BUTTONS ================= */
+
+.profile-row button {
+  min-width: 96px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* ENABLED STATE */
+.profile-row button:contains("Enabled"),
+.profile-row button.enabled {
+  background: #b11226;
+  color: #ffffff;
+  border-color: #b11226;
+}
+
+/* DISABLED STATE */
+.profile-row button:contains("Disabled"),
+.profile-row button.disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+/* HOVER */
+.profile-row button:hover {
+  opacity: 0.9;
+}
+
+/* ================= SECURITY ================= */
+
+.profile-card .btn.secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.profile-card .btn.secondary:hover {
+  background: #e5e7eb;
+}
+
+/* ================= DANGER ZONE ================= */
+
+.profile-card.danger,
+.danger-zone {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+}
+
+.profile-card.danger h4 {
+  color: #b11226;
+}
+
+.profile-card.danger p {
+  font-size: 14px;
+  color: #7f1d1d;
+  margin-bottom: 16px;
+}
+
+/* DANGER BUTTONS */
+.profile-card.danger .btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* LOGOUT */
+.profile-card.danger .btn.secondary {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+/* DELETE ACCOUNT */
+.profile-card.danger .btn.primary {
+  background: #b11226;
+  color: #ffffff;
+}
+
+.profile-card.danger .btn.primary:hover {
+  background: #8f0f1e;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 600px) {
+  .profile-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .profile-row button {
+    align-self: flex-end;
+  }
+}
+/* ================= SETTINGS TOGGLE ================= */
+
+.toggle {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.toggle.on {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.toggle.off {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+/* Muted text */
+.muted-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+/* Danger section */
+.profile-card.danger {
+  background: #fff5f5;
+  border: 1px solid #fee2e2;
+}
+
+.danger-text {
+  color: #7f1d1d;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+/* Password button theme */
+.danger-outline {
+  background: #fef2f2;
+  color: #b11226;
+  border: 1px solid #fecaca;
+}
+
+.danger-outline:hover {
+  background: #fee2e2;
+}
+/* ================= DANGER BUTTONS ================= */
+
+.btn.danger-btn {
+  background: #fff1f2;
+  color: #b11226;
+  border: 1px solid #fecaca;
+}
+
+.btn.danger-btn:hover {
+  background: #fee2e2;
+}
+
+/* Strong danger (delete) */
+.btn.primary.danger {
+  background: #b11226;
+  color: #ffffff;
+}
+
+.btn.primary.danger:hover {
+  background: #8f0f1e;
+}
+/* ================= SECURITY / DANGER BUTTONS ================= */
+
+/* Change Password (outlined danger) */
+.btn.danger-outline {
+  background: #fff5f5;
+  color: #b11226;
+  border: 1.5px solid #fca5a5;
+  font-weight: 600;
+}
+
+.btn.danger-outline:hover {
+  background: #fee2e2;
+}
+
+/* Delete Account (solid danger) */
+.btn.danger-solid {
+  background: #b11226;
+  color: #ffffff;
+}
+
+.btn.danger-solid:hover {
+  background: #8f0f1e;
 }
