@@ -46,6 +46,90 @@ export function AuthProvider({ children }) {
     return loggedUser;
   };
 
+  /* ================= SIGNUP ================= */
+  const signup = (form) => {
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+
+    const exists = users.find((u) => u.email === form.email);
+    if (exists) return false;
+
+    const newUser = {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      role: "buyer",
+      phone: "",
+      address: "",
+      sellerInfo: null,
+    };
+
+    users.push(newUser);
+    localStorage.setItem("users", JSON.stringify(users));
+    return true;
+  };
+
+  /* ================= UPDATE USER ROLE (BECOME SELLER) ================= */
+  const updateUserRole = (sellerData) => {
+    if (!user) return;
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    users = users.map((u) =>
+      u.email === user.email
+        ? {
+            ...u,
+            role: "seller",
+            phone: sellerData.phone,
+            address: sellerData.address,
+            sellerInfo: sellerData,
+          }
+        : u
+    );
+
+    localStorage.setItem("users", JSON.stringify(users));
+
+    const updatedUser = {
+      ...user,
+      role: "seller",
+      phone: sellerData.phone,
+      address: sellerData.address,
+      sellerInfo: sellerData,
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  /* ================= UPDATE USER PROFILE ================= */
+  const updateUser = (data) => {
+    if (!user) return;
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    users = users.map((u) =>
+      u.email === user.email
+        ? {
+            ...u,
+            name: data.username,
+            phone: data.phone,
+            address: data.address,
+          }
+        : u
+    );
+
+    localStorage.setItem("users", JSON.stringify(users));
+
+    const updatedUser = {
+      ...user,
+      username: data.username,
+      phone: data.phone,
+      address: data.address,
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
   /* ================= VERIFY EMAIL ================= */
   const verifyEmail = (email) => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
@@ -84,6 +168,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  /* ================= LOGOUT ================= */
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -94,8 +179,11 @@ export function AuthProvider({ children }) {
       value={{
         user,
         login,
-        verifyEmail,     // ✅ added
-        resetPassword,   // ✅ added
+        signup,
+        updateUserRole,
+        updateUser,
+        verifyEmail,
+        resetPassword,
         deleteAccount,
         logout,
       }}

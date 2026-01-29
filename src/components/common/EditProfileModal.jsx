@@ -13,13 +13,19 @@ export default function EditProfileModal({ user, onClose, onSave }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    onSave(form);
+  // ✅ UPDATED (added close + safety)
+  const handleSubmit = (e) => {
+    e.preventDefault();          // ✅ prevent any default behavior
+    onSave(form);               // ✅ save updated data
+    onClose();                  // ✅ close modal after saving
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()} // ✅ already correct
+      >
         <h3>Edit Profile</h3>
 
         <div className="modal-field">
@@ -57,10 +63,19 @@ export default function EditProfileModal({ user, onClose, onSave }) {
         </div>
 
         <div className="modal-actions">
-          <button className="btn secondary" onClick={onClose}>
+          <button
+            className="btn secondary"
+            type="button"          // ✅ IMPORTANT
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button className="btn primary" onClick={handleSubmit}>
+
+          <button
+            className="btn primary"
+            type="button"          // ✅ IMPORTANT
+            onClick={handleSubmit}
+          >
             Save Changes
           </button>
         </div>
