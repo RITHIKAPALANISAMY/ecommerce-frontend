@@ -161,6 +161,7 @@ export default function SellerDashboard() {
               </ResponsiveContainer>
             </div>
 
+<<<<<<< HEAD
             <div className="seller-metric-card seller-pending">
               <div className="seller-metric-icon">⏳</div>
               <div className="seller-metric-text">
@@ -202,6 +203,10 @@ export default function SellerDashboard() {
 
       {tab === "products" && <SellerProducts />}
       {tab === "orders" && <SellerOrders />}
+=======
+        {/* ================= ORDERS ================= */}
+        {tab === "orders" && <SellerOrders />}
+>>>>>>> main
 
     </div>
   );

@@ -2,16 +2,24 @@ import { useEffect, useState, useRef } from "react";
 import "./Settings.css";
 
 const Settings = () => {
+<<<<<<< HEAD
   /* ===== TOAST (MUST BE ON TOP) ===== */
+=======
+  /* ===== TOAST ===== */
+>>>>>>> main
   const showToast = (message, type = "success") => {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.innerText = message;
     document.body.appendChild(toast);
+<<<<<<< HEAD
 
     setTimeout(() => {
       toast.remove();
     }, 3000);
+=======
+    setTimeout(() => toast.remove(), 3000);
+>>>>>>> main
   };
 
   /* ===== DARK MODE ===== */
@@ -23,27 +31,41 @@ const Settings = () => {
   const [notifications, setNotifications] = useState(
     localStorage.getItem("notifications") !== "false"
   );
+<<<<<<< HEAD
 
   /* store previous value */
   const prevNotifications = useRef(notifications);
 
   /* ===== CHANGE PASSWORD ===== */
+=======
+  const prevNotifications = useRef(notifications);
+
+  /* ===== PASSWORD ===== */
+>>>>>>> main
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
+<<<<<<< HEAD
   /* 👁️ show / hide */
+=======
+>>>>>>> main
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+<<<<<<< HEAD
   /* ===== ADMIN PROFILE ===== */
+=======
+  /* ===== PROFILE ===== */
+>>>>>>> main
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem("adminProfile");
     return saved
       ? JSON.parse(saved)
+<<<<<<< HEAD
       : {
           name: "Admin",
           email: "admin@shopverse.com",
@@ -118,6 +140,51 @@ const Settings = () => {
   const saveProfile = () => {
     localStorage.setItem("adminProfile", JSON.stringify(profile));
     showToast("Profile Updated 👤", "success");
+=======
+      : { name: "Admin", email: "admin@shopverse.com", phone: "" };
+  });
+
+  /* ===== EFFECTS ===== */
+  useEffect(() => {
+    document.body.classList.toggle("dark-mode", darkMode);
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem("notifications", notifications);
+    if (prevNotifications.current !== notifications) {
+      showToast(
+        notifications ? "Notifications Enabled 🔔" : "Notifications Disabled 🔕",
+        notifications ? "success" : "warning"
+      );
+    }
+    prevNotifications.current = notifications;
+  }, [notifications]);
+
+  /* ===== HANDLERS ===== */
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword)
+      return alert("All fields required");
+    if (form.newPassword.length < 6)
+      return alert("Password must be at least 6 characters");
+    if (form.newPassword !== form.confirmPassword)
+      return alert("Passwords do not match");
+
+    showToast("Password updated successfully 🔐");
+    setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  };
+
+  const handleProfileChange = (e) =>
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+
+  const saveProfile = () => {
+    localStorage.setItem("adminProfile", JSON.stringify(profile));
+    showToast("Profile Updated 👤");
+>>>>>>> main
   };
 
   return (
@@ -127,6 +194,7 @@ const Settings = () => {
       {/* APPEARANCE */}
       <div className="settings-card">
         <h3>Appearance</h3>
+<<<<<<< HEAD
 
         <div className="setting-row">
           <div>
@@ -136,6 +204,13 @@ const Settings = () => {
             </span>
           </div>
 
+=======
+        <div className="setting-row">
+          <div>
+            <p className="setting-title">Dark Mode</p>
+            <span className="setting-desc">Enable dark theme</span>
+          </div>
+>>>>>>> main
           <label className="switch">
             <input
               type="checkbox"
@@ -150,6 +225,7 @@ const Settings = () => {
       {/* NOTIFICATIONS */}
       <div className="settings-card">
         <h3>Notifications</h3>
+<<<<<<< HEAD
 
         <div className="setting-row">
           <div>
@@ -159,6 +235,13 @@ const Settings = () => {
             </span>
           </div>
 
+=======
+        <div className="setting-row">
+          <div>
+            <p className="setting-title">Admin Notifications</p>
+            <span className="setting-desc">Order & system alerts</span>
+          </div>
+>>>>>>> main
           <label className="switch">
             <input
               type="checkbox"
@@ -170,6 +253,7 @@ const Settings = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* ADMIN PROFILE */}
       <div className="settings-card">
         <h3>👤 Admin Profile</h3>
@@ -248,9 +332,72 @@ const Settings = () => {
             Update Password
           </button>
         </form>
+=======
+      {/* PROFILE + PASSWORD SIDE BY SIDE */}
+      <div className="settings-grid">
+        {/* PROFILE */}
+        <div className="settings-card">
+          <h3>👤 Admin Profile</h3>
+
+          <div className="form-group">
+            <label>Name</label>
+            <input name="name" value={profile.name} onChange={handleProfileChange} />
+          </div>
+
+          <div className="form-group">
+            <label>Email</label>
+            <input name="email" value={profile.email} onChange={handleProfileChange} />
+          </div>
+
+          <div className="form-group">
+            <label>Phone</label>
+            <input name="phone" value={profile.phone} onChange={handleProfileChange} />
+          </div>
+
+          <button className="save-btn" onClick={saveProfile}>
+            Save Profile
+          </button>
+        </div>
+
+        {/* PASSWORD */}
+        <div className="settings-card">
+          <h3>🔐 Change Password</h3>
+
+          <form onSubmit={handleSubmit}>
+            {[
+              ["currentPassword", showCurrent, setShowCurrent],
+              ["newPassword", showNew, setShowNew],
+              ["confirmPassword", showConfirm, setShowConfirm],
+            ].map(([name, show, toggle], i) => (
+              <div className="form-group" key={i}>
+                <label>{name.replace(/([A-Z])/g, " $1")}</label>
+                <div className="password-field">
+                  <input
+                    type={show ? "text" : "password"}
+                    name={name}
+                    value={form[name]}
+                    onChange={handleChange}
+                  />
+                  <span onClick={() => toggle(!show)}>
+                    {show ? "🙈" : "👁️"}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            <button className="save-btn" type="submit">
+              Update Password
+            </button>
+          </form>
+        </div>
+>>>>>>> main
       </div>
     </div>
   );
 };
 
+<<<<<<< HEAD
 export default Settings;
+=======
+export default Settings;
+>>>>>>> main

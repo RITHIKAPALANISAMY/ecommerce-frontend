@@ -4,7 +4,7 @@ const AdminNavbar = () => {
   return (
     <header className="admin-navbar">
       <div className="admin-navbar-inner">
-        <h2 className="logo">ShopVerse Admin</h2>
+        <h2 className="logo">ShopVerse </h2>
 
         <div className="navbar-right">
           <input type="text" placeholder="Search..." />

@@ -1,5 +1,6 @@
-import "./Analytics.css";
-
+import React from 'react';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import './analytics.css';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,10 +11,7 @@ import {
   ArcElement,
   Tooltip,
   Legend,
-} from "chart.js";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
-import { useOrders } from "../../context/OrderContext";
-import { useState } from "react";
+} from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -26,259 +24,211 @@ ChartJS.register(
   Legend
 );
 
-export default function Analytics() {
-  const { orders } = useOrders();
+/* 🎨 Elegant color palette */
+const COLORS = {
+  primary: '#4F46E5',   // Indigo
+  secondary: '#06B6D4', // Cyan
+  success: '#16A34A',   // Green
+  warning: '#F59E0B',   // Amber
+  danger: '#DC2626',    // Red
+  purple: '#7C3AED',    // Violet
+  slate: '#64748B',     // Gray
+  pink: '#EC4899',      // Pink
+};
 
-  /* ================= DATE FILTER ================= */
-  const [filter, setFilter] = useState("month"); // today | week | month
+/* 🔧 Common chart options */
+const commonOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        boxWidth: 12,
+        padding: 10,
+      },
+    },
+  },
+};
 
-  const now = new Date();
+const doughnutOptions = {
+  ...commonOptions,
+  cutout: '65%',
+};
 
-  const filteredOrders = orders.filter((o) => {
-    if (!o.createdAt) return false;
-    const orderDate = new Date(o.createdAt);
-
-    if (filter === "today") {
-      return orderDate.toDateString() === now.toDateString();
-    }
-
-    if (filter === "week") {
-      const diff = (now - orderDate) / (1000 * 60 * 60 * 24);
-      return diff <= 7;
-    }
-
-    return true; // month (default)
-  });
-
-  /* ================= SALES TREND ================= */
-  const salesByDate = {};
-
-  filteredOrders.forEach((o) => {
-    const date = new Date(o.createdAt).toLocaleDateString();
-    salesByDate[date] = (salesByDate[date] || 0) + (o.totalAmount || 0);
-  });
-
-  const salesTrendData = {
-    labels: Object.keys(salesByDate),
+const Analytics = () => {
+  const salesData = {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     datasets: [
       {
-        label: "Sales Revenue",
-        data: Object.values(salesByDate),
-        borderColor: "#e91e63",
-        backgroundColor: "rgba(233,30,99,0.15)",
-        tension: 0.4,
+        label: '2026 Sales',
+        data: [12000,15000,18000,22000,25000,40000,38000,36000,34000,32000,30000,28000],
+        borderColor: COLORS.primary,
+        backgroundColor: 'rgba(79,70,229,0.15)',
         fill: true,
+        tension: 0.4,
+      },
+      {
+        label: '2025 Sales',
+        data: [10000,12000,16000,20000,23000,35000,34000,32000,30000,28000,26000,24000],
+        borderColor: COLORS.warning,
+        backgroundColor: 'rgba(245,158,11,0.15)',
+        fill: true,
+        tension: 0.4,
       },
     ],
   };
 
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 1200,
-      easing: "easeInOutQuart",
-    },
-    plugins: {
-      legend: {
-        position: "top",
-      },
-    },
-  };
-
-  /* ================= ORDER STATUS ================= */
-  const statusCount = {
-    Pending: 0,
-    Approved: 0,
-    Delivered: 0,
-    Cancelled: 0,
-  };
-
-  filteredOrders.forEach((o) => {
-    if (statusCount[o.status] !== undefined) {
-      statusCount[o.status]++;
-    }
-  });
-
-  const statusData = {
-    labels: Object.keys(statusCount),
+  const viewsData = {
+    labels: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     datasets: [
       {
-        data: Object.values(statusCount),
+        label: 'This Week',
+        data: [12000,14000,10000,16000,13000,15000,14000],
+        backgroundColor: COLORS.secondary,
+      },
+      {
+        label: 'Last Week',
+        data: [10000,11000,9000,12000,10000,11000,10000],
+        backgroundColor: COLORS.slate,
+      },
+    ],
+  };
+
+  const topProductsData = {
+    labels: ['Jeans','Jacket','Sweater','T-Shirt','Cap'],
+    datasets: [
+      {
+        label: 'Sales %',
+        data: [75,90,80,60,50],
         backgroundColor: [
-          "#ffb74d",
-          "#81c784",
-          "#64b5f6",
-          "#e57373",
+          COLORS.primary,
+          COLORS.secondary,
+          COLORS.success,
+          COLORS.warning,
+          COLORS.pink,
         ],
-        cutout: "70%",
       },
     ],
   };
 
-  const donutOptions = {
-    maintainAspectRatio: false,
-    animation: {
-      animateRotate: true,
-      duration: 1200,
-      easing: "easeInOutCubic",
-    },
-    plugins: {
-      legend: {
-        position: "bottom",
-      },
-    },
-  };
-
-  /* ================= ORDERS vs REVENUE ================= */
-  const barOptions = {
-    maintainAspectRatio: false,
-    animation: {
-      duration: 1000,
-      easing: "easeOutQuart",
-    },
-  };
-
-  const barData = {
-    labels: ["Orders", "Revenue"],
+  const ordersVsRevenueData = {
+    labels: ['Performance'],
     datasets: [
       {
-        label: "Performance",
-        data: [
-          filteredOrders.length,
-          filteredOrders.reduce((s, o) => s + (o.totalAmount || 0), 0),
-        ],
-        backgroundColor: ["#6c63ff", "#00c853"],
-        borderRadius: 10,
+        label: 'Orders',
+        data: [6],
+        backgroundColor: COLORS.warning,
+      },
+      {
+        label: 'Revenue',
+        data: [6294],
+        backgroundColor: COLORS.purple,
       },
     ],
   };
 
-  /* ================= SELLER WISE ================= */
-  const sellerMap = {};
+  const orderStatusData = {
+    labels: ['Pending','Approved','Delivered','Cancelled'],
+    datasets: [
+      {
+        data: [1,2,2,1],
+        backgroundColor: [
+          COLORS.warning,
+          COLORS.primary,
+          COLORS.success,
+          COLORS.danger,
+        ],
+      },
+    ],
+  };
 
-  filteredOrders.forEach((order) => {
-    order.items?.forEach((item) => {
-      const seller = item.sellerName || "Unknown Seller";
-
-      if (!sellerMap[seller]) {
-        sellerMap[seller] = { revenue: 0, orders: 0 };
-      }
-
-      sellerMap[seller].orders += 1;
-      sellerMap[seller].revenue +=
-        item.price && item.quantity
-          ? item.price * item.quantity
-          : order.totalAmount / order.items.length;
-    });
-  });
-
-  const sellerLabels = Object.keys(sellerMap);
+  const sellerColors = [
+    COLORS.primary,
+    COLORS.secondary,
+    COLORS.success,
+    COLORS.warning,
+  ];
 
   const sellerRevenueData = {
-    labels: sellerLabels,
+    labels: ['Tech Hub','Fashion Store','Electro Mart','Green Mart'],
     datasets: [
       {
-        label: "Revenue (₹)",
-        data: sellerLabels.map((s) => sellerMap[s].revenue),
-        backgroundColor: "#6c63ff",
-        borderRadius: 10,
+        label: 'Revenue (₹)',
+        data: [2500,1800,1200,794],
+        backgroundColor: sellerColors,
       },
     ],
   };
 
   const sellerOrdersData = {
-    labels: sellerLabels,
+    labels: ['Tech Hub','Fashion Store','Electro Mart','Green Mart'],
     datasets: [
       {
-        label: "Orders",
-        data: sellerLabels.map((s) => sellerMap[s].orders),
-        backgroundColor: "#00c853",
-        borderRadius: 10,
+        label: 'Orders',
+        data: [2,2,1,1],
+        backgroundColor: sellerColors,
       },
     ],
   };
 
-  const totalRevenue = filteredOrders.reduce(
-    (s, o) => s + (o.totalAmount || 0),
-    0
-  );
-
-  /* ================= UI ================= */
   return (
-    <div className="analytics-page">
+    <div className="analytics">
+      <h1>Analytics Dashboard</h1>
 
-      {/* ===== SALES TREND + FILTER ===== */}
-      <div className="analytics-card small">
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <h3>📈 Sales Trend</h3>
-
-          <div className="date-filter">
-            {["today", "week", "month"].map((f) => (
-              <button
-                key={f}
-                className={filter === f ? "active" : ""}
-                onClick={() => setFilter(f)}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="chart-sm">
-          <Line data={salesTrendData} options={lineOptions} />
+      <div className="section chart-container">
+        <h2>📈Sales Overview</h2>
+        <div className="chart-box large">
+          <Line data={salesData} options={commonOptions} />
         </div>
       </div>
 
-      {/* ===== MAIN GRID ===== */}
-      <div className="analytics-grid">
-
-        <div className="analytics-card">
-          <h3>📊 Orders vs Revenue</h3>
-          <div className="chart-md">
-            <Bar data={barData} options={barOptions} />
-          </div>
+      <div className="section chart-container">
+        <h2>Product Views</h2>
+        <div className="chart-box large">
+          <Bar data={viewsData} options={commonOptions} />
         </div>
+      </div>
 
-        <div className="analytics-card">
-          <h3>🟢 Order Status</h3>
-          <div className="chart-md donut">
-            <Doughnut data={statusData} options={donutOptions} />
-            <div className="donut-center">
-              <h2>{filteredOrders.length}</h2>
-              <p>Total Orders</p>
-            </div>
-          </div>
+      <div className="section chart-container">
+        <h2>Top Selling Products</h2>
+        <div className="chart-box large">
+          <Bar
+            data={topProductsData}
+            options={{ ...commonOptions, indexAxis: 'y' }}
+          />
         </div>
+      </div>
 
-        <div className="analytics-card stats">
-          <h3>📦 Summary</h3>
-          <div className="stat-box">
-            <p>Total Orders</p>
-            <h2>{filteredOrders.length}</h2>
-          </div>
-          <div className="stat-box">
-            <p>Total Revenue</p>
-            <h2>₹{totalRevenue}</h2>
-          </div>
+      <div className="section chart-container">
+        <h2>📦Orders vs ₹ Revenue</h2>
+        <div className="chart-box large">
+          <Bar data={ordersVsRevenueData} options={commonOptions} />
         </div>
+      </div>
 
-        <div className="analytics-card">
-          <h3>🏪 Seller-wise Revenue</h3>
-          <div className="chart-md">
-            <Bar data={sellerRevenueData} options={barOptions} />
-          </div>
+      <div className="section chart-container">
+        <h2>🟢Order Status</h2>
+        <div className="chart-box small">
+          <Doughnut data={orderStatusData} options={doughnutOptions} />
         </div>
+      </div>
 
-        <div className="analytics-card">
-          <h3>📦 Seller-wise Orders</h3>
-          <div className="chart-md">
-            <Bar data={sellerOrdersData} options={barOptions} />
-          </div>
+      <div className="section chart-container">
+        <h2>🏪Seller-wise Revenue</h2>
+        <div className="chart-box large">
+          <Bar data={sellerRevenueData} options={commonOptions} />
         </div>
+      </div>
 
+      <div className="section chart-container">
+        <h2>📦Seller-wise Orders</h2>
+        <div className="chart-box large">
+          <Bar data={sellerOrdersData} options={commonOptions} />
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default Analytics;

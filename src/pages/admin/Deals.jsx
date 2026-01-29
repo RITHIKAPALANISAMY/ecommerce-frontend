@@ -47,10 +47,10 @@ const Deals = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  /* ===== ADD ===== */
+  /* ===== ADD DEAL ===== */
   const handleAdd = () => {
     if (!newDeal.title || !newDeal.discount || !newDeal.expiry) {
-      alert("Fill all fields");
+      alert("Fill all required fields");
       return;
     }
 
@@ -67,9 +67,7 @@ const Deals = () => {
   /* ===== SAVE EDIT ===== */
   const handleSave = () => {
     setDeals(
-      deals.map((d) =>
-        d.id === editingDeal.id ? editingDeal : d
-      )
+      deals.map((d) => (d.id === editingDeal.id ? editingDeal : d))
     );
     setEditingDeal(null);
   };
@@ -78,7 +76,7 @@ const Deals = () => {
     <div className="deals-container">
       <h2>Deals & Offers</h2>
 
-      {/* ADD DEAL */}
+      {/* ===== ADD DEAL ===== */}
       <div className="add-deal">
         <input
           placeholder="Title"
@@ -91,20 +89,14 @@ const Deals = () => {
           placeholder="Description"
           value={newDeal.description}
           onChange={(e) =>
-            setNewDeal({
-              ...newDeal,
-              description: e.target.value,
-            })
+            setNewDeal({ ...newDeal, description: e.target.value })
           }
         />
         <input
           placeholder="Discount (30% / ₹500)"
           value={newDeal.discount}
           onChange={(e) =>
-            setNewDeal({
-              ...newDeal,
-              discount: e.target.value,
-            })
+            setNewDeal({ ...newDeal, discount: e.target.value })
           }
         />
         <input
@@ -117,7 +109,7 @@ const Deals = () => {
         <button onClick={handleAdd}>Add Deal</button>
       </div>
 
-      {/* DEAL CARDS */}
+      {/* ===== DEAL CARDS ===== */}
       <div className="deals-grid">
         {deals.map((deal) => {
           const expired = deal.expiry < today;
@@ -133,9 +125,7 @@ const Deals = () => {
                 </span>
 
                 <span
-                  className={`status ${
-                    expired ? "expired" : "active"
-                  }`}
+                  className={`status ${expired ? "expired" : "active"}`}
                 >
                   {expired ? "Expired" : "Active"}
                 </span>
@@ -160,7 +150,7 @@ const Deals = () => {
         })}
       </div>
 
-      {/* EDIT MODAL */}
+      {/* ===== EDIT MODAL ===== */}
       {editingDeal && (
         <div className="modal-overlay">
           <div className="modal">

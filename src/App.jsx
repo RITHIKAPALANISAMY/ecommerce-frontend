@@ -6,10 +6,16 @@ import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
+<<<<<<< HEAD
 import OrdersAdmin from "./pages/admin/AdminOrders";
 import Coupons from "./pages/admin/Coupons";
 import Settings from "./pages/admin/Settings";
 
+=======
+import OrdersAdmin from "./pages/admin/AdminOrders"; // ✅ FIXED
+import Coupons from "./pages/admin/Coupons";
+import Settings from "./pages/admin/Settings";
+>>>>>>> main
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
@@ -25,7 +31,7 @@ import ProductDetails from "./pages/buyer/ProductDetails";
 import CategoryPage from "./pages/buyer/CategoryPage";
 import SearchResults from "./pages/buyer/SearchResults";
 import Cart from "./pages/buyer/Cart";
-import Orders from "./pages/buyer/Orders";
+import BuyerOrders from "./pages/buyer/Orders";
 import Wishlist from "./pages/buyer/Wishlist";
 
 /* ================= CHECKOUT ================= */
@@ -58,10 +64,13 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="products" element={<Products />} />
-            <Route path="orders" element={<OrdersAdmin />} />
+            <Route path="orders" element={<OrdersAdmin />} /> {/* ✅ ADMIN ORDERS */}
             <Route path="coupons" element={<Coupons />} />
             <Route path="settings" element={<Settings />} />
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
           </Route>
         </Route>
       </Route>
@@ -81,7 +90,7 @@ export default function App() {
         <Route path="category/:category" element={<CategoryPage />} />
         <Route path="search" element={<SearchResults />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="orders" element={<Orders />} />
+        <Route path="orders" element={<BuyerOrders />} /> {/* ✅ BUYER ORDERS */}
         <Route path="wishlist" element={<Wishlist />} />
 
         <Route path="checkout" element={<Checkout />}>

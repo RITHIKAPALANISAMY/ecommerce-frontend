@@ -1,31 +1,34 @@
 .users-container {
   background: white;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  margin-top: 25px;
-}.users-page {
+  padding: 16px;              /* ⬅ was 24px */
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-top: 16px;           /* ⬅ was 25px */
+}
+
+.users-page {
   background: #fff;
-  padding: 24px;
-  border-radius: 14px;
+  padding: 16px;              /* ⬅ was 24px */
+  border-radius: 12px;
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: 24px;            /* ⬅ was 28px */
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 14px;        /* ⬅ was 20px */
 }
 
-/* TABLE */
+/* ===== TABLE ===== */
 .users-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 14px;
 }
 
 .users-table thead th {
   text-align: left;
-  padding: 14px 12px;
-  font-size: 16px;
+  padding: 10px 10px;         /* ⬅ reduced */
+  font-size: 15px;
   color: #444;
   border-bottom: 1px solid #eee;
 }
@@ -35,33 +38,33 @@
 }
 
 .users-table tbody td {
-  padding: 18px 12px;
+  padding: 12px 10px;         /* ⬅ was 18px */
   vertical-align: middle;
 }
 
-/* NAME + EMAIL */
+/* ===== NAME + EMAIL ===== */
 .user-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;                   /* ⬅ was 4px */
 }
 
 .user-name {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;            /* ⬅ was 16px */
   color: #000;
 }
 
 .user-email {
-  font-size: 14px;
+  font-size: 13px;            /* ⬅ was 14px */
   color: #777;
 }
 
-/* ROLE BADGE */
+/* ===== ROLE BADGE ===== */
 .role-badge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 14px;
+  padding: 4px 10px;          /* ⬅ reduced */
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -75,11 +78,11 @@
   color: #7b1fa2;
 }
 
-/* STATUS BADGE */
+/* ===== STATUS BADGE ===== */
 .status-badge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 14px;
+  padding: 4px 10px;          /* ⬅ reduced */
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -93,20 +96,20 @@
   color: #c62828;
 }
 
-/* ACTIONS */
+/* ===== ACTIONS ===== */
 .actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;                   /* ⬅ was 12px */
 }
 
 .view-btn {
   background: #8b0022;
   color: #fff;
   border: none;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 6px 14px;          /* ⬅ reduced */
+  border-radius: 8px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -114,9 +117,9 @@
   background: transparent;
   border: 1.5px solid #8b0022;
   color: #8b0022;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 6px 14px;          /* ⬅ reduced */
+  border-radius: 8px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -125,7 +128,7 @@
   color: #2e7d32;
 }
 
-/* MODAL */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -137,113 +140,18 @@
 
 .modal {
   background: #fff;
-  padding: 24px;
-  width: 400px;
-  border-radius: 14px;
+  padding: 18px;              
+  width: 360px;              
+  border-radius: 12px;
 }
 
 .close-btn {
-  margin-top: 20px;
+  margin-top: 14px;           
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   background: #8b0022;
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-}
-
-
-.users-container h2 {
-  margin-bottom: 20px;
-  color: #7b001c;
-}
-
-/* TABLE */
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.users-table th,
-.users-table td {
-  padding: 14px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.users-table th {
-  background: #fafafa;
-  color: #555;
-}
-
-/* ROLE */
-.role {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.role.buyer {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.role.seller {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-
-/* STATUS */
-.status {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status.blocked {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* BUTTONS */
-.btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  margin-right: 6px;
-}
-
-.btn.view {
-  background: #e5e7eb;
-}
-
-.btn.block {
-  background: #7b001c;
-  color: white;
-}
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.user-email {
-  font-size: 14px;
-  color: #777;
 }

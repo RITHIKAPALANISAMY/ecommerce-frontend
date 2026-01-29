@@ -11,12 +11,25 @@ export function OrderProvider({ children }) {
 
   const { restoreStockAfterCancel } = useSellerProducts();
 
+  /* ================= SYNC TO LOCAL STORAGE ================= */
   useEffect(() => {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
-  /* ================= PLACE ORDER ================= */
+  /* ================= REAL-TIME SYNC (ADMIN <-> BUYER) ================= */
+  useEffect(() => {
+    const syncOrders = () => {
+      const saved = localStorage.getItem("orders");
+      setOrders(saved ? JSON.parse(saved) : []);
+    };
+
+    window.addEventListener("storage", syncOrders);
+    return () => window.removeEventListener("storage", syncOrders);
+  }, []);
+
+  /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
+<<<<<<< HEAD
     const today = new Date().toISOString().split("T")[0];
 
     setOrders((prev) => [
@@ -42,6 +55,26 @@ export function OrderProvider({ children }) {
   ) => {
     setOrders((prev) =>
       prev.map((order) => {
+=======
+    const newOrder = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      status: "Placed",
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        status: "Placed",
+      })),
+    };
+
+    setOrders((prev) => [...prev, newOrder]);
+  };
+
+  /* ================= UPDATE ORDER STATUS (SELLER) ================= */
+  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+>>>>>>> main
         if (order.id !== orderId) return order;
 
         const updatedItems = order.items.map((item) =>
@@ -50,38 +83,64 @@ export function OrderProvider({ children }) {
             : item
         );
 
+        const allDelivered = updatedItems.every(
+          (item) => item.status === "Delivered"
+        );
+
         return {
           ...order,
+<<<<<<< HEAD
           status: newStatus,
           ...meta, // 🔥 attach shippedDate, deliveredDate, etc
           items: updatedItems,
+=======
+          items: updatedItems,
+          status:
+            newStatus === "Cancelled"
+              ? "Cancelled"
+              : allDelivered
+              ? "Delivered"
+              : "Processing",
+>>>>>>> main
         };
       })
     );
   };
 
-  /* ================= CANCEL ORDER ================= */
+  /* ================= CANCEL ORDER (SELLER) ================= */
   const cancelOrderBySeller = (orderId, sellerId) => {
+<<<<<<< HEAD
     const today = new Date().toISOString().split("T")[0];
 
     setOrders((prev) =>
       prev.map((order) => {
+=======
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+>>>>>>> main
         if (order.id !== orderId) return order;
 
         const cancelledItems = order.items.filter(
-          (i) => i.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
 
         restoreStockAfterCancel(cancelledItems);
 
         return {
           ...order,
+<<<<<<< HEAD
           status: "Cancelled",
           cancelledDate: today,
           items: order.items.map((i) =>
             i.sellerId === sellerId
               ? { ...i, status: "Cancelled" }
               : i
+=======
+          items: order.items.map((item) =>
+            item.sellerId === sellerId
+              ? { ...item, status: "Cancelled" }
+              : item
+>>>>>>> main
           ),
         };
       })
@@ -93,7 +152,7 @@ export function OrderProvider({ children }) {
     orders
       .map((order) => {
         const sellerItems = order.items.filter(
-          (i) => i.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
         if (!sellerItems.length) return null;
         return { ...order, items: sellerItems };
@@ -105,15 +164,23 @@ export function OrderProvider({ children }) {
       (sum, order) =>
         sum +
         order.items.reduce(
+<<<<<<< HEAD
           (s, i) =>
             i.status === "Cancelled"
               ? s
               : s + i.price * i.quantity,
+=======
+          (s, item) =>
+            item.status === "Cancelled"
+              ? s
+              : s + item.price * item.quantity,
+>>>>>>> main
           0
         ),
       0
     );
 
+<<<<<<< HEAD
   /* ================= BUYER HELPERS (NEW – SAFE) ================= */
   const getBuyerOrders = (buyerEmail) =>
     orders.filter((o) => o.buyerEmail === buyerEmail);
@@ -129,6 +196,27 @@ export function OrderProvider({ children }) {
       )
   );
 
+=======
+  /* ================= ADMIN HELPERS (REAL-TIME) ================= */
+  const totalOrders = orders.length;
+
+  const totalRevenue = orders.reduce(
+    (sum, order) =>
+      sum +
+      order.items.reduce(
+        (s, item) =>
+          item.status === "Cancelled"
+            ? s
+            : s + item.price * item.quantity,
+        0
+      ),
+    0
+  );
+
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+>>>>>>> main
 
   return (
     <OrderContext.Provider
@@ -137,12 +225,21 @@ export function OrderProvider({ children }) {
         placeOrder,
         updateSellerOrderStatus,
         cancelOrderBySeller,
+
+        // seller
         getSellerOrders,
         getSellerRevenue,
 
+<<<<<<< HEAD
         // 🔥 NEW (used next)
         getBuyerOrders,
         canReviewProduct,
+=======
+        // admin (🔥 REAL-TIME)
+        totalOrders,
+        totalRevenue,
+        recentOrders,
+>>>>>>> main
       }}
     >
       {children}

@@ -1,83 +1,142 @@
-import React from "react";
 import { useProducts } from "../../context/ProductContext";
 import "./Products.css";
 
-export default function ProductsApproval() {
-  const { products, approveProduct, rejectProduct } = useProducts();
+export default function Products() {
+  const {
+    products,
+    approveProduct,
+    rejectProduct,
+    flagProduct,
+    unflagProduct,
+  } = useProducts();
 
-  const handleAction = (id, action) => {
-    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
-    action === "Approve" ? approveProduct(id) : rejectProduct(id);
+  /* 🔹 READ ADMIN CATEGORIES */
+  const categories =
+    JSON.parse(localStorage.getItem("admin_categories")) || [];
+
+  /* 🔹 HELPER: GET CATEGORY NAME */
+  const getCategoryName = (cat) => {
+    if (typeof cat === "string") return cat;
+
+    if (typeof cat === "number") {
+      return (
+        categories.find((c) => c.id === cat)?.name || "Unknown"
+      );
+    }
+
+    return "Unknown";
   };
 
   return (
-    <div className="products-approval">
-      <h2>Products Approval</h2>
+    <div className="admin-products">
+      <h2 className="section-title">Products Management</h2>
 
-      <table className="orders-table">
+      <table className="products-table">
         <thead>
           <tr>
-            <th>Image</th>
             <th>Product</th>
             <th>Seller</th>
             <th>Category</th>
             <th>Price</th>
+            <th>Stock</th>
             <th>Status</th>
-            <th style={{ textAlign: "center" }}>Action</th>
+            <th>Risk</th>
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {products.map((p) => (
-            <tr key={p.id}>
-              {/* IMAGE */}
-              <td>
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="product-image"
-                />
-              </td>
+          {products.map((p) => {
+            const lowStock = p.stock !== undefined && p.stock < 5;
 
-              {/* NAME */}
-              <td className="product-name">{p.name}</td>
-
-              <td>{p.seller || "Seller"}</td>
-              <td>{p.category}</td>
-              <td>₹{p.price}</td>
-
-              {/* STATUS */}
-              <td>
-                <span className={`status ${p.status.toLowerCase()}`}>
-                  {p.status}
-                </span>
-              </td>
-
-              {/* ACTION */}
-              <td style={{ textAlign: "center" }}>
-                {p.status === "Pending" ? (
-                  <div className="action-group">
-                    <button
-                      className="btn approve"
-                      onClick={() => handleAction(p.id, "Approve")}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn reject"
-                      onClick={() => handleAction(p.id, "Reject")}
-                    >
-                      Reject
-                    </button>
+            return (
+              <tr key={p.id}>
+                {/* PRODUCT */}
+                <td>
+                  <div className="product-cell">
+                    <img
+                      src={p.image || "https://via.placeholder.com/60"}
+                      alt={p.name}
+                      className="product-img"
+                    />
+                    <span className="product-name">{p.name}</span>
                   </div>
-                ) : (
-                  <button className="btn disabled" disabled>
+                </td>
+
+                <td>{p.seller || "Seller"}</td>
+
+                {/* ✅ CATEGORY (NOW CONNECTED) */}
+                <td>{getCategoryName(p.category)}</td>
+
+                <td>₹{p.price}</td>
+
+                {/* STOCK */}
+                <td>
+                  {p.stock ?? "—"}
+                  {lowStock && (
+                    <span className="low-stock"> Low</span>
+                  )}
+                </td>
+
+                {/* STATUS */}
+                <td>
+                  <span className={`status ${p.status.toLowerCase()}`}>
                     {p.status}
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
+                  </span>
+                </td>
+
+                {/* RISK */}
+                <td>
+                  {p.flagged ? (
+                    <span className="risk-badge">🚩 Flagged</span>
+                  ) : (
+                    <span className="safe-badge">Safe</span>
+                  )}
+                </td>
+
+                {/* ACTION */}
+                <td>
+                  {p.status === "Pending" && (
+                    <div className="action-buttons">
+                      <button
+                        className="approve-btn"
+                        onClick={() => approveProduct(p.id)}
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        className="reject-btn"
+                        onClick={() => rejectProduct(p.id)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+
+                  {p.status !== "Pending" && (
+                    <>
+                      {p.flagged ? (
+                        <button
+                          className="unflag-btn"
+                          onClick={() => unflagProduct(p.id)}
+                        >
+                          Unflag
+                        </button>
+                      ) : (
+                        <button
+                          className="flag-btn"
+                          onClick={() => flagProduct(p.id)}
+                        >
+                          Flag
+                        </button>
+                      )}
+                    </>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

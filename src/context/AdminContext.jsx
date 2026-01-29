@@ -62,4 +62,8 @@ export const AdminProvider = ({ children }) => {
   );
 };
 
+<<<<<<< HEAD
 export const useAdmin = () => useContext(AdminContext);
+=======
+export const useAdmin = () => useContext(AdminContext);
+>>>>>>> main

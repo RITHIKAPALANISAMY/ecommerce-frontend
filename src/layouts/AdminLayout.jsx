@@ -12,4 +12,8 @@ const AdminLayout = () => {
   );
 };
 
+<<<<<<< HEAD
 export default AdminLayout;
+=======
+export default AdminLayout;
+>>>>>>> main
