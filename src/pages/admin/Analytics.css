@@ -1,156 +1,67 @@
-/* ===== PAGE ===== */
-.analytics-page {
-  display: flex;
-  flex-direction: column;
-  gap: 28px; /* ⬅ more breathing space */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 0;
 }
 
-/* ===== COMMON CARD ===== */
-.analytics-card {
-  background: #fff;
-  padding: 24px;              /* ⬅ was 20 */
-  border-radius: 18px;        /* ⬅ smoother */
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+.analytics {
+  padding: 30px;
+  max-width: 1200px;
+  margin: auto;
 }
 
-/* ===== SALES TREND (BIG) ===== */
-.analytics-card.small {
-  height: 380px;              /* 🔥 BIG CHART */
+.analytics h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: #1f2937;
 }
 
-.chart-sm {
-  height: 300px;              /* 🔥 chart area bigger */
+.section {
+  margin-bottom: 40px;
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #374151;
+}
+
+.chart-container {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.chart-box {
   position: relative;
+  width: 100%;
 }
 
-/* ===== GRID (BOTTOM SECTION) ===== */
-.analytics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 🔥 4 cards neat */
-  gap: 24px;
+.chart-box.large {
+  height: 320px;
 }
 
-/* ===== ALL GRID CARDS SAME HEIGHT ===== */
-.analytics-grid .analytics-card {
-  height: 360px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.chart-box.small {
+  height: 260px;
+  max-width: 320px;
+  margin: auto;
 }
 
-/* ===== CHART SIZES ===== */
-.chart-md {
-  height: 260px;              /* 🔥 was 240 */
-  position: relative;
-}
+/* Responsive */
+@media (max-width: 768px) {
+  .analytics {
+    padding: 15px;
+  }
 
-.chart-md.donut {
-  height: 250px;              /* 🔥 donut bigger */
-}
+  .chart-box.large {
+    height: 260px;
+  }
 
-/* ===== DONUT CENTER ===== */
-.donut-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none;
-}
-
-.donut-center h2 {
-  margin: 0;
-  font-size: 30px;            /* ⬅ more focus */
-  font-weight: 700;
-}
-
-.donut-center p {
-  margin: 0;
-  font-size: 14px;
-  color: #666;
-}
-
-/* ===== STATS / SUMMARY ===== */
-.stats {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 16px;
-  height: 100%;
-}
-
-.stats .stat-box {
-  background: #f7f7f7;
-  padding: 18px;              /* ⬅ was 14 */
-  border-radius: 14px;
-  text-align: center;
-}
-
-.stats .stat-box h3 {
-  margin: 0;
-  font-size: 26px;
-}
-
-.stats .stat-box p {
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: #666;
-}
-
-/* ===== HEADINGS ===== */
-.analytics-card h3,
-.analytics-card h4 {
-  margin-bottom: 12px;
-  font-weight: 700;
-}
-
-/* ===== CANVAS FIX ===== */
-canvas {
-  max-width: 100% !important;
-}
-.date-filter {
-  display: flex;
-  gap: 8px;
-}
-
-.date-filter button {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.date-filter button.active {
-  background: #7b001c;
-  color: #fff;
-  border-color: #7b001c;
-}
-/* ===== SALES TREND HEADER ALIGNMENT ===== */
-.sales-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;     /* 🔥 space between header & chart */
-}
-
-/* LEFT SIDE TITLE */
-.sales-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;               /* 🔥 icon & text gap */
-}
-
-.sales-title h3 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-/* PUSH FILTERS A BIT RIGHT */
-.date-filter {
-  margin-left: auto;       /* 🔥 key fix */
-  gap: 12px;               /* override previous 8px */
+  .chart-box.small {
+    height: 220px;
+  }
 }

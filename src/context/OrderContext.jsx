@@ -11,9 +11,21 @@ export function OrderProvider({ children }) {
 
   const { restoreStockAfterCancel } = useSellerProducts();
 
+  /* ================= SYNC TO LOCAL STORAGE ================= */
   useEffect(() => {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
+
+  /* ================= REAL-TIME SYNC (ADMIN <-> BUYER) ================= */
+  useEffect(() => {
+    const syncOrders = () => {
+      const saved = localStorage.getItem("orders");
+      setOrders(saved ? JSON.parse(saved) : []);
+    };
+
+    window.addEventListener("storage", syncOrders);
+    return () => window.removeEventListener("storage", syncOrders);
+  }, []);
 
   /* ================= PLACE ORDER (BUYER) ================= */
   const placeOrder = (order) => {
@@ -112,7 +124,7 @@ export function OrderProvider({ children }) {
       0
     );
 
-  /* ================= ADMIN HELPERS ================= */
+  /* ================= ADMIN HELPERS (REAL-TIME) ================= */
   const totalOrders = orders.length;
 
   const totalRevenue = orders.reduce(
@@ -144,7 +156,7 @@ export function OrderProvider({ children }) {
         getSellerOrders,
         getSellerRevenue,
 
-        // admin
+        // admin (🔥 REAL-TIME)
         totalOrders,
         totalRevenue,
         recentOrders,

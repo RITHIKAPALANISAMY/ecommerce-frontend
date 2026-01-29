@@ -6,20 +6,9 @@ import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-import OrdersAdmin from "./pages/admin/Orders";
+import OrdersAdmin from "./pages/admin/AdminOrders"; // ✅ FIXED
 import Coupons from "./pages/admin/Coupons";
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 import Settings from "./pages/admin/Settings";
-
->>>>>>> admin-safe
-=======
-import Settings from "./pages/admin/Settings";
-
-=======
->>>>>>> e757dc5c533cac1d1387b70360969ab3333de4bb
->>>>>>> admin-safe
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
@@ -35,7 +24,7 @@ import ProductDetails from "./pages/buyer/ProductDetails";
 import CategoryPage from "./pages/buyer/CategoryPage";
 import SearchResults from "./pages/buyer/SearchResults";
 import Cart from "./pages/buyer/Cart";
-import Orders from "./pages/buyer/Orders";
+import BuyerOrders from "./pages/buyer/Orders";
 import Wishlist from "./pages/buyer/Wishlist";
 
 /* ================= CHECKOUT ================= */
@@ -64,15 +53,14 @@ export default function App() {
       <Route element={<AdminGuard />}>
         <Route element={<AdminRoutes />}>
           <Route path="/admin">
-  <Route index element={<Navigate to="dashboard" />} />
-  <Route path="dashboard" element={<AdminDashboard />} />
-  <Route path="users" element={<Users />} />
-  <Route path="products" element={<Products />} />
-  <Route path="orders" element={<OrdersAdmin />} />
-  <Route path="coupons" element={<Coupons />} />
-  <Route path="settings" element={<Settings />} />   
-</Route>
-
+            <Route index element={<Navigate to="dashboard" />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<Users />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<OrdersAdmin />} /> {/* ✅ ADMIN ORDERS */}
+            <Route path="coupons" element={<Coupons />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
         </Route>
       </Route>
 
@@ -91,7 +79,7 @@ export default function App() {
         <Route path="category/:category" element={<CategoryPage />} />
         <Route path="search" element={<SearchResults />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="orders" element={<Orders />} />
+        <Route path="orders" element={<BuyerOrders />} /> {/* ✅ BUYER ORDERS */}
         <Route path="wishlist" element={<Wishlist />} />
 
         <Route path="checkout" element={<Checkout />}>
