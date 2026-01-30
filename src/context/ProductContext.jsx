@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import baseProducts from "../data/products";
-
 const ProductContext = createContext();
-
 export function ProductProvider({ children }) {
-  /* ================= SELLER PRODUCTS ================= */
+  
   const [sellerProducts, setSellerProducts] = useState(() => {
     const saved = localStorage.getItem("products");
     return saved ? JSON.parse(saved) : [];
   });
+  useEffect(() => {
+    localStorage.setItem("products", JSON.stringify(sellerProducts));
+  }, [sellerProducts]);
 
-  /* ================= REVIEWS ================= */
   const [reviewsMap, setReviewsMap] = useState(() => {
     const saved = localStorage.getItem("productReviews");
     return saved ? JSON.parse(saved) : {};
@@ -20,7 +20,6 @@ export function ProductProvider({ children }) {
     localStorage.setItem("productReviews", JSON.stringify(reviewsMap));
   }, [reviewsMap]);
 
-  /* ================= APPROVAL (ADMIN) ================= */
   const [approvalMap, setApprovalMap] = useState(() => {
     const saved = localStorage.getItem("productApproval");
     return saved ? JSON.parse(saved) : {};
@@ -30,7 +29,6 @@ export function ProductProvider({ children }) {
     localStorage.setItem("productApproval", JSON.stringify(approvalMap));
   }, [approvalMap]);
 
-  /* ================= FLAGGED PRODUCTS (ADMIN) ================= */
   const [flagMap, setFlagMap] = useState(() => {
     const saved = localStorage.getItem("productFlags");
     return saved ? JSON.parse(saved) : {};
@@ -40,7 +38,6 @@ export function ProductProvider({ children }) {
     localStorage.setItem("productFlags", JSON.stringify(flagMap));
   }, [flagMap]);
 
-  /* ================= STOCK (INVENTORY) ================= */
   const [stockMap, setStockMap] = useState(() => {
     const saved = localStorage.getItem("productStock");
     return saved ? JSON.parse(saved) : {};
@@ -50,7 +47,6 @@ export function ProductProvider({ children }) {
     localStorage.setItem("productStock", JSON.stringify(stockMap));
   }, [stockMap]);
 
-  /* ================= MERGED PRODUCTS ================= */
   const products = [...baseProducts, ...sellerProducts].map((p) => ({
     ...p,
     name: p.name || p.title || "Unnamed Product",
@@ -63,7 +59,7 @@ export function ProductProvider({ children }) {
     status: approvalMap[p.id] || p.status || "Pending",
     reviews: reviewsMap[p.id] || [],
     flagged: flagMap[p.id] || false,
-    stock: stockMap[p.id] ?? p.stock ?? 10, // default stock
+    stock: stockMap[p.id] ?? p.stock ?? 10,
   }));
 
   /* ================= ADMIN ACTIONS ================= */
@@ -122,7 +118,30 @@ export function ProductProvider({ children }) {
     }));
   };
 
-  /* ================= SYNC SELLER PRODUCTS ================= */
+  /* ================= STOCK HELPERS (USED BY SELLER & ORDERS) ================= */
+  const reduceStock = (items) => {
+    setStockMap((prev) => {
+      const updated = { ...prev };
+      items.forEach((item) => {
+        updated[item.productId] =
+          (updated[item.productId] ?? item.stock ?? 10) - item.quantity;
+      });
+      return updated;
+    });
+  };
+
+  const restoreStockAfterCancel = (items) => {
+    setStockMap((prev) => {
+      const updated = { ...prev };
+      items.forEach((item) => {
+        updated[item.productId] =
+          (updated[item.productId] ?? 0) + item.quantity;
+      });
+      return updated;
+    });
+  };
+
+  /* ================= REAL-TIME SYNC (MULTI-TAB) ================= */
   useEffect(() => {
     const syncProducts = () => {
       const saved = localStorage.getItem("products");
@@ -148,6 +167,13 @@ export function ProductProvider({ children }) {
         addReview,
         editReview,
         deleteReview,
+
+        /* STOCK */
+        reduceStock,
+        restoreStockAfterCancel,
+
+        /* SELLER */
+        setSellerProducts,
       }}
     >
       {children}

@@ -9,7 +9,8 @@ export default function Orders() {
   const { products } = useProducts();
   const { getBuyerOrders } = useOrders();
 
-  const orders = getBuyerOrders(user.email);
+  // ✅ FIX: use buyerId instead of email
+  const orders = user ? getBuyerOrders(user.id) : [];
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -168,7 +169,6 @@ export default function Orders() {
                         Status: {order.status}
                       </p>
 
-                      {/* REVIEW BUTTON */}
                       {order.status === "Delivered" && (
                         hasReviewed(item.productId) ? (
                           <span className="reviewed-badge">

@@ -24,7 +24,6 @@ export default function SellerDashboard() {
   const { getSellerOrders, getSellerRevenue } = useOrders();
 
   const [tab, setTab] = useState("overview");
-
   const sellerId = user?.email;
   const seller = user?.sellerInfo;
 
@@ -109,10 +108,9 @@ export default function SellerDashboard() {
         </button>
       </div>
 
-      {/* ================= CONTENT ================= */}
+      {/* ================= OVERVIEW ================= */}
       {tab === "overview" && (
         <>
-          {/* ================= METRICS GRID ================= */}
           <div className="seller-metrics-grid">
 
             <div className="seller-metric-card seller-products">
@@ -161,52 +159,15 @@ export default function SellerDashboard() {
               </ResponsiveContainer>
             </div>
 
-<<<<<<< HEAD
-            <div className="seller-metric-card seller-pending">
-              <div className="seller-metric-icon">⏳</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Pending Orders</span>
-                <span className="seller-metric-value">
-                  {pendingOrdersCount}
-                </span>
-              </div>
-            </div>
-
-            <div className="seller-metric-card seller-lowstock">
-              <div className="seller-metric-icon">⚠️</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Low Stock</span>
-                <span className="seller-metric-value">
-                  {lowStockCount}
-                </span>
-              </div>
-            </div>
-
-            <div className="seller-metric-card seller-outstock">
-              <div className="seller-metric-icon">❌</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Out of Stock</span>
-                <span className="seller-metric-value">
-                  {outOfStockCount}
-                </span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* ================= REVENUE SECTION ================= */}
-          <div className="overview-section">
-            <SellerRevenueReport />
           </div>
         </>
       )}
 
+      {/* ================= PRODUCTS ================= */}
       {tab === "products" && <SellerProducts />}
+
+      {/* ================= ORDERS ================= */}
       {tab === "orders" && <SellerOrders />}
-=======
-        {/* ================= ORDERS ================= */}
-        {tab === "orders" && <SellerOrders />}
->>>>>>> main
 
     </div>
   );

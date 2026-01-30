@@ -6,16 +6,9 @@ import AdminGuard from "./routes/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-<<<<<<< HEAD
-import OrdersAdmin from "./pages/admin/AdminOrders";
-import Coupons from "./pages/admin/Coupons";
-import Settings from "./pages/admin/Settings";
-
-=======
 import OrdersAdmin from "./pages/admin/AdminOrders"; // ✅ FIXED
 import Coupons from "./pages/admin/Coupons";
 import Settings from "./pages/admin/Settings";
->>>>>>> main
 
 /* ================= SELLER ================= */
 import SellerRoutes from "./routes/SellerRoutes";
@@ -47,7 +40,7 @@ import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
-/* ================= COMMON ================= */
+
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./components/common/ProfilePage";
@@ -67,10 +60,6 @@ export default function App() {
             <Route path="orders" element={<OrdersAdmin />} /> {/* ✅ ADMIN ORDERS */}
             <Route path="coupons" element={<Coupons />} />
             <Route path="settings" element={<Settings />} />
-<<<<<<< HEAD
-
-=======
->>>>>>> main
           </Route>
         </Route>
       </Route>

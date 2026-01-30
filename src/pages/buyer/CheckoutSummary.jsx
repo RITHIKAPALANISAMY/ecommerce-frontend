@@ -2,9 +2,13 @@ import "../../styles/checkoutSummary.css";
 import CheckoutSteps from "./CheckoutSteps";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
+import { useOrders } from "../../context/OrderContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CheckoutSummary() {
   const { cartItems } = useCart();
+  const { placeOrder } = useOrders();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const address = JSON.parse(
@@ -19,6 +23,26 @@ export default function CheckoutSummary() {
   const delivery = 99;
   const gst = Math.round(subtotal * 0.18);
   const total = subtotal + delivery + gst;
+
+  /* ================= PLACE ORDER ================= */
+  const handlePlaceOrder = () => {
+    if (!user || cartItems.length === 0) return;
+
+    placeOrder({
+      buyerId: user.id,
+      buyerName: user.name || "Buyer",
+      items: cartItems,
+      address,
+      amount: total,
+      status: "PLACED",
+    });
+
+    // block cart reuse
+    localStorage.setItem("orderPlaced", "true");
+
+    navigate("/order-success", { replace: true });
+  };
+  /* ================================================= */
 
   return (
     <div className="checkout-page">
@@ -58,18 +82,21 @@ export default function CheckoutSummary() {
           )}
 
           {/* ACTION BUTTONS */}
-        <div className="summary-actions">
-  <button className="back-btn" onClick={() => navigate(-1)}>
-    Back
-  </button>
+          <div className="summary-actions">
+            <button
+              className="back-btn"
+              onClick={() => navigate(-1)}
+            >
+              Back
+            </button>
 
-  <button
-    className="pay-btn"
-    onClick={() => navigate("/checkout/payment")}
-  >
-    Continue to Payment →
-  </button>
-</div>
+            <button
+              className="pay-btn"
+              onClick={handlePlaceOrder}
+            >
+              Place Order →
+            </button>
+          </div>
         </div>
 
         {/* RIGHT */}
@@ -77,7 +104,7 @@ export default function CheckoutSummary() {
           <h3>Price Details</h3>
 
           <div className="price-row">
-            <span>Subtotal (1 item)</span>
+            <span>Subtotal ({cartItems.length} item)</span>
             <span>₹{subtotal}</span>
           </div>
 

@@ -43,21 +43,25 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
   const { logout } = useAuth();
+
   const { orders = [] } = useOrders();
   const { products = [] } = useProducts();
   const users = JSON.parse(localStorage.getItem("admin_users")) || [];
 
+  /* ================= KPI DATA ================= */
   const totalOrders = orders.length;
 
   const totalRevenue = useMemo(() => {
-    return orders.reduce((sum, o) => {
-      const amount = o.totalAmount || o.amount || o.total || 0;
-      return sum + Number(amount);
-    }, 0);
+    return orders.reduce((sum, o) => sum + (o.amount || 0), 0);
   }, [orders]);
 
   const recentOrders = useMemo(() => {
-    return [...orders].slice(-5).reverse();
+    return [...orders]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+      )
+      .slice(0, 5);
   }, [orders]);
 
   const handleLogout = () => {
@@ -65,38 +69,58 @@ const AdminDashboard = () => {
     navigate("/", { replace: true });
   };
 
+  /* ================= ORDER STATUS COUNTS ================= */
   const orderStatusCounts = useMemo(() => {
-    const counts = { Completed: 0, Pending: 0, Cancelled: 0 };
+    const counts = {
+      PLACED: 0,
+      Approved: 0,
+      Cancelled: 0,
+      Delivered: 0,
+    };
+
     orders.forEach((o) => {
-      const status = o.status?.toLowerCase() || "pending";
-      if (status === "completed") counts.Completed++;
-      else if (status === "cancelled") counts.Cancelled++;
-      else counts.Pending++;
+      counts[o.status] = (counts[o.status] || 0) + 1;
     });
+
     return counts;
   }, [orders]);
 
+  /* ================= MONTHLY SALES ================= */
+  const monthlySales = useMemo(() => {
+    const map = {};
+    orders.forEach((o) => {
+      const key = new Date(o.createdAt).toLocaleString(
+        "default",
+        { month: "short", year: "numeric" }
+      );
+
+      map[key] = (map[key] || 0) + (o.amount || 0);
+    });
+    return map;
+  }, [orders]);
+
+  /* ================= CHART DATA ================= */
   const donutData = {
-    labels: ["Completed", "Pending", "Cancelled"],
+    labels: Object.keys(orderStatusCounts),
     datasets: [
       {
-        data: [
-          orderStatusCounts.Completed,
-          orderStatusCounts.Pending,
-          orderStatusCounts.Cancelled,
+        data: Object.values(orderStatusCounts),
+        backgroundColor: [
+          "#ff9800",
+          "#4caf50",
+          "#f44336",
+          "#2196f3",
         ],
-        backgroundColor: ["#4caf50", "#ff9800", "#f44336"],
-        borderWidth: 1,
       },
     ],
   };
 
   const lineData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+    labels: Object.keys(monthlySales),
     datasets: [
       {
         label: "Sales",
-        data: [2000, 3000, 2800, 4000, 5800],
+        data: Object.values(monthlySales),
         borderColor: "#931012",
         backgroundColor: "rgba(147,16,18,0.1)",
         fill: true,
@@ -107,9 +131,7 @@ const AdminDashboard = () => {
 
   const chartOptions = {
     maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "bottom" },
-    },
+    plugins: { legend: { position: "bottom" } },
   };
 
   return (
@@ -120,19 +142,6 @@ const AdminDashboard = () => {
           <h1>Admin Dashboard</h1>
           <p>Complete platform control and management</p>
         </div>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            background: "#e53935",
-            color: "#fff",
-            border: "none",
-            padding: "8px 16px",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: "600",
-          }}
-        >
         <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
@@ -160,7 +169,8 @@ const AdminDashboard = () => {
           >
             {tab === "deals"
               ? "Deals & Offers"
-              : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              : tab.charAt(0).toUpperCase() +
+                tab.slice(1)}
           </span>
         ))}
       </div>
@@ -168,7 +178,7 @@ const AdminDashboard = () => {
       {/* ================= OVERVIEW ================= */}
       {activeTab === "overview" && (
         <>
-          {/* ===== KPI STATS ===== */}
+          {/* KPI */}
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-icon users">👥</div>
@@ -177,6 +187,7 @@ const AdminDashboard = () => {
                 <p>Total Users</p>
               </div>
             </div>
+
             <div className="stat-card">
               <div className="stat-icon products">📊</div>
               <div>
@@ -184,6 +195,7 @@ const AdminDashboard = () => {
                 <p>Total Products</p>
               </div>
             </div>
+
             <div className="stat-card">
               <div className="stat-icon orders">📦</div>
               <div>
@@ -191,89 +203,116 @@ const AdminDashboard = () => {
                 <p>Total Orders</p>
               </div>
             </div>
+
             <div className="stat-card">
               <div className="stat-icon revenue">📈</div>
               <div>
-                <h2>₹{totalRevenue}</h2>
+                <h2>₹{totalRevenue.toLocaleString()}</h2>
                 <p>Total Revenue</p>
               </div>
             </div>
           </div>
 
-          {/* ===== ACTION BUTTONS ===== */}
+          {/* ACTIONS */}
           <div className="admin-actions">
-            <button onClick={() => setActiveTab("payments")}>📄 Process Payment</button>
-            <button onClick={() => setActiveTab("returns")}>🅿️ Manage Returns</button>
-            <button onClick={() => setActiveTab("refunds")}>💰 Issue Refund</button>
+            <button onClick={() => setActiveTab("payments")}>
+              📄 Process Payment
+            </button>
+            <button onClick={() => setActiveTab("returns")}>
+              🅿️ Manage Returns
+            </button>
+            <button onClick={() => setActiveTab("refunds")}>
+              💰 Issue Refund
+            </button>
           </div>
 
-          {/* ===== CHARTS SIDE-BY-SIDE ===== */}
+          {/* CHARTS */}
           <div className="overview-charts-row">
             <div className="chart-box">
               <h3>Orders Breakdown</h3>
-              <div style={{ width: "220px", height: "220px", margin: "0 auto" }}>
-                <Doughnut data={donutData} options={chartOptions} />
+              <div
+                style={{
+                  width: "220px",
+                  height: "220px",
+                  margin: "0 auto",
+                }}
+              >
+                <Doughnut
+                  data={donutData}
+                  options={chartOptions}
+                />
               </div>
             </div>
+
             <div className="chart-box">
               <h3>Sales Trend</h3>
-              <div style={{ width: "100%", height: "250px" }}>
-                <Line data={lineData} options={chartOptions} />
+              <div
+                style={{ width: "100%", height: "250px" }}
+              >
+                <Line
+                  data={lineData}
+                  options={chartOptions}
+                />
               </div>
             </div>
           </div>
 
+          {/* RECENT ORDERS */}
           {/* ===== RECENT ORDERS ===== */}
-          <div className="recent-orders">
-            <div className="recent-orders-header">
-              <h3>Recent Orders</h3>
-              <button className="view-all" onClick={() => navigate("/admin/orders")}>
-                View All
-              </button>
-            </div>
-            <div className="recent-orders-table-wrapper">
-              <table className="recent-orders-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>User</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" style={{ textAlign: "center" }}>
-                        No recent orders
-                      </td>
-                    </tr>
-                  ) : (
-                    recentOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="clickable-row"
-                        onClick={() => navigate("/admin/orders")}
-                      >
-                        <td>{order.id}</td>
-                        <td>{order.user?.name || "Customer"}</td>
-                        <td>₹{order.totalAmount || order.amount || 0}</td>
-                        <td>
-                          <span className={`status ${order.status?.toLowerCase()}`}>
-                            {order.status || "Pending"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+<div className="recent-orders">
+  <div className="recent-orders-header">
+    <h3>Recent Orders</h3>
+    <button
+      className="view-all"
+      onClick={() => setActiveTab("orders")}
+    >
+      View All
+    </button>
+  </div>
+
+  <table className="recent-orders-table">
+    <thead>
+      <tr>
+        <th style={{ width: "30%" }}>Order ID</th>
+        <th style={{ width: "25%" }}>User</th>
+        <th style={{ width: "20%" }}>Amount</th>
+        <th style={{ width: "25%" }}>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {recentOrders.length === 0 ? (
+        <tr>
+          <td colSpan="4" className="empty-cell">
+            No recent orders
+          </td>
+        </tr>
+      ) : (
+        recentOrders.map((o) => (
+          <tr
+            key={o.id}
+            className="recent-row"
+            onClick={() => setActiveTab("orders")}
+          >
+            <td className="mono">#{o.id}</td>
+            <td>{o.buyerName}</td>
+            <td>₹{o.amount}</td>
+            <td>
+              <span className={`status ${o.status.toLowerCase()}`}>
+                {o.status}
+              </span>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
+
         </>
       )}
 
-      {/* ================= OTHER PAGES ================= */}
+      {/* ================= OTHER TABS ================= */}
       {activeTab === "users" && <Users />}
       {activeTab === "products" && <Products />}
       {activeTab === "orders" && <AdminOrders />}
