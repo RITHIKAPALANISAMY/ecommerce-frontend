@@ -57,10 +57,7 @@ const AdminDashboard = () => {
 
   const recentOrders = useMemo(() => {
     return [...orders]
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt) - new Date(a.createdAt)
-      )
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
   }, [orders]);
 
@@ -89,11 +86,10 @@ const AdminDashboard = () => {
   const monthlySales = useMemo(() => {
     const map = {};
     orders.forEach((o) => {
-      const key = new Date(o.createdAt).toLocaleString(
-        "default",
-        { month: "short", year: "numeric" }
-      );
-
+      const key = new Date(o.createdAt).toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      });
       map[key] = (map[key] || 0) + (o.amount || 0);
     });
     return map;
@@ -105,12 +101,7 @@ const AdminDashboard = () => {
     datasets: [
       {
         data: Object.values(orderStatusCounts),
-        backgroundColor: [
-          "#ff9800",
-          "#4caf50",
-          "#f44336",
-          "#2196f3",
-        ],
+        backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"],
       },
     ],
   };
@@ -135,7 +126,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <>
+    <div className="admin-container">
       {/* ================= HEADER ================= */}
       <div className="admin-header">
         <div>
@@ -169,8 +160,7 @@ const AdminDashboard = () => {
           >
             {tab === "deals"
               ? "Deals & Offers"
-              : tab.charAt(0).toUpperCase() +
-                tab.slice(1)}
+              : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </span>
         ))}
       </div>
@@ -230,85 +220,70 @@ const AdminDashboard = () => {
           <div className="overview-charts-row">
             <div className="chart-box">
               <h3>Orders Breakdown</h3>
-              <div
-                style={{
-                  width: "220px",
-                  height: "220px",
-                  margin: "0 auto",
-                }}
-              >
-                <Doughnut
-                  data={donutData}
-                  options={chartOptions}
-                />
+              <div style={{ width: 220, height: 220, margin: "0 auto" }}>
+                <Doughnut data={donutData} options={chartOptions} />
               </div>
             </div>
 
             <div className="chart-box">
               <h3>Sales Trend</h3>
-              <div
-                style={{ width: "100%", height: "250px" }}
-              >
-                <Line
-                  data={lineData}
-                  options={chartOptions}
-                />
+              <div style={{ width: "100%", height: 250 }}>
+                <Line data={lineData} options={chartOptions} />
               </div>
             </div>
           </div>
 
           {/* RECENT ORDERS */}
-          {/* ===== RECENT ORDERS ===== */}
-<div className="recent-orders">
-  <div className="recent-orders-header">
-    <h3>Recent Orders</h3>
-    <button
-      className="view-all"
-      onClick={() => setActiveTab("orders")}
-    >
-      View All
-    </button>
-  </div>
+          <div className="recent-orders">
+            <div className="recent-orders-header">
+              <h3>Recent Orders</h3>
+              <button
+                className="view-all"
+                onClick={() => setActiveTab("orders")}
+              >
+                View All
+              </button>
+            </div>
 
-  <table className="recent-orders-table">
-    <thead>
-      <tr>
-        <th style={{ width: "30%" }}>Order ID</th>
-        <th style={{ width: "25%" }}>User</th>
-        <th style={{ width: "20%" }}>Amount</th>
-        <th style={{ width: "25%" }}>Status</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {recentOrders.length === 0 ? (
-        <tr>
-          <td colSpan="4" className="empty-cell">
-            No recent orders
-          </td>
-        </tr>
-      ) : (
-        recentOrders.map((o) => (
-          <tr
-            key={o.id}
-            className="recent-row"
-            onClick={() => setActiveTab("orders")}
-          >
-            <td className="mono">#{o.id}</td>
-            <td>{o.buyerName}</td>
-            <td>₹{o.amount}</td>
-            <td>
-              <span className={`status ${o.status.toLowerCase()}`}>
-                {o.status}
-              </span>
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div>
-
+            <table className="recent-orders-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "30%" }}>Order ID</th>
+                  <th style={{ width: "25%" }}>User</th>
+                  <th style={{ width: "20%" }}>Amount</th>
+                  <th style={{ width: "25%" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="empty-cell">
+                      No recent orders
+                    </td>
+                  </tr>
+                ) : (
+                  recentOrders.map((o) => (
+                    <tr
+                      key={o.id}
+                      className="recent-row"
+                      onClick={() => setActiveTab("orders")}
+                    >
+                      <td className="mono">#{o.id}</td>
+                      <td>{o.buyerName}</td>
+                      <td>₹{o.amount}</td>
+                      <td>
+                        <span
+                          className={`status ${o.status.toLowerCase()}`}
+                        >
+                          {o.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 
@@ -323,7 +298,7 @@ const AdminDashboard = () => {
       {activeTab === "returns" && <Returns />}
       {activeTab === "refunds" && <Refunds />}
       {activeTab === "settings" && <Settings />}
-    </>
+    </div>
   );
 };
 

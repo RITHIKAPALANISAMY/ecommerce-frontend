@@ -5,9 +5,6 @@ import { useOrders } from "../../context/OrderContext";
 
 import SellerProducts from "./SellerProducts";
 import SellerOrders from "./SellerOrders";
-import SellerRevenueReport from "../../components/seller/SellerRevenueReport";
-
-import "../../styles/seller/seller.css";
 
 import {
   BarChart,
@@ -20,139 +17,132 @@ import {
 
 export default function SellerDashboard() {
   const { user } = useAuth();
-  const { products } = useProducts();
-  const { getSellerOrders, getSellerRevenue } = useOrders();
+  const { products = [] } = useProducts();
+
+  const orderContext = useOrders() || {};
+  const getSellerOrders =
+    typeof orderContext.getSellerOrders === "function"
+      ? orderContext.getSellerOrders
+      : () => [];
+
+  const getSellerRevenue =
+    typeof orderContext.getSellerRevenue === "function"
+      ? orderContext.getSellerRevenue
+      : () => 0;
 
   const [tab, setTab] = useState("overview");
-  const sellerId = user?.email;
+
+  const sellerId = user?.email || "";
   const seller = user?.sellerInfo;
 
   /* ================= DATA ================= */
-  const sellerProducts = products.filter(p => p.sellerId === sellerId);
-  const sellerOrders = sellerId ? getSellerOrders(sellerId) : [];
-  const revenue = sellerId ? getSellerRevenue(sellerId) : 0;
+  const sellerProducts = useMemo(
+    () => products.filter(p => p.sellerId === sellerId),
+    [products, sellerId]
+  );
+
+  const sellerOrders = useMemo(
+    () => (sellerId ? getSellerOrders(sellerId) : []),
+    [sellerId, getSellerOrders]
+  );
+
+  const revenue = useMemo(
+    () => (sellerId ? getSellerRevenue(sellerId) : 0),
+    [sellerId, getSellerRevenue]
+  );
 
   /* ================= DAILY REVENUE ================= */
-  const chartData = Object.values(
-    sellerOrders.reduce((acc, order) => {
-      const date = order.date;
-      const amount = order.items.reduce(
-        (s, i) => s + i.price * i.quantity,
-        0
-      );
+  const chartData = useMemo(() => {
+    return Object.values(
+      sellerOrders.reduce((acc, order) => {
+        const date = order.date;
+        const amount = order.items.reduce(
+          (s, i) => s + i.price * i.quantity,
+          0
+        );
 
-      if (!acc[date]) acc[date] = { date, revenue: 0 };
-      acc[date].revenue += amount;
-      return acc;
-    }, {})
-  );
-
-  /* ================= METRICS ================= */
-  const pendingOrdersCount = useMemo(
-    () =>
-      sellerOrders.filter(
-        o => o.status === "Placed" || o.status === "Shipped"
-      ).length,
-    [sellerOrders]
-  );
-
-  const LOW_STOCK_LIMIT = 5;
-
-  const lowStockCount = sellerProducts.filter(
-    p => p.stock > 0 && p.stock <= LOW_STOCK_LIMIT
-  ).length;
-
-  const outOfStockCount = sellerProducts.filter(
-    p => p.stock === 0
-  ).length;
+        if (!acc[date]) acc[date] = { date, revenue: 0 };
+        acc[date].revenue += amount;
+        return acc;
+      }, {})
+    );
+  }, [sellerOrders]);
 
   return (
-    <div className="seller-dashboard">
+    <div className="bg-gray-50 min-h-screen py-6">
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
 
-      {/* ================= HEADER ================= */}
-      <div className="seller-header">
-        <h2>Seller Dashboard</h2>
-        <p>{user?.email}</p>
-      </div>
-
-      {/* ================= SELLER INFO ================= */}
-      {seller && (
-        <div className="seller-info-card">
-          <h3>{seller.storeName}</h3>
-          <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
-          <p><strong>Phone:</strong> {seller.phone}</p>
-          {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
-          <p>{seller.address}</p>
+        {/* ================= HEADER ================= */}
+        <div>
+          <h2 className="text-2xl font-semibold">
+            Seller Dashboard
+          </h2>
+          <p className="text-sm text-gray-500">
+            {user?.email}
+          </p>
         </div>
-      )}
 
-      {/* ================= TABS ================= */}
-      <div className="seller-tabs">
-        <button
-          className={tab === "overview" ? "active" : ""}
-          onClick={() => setTab("overview")}
-        >
-          OVERVIEW
-        </button>
-        <button
-          className={tab === "products" ? "active" : ""}
-          onClick={() => setTab("products")}
-        >
-          PRODUCTS
-        </button>
-        <button
-          className={tab === "orders" ? "active" : ""}
-          onClick={() => setTab("orders")}
-        >
-          ORDERS
-        </button>
-      </div>
+        {/* ================= SELLER INFO ================= */}
+        {seller && (
+          <div className="bg-white rounded-xl shadow p-5">
+            <h3 className="text-lg font-semibold">
+              {seller.storeName}
+            </h3>
+            <p className="text-sm text-gray-600">
+              <strong>Owner:</strong> {seller.ownerName || "—"}
+            </p>
+            <p className="text-sm">
+              <strong>Phone:</strong> {seller.phone}
+            </p>
+            {seller.gst && (
+              <p className="text-sm">
+                <strong>GST:</strong> {seller.gst}
+              </p>
+            )}
+            <p className="text-sm text-gray-500">
+              {seller.address}
+            </p>
+          </div>
+        )}
 
-      {/* ================= OVERVIEW ================= */}
-      {tab === "overview" && (
-        <>
-          <div className="seller-metrics-grid">
+        {/* ================= TABS ================= */}
+        <div className="flex gap-3">
+          {["overview", "products", "orders"].map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition
+                ${
+                  tab === t
+                    ? "bg-rose-500 text-white shadow"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </div>
 
-            <div className="seller-metric-card seller-products">
-              <div className="seller-metric-icon">📦</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Products</span>
-                <span className="seller-metric-value">
-                  {sellerProducts.length}
-                </span>
-              </div>
-            </div>
+        {/* ================= OVERVIEW ================= */}
+        {tab === "overview" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
-            <div className="seller-metric-card seller-orders">
-              <div className="seller-metric-icon">🧾</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Orders</span>
-                <span className="seller-metric-value">
-                  {sellerOrders.length}
-                </span>
-              </div>
-            </div>
+            <OverviewCard title="Products" value={sellerProducts.length} icon="📦" />
+            <OverviewCard title="Orders" value={sellerOrders.length} icon="🧾" />
+            <OverviewCard title="Revenue" value={`₹${revenue}`} icon="💰" />
 
-            <div className="seller-metric-card seller-revenue">
-              <div className="seller-metric-icon">💰</div>
-              <div className="seller-metric-text">
-                <span className="seller-metric-title">Revenue</span>
-                <span className="seller-metric-value">
-                  ₹{revenue}
-                </span>
-              </div>
-            </div>
-
-            <div className="seller-metric-card seller-chart-card">
-              <span className="seller-metric-title">Daily Revenue</span>
-              <ResponsiveContainer width="100%" height={70}>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-sm font-medium mb-2">
+                Daily Revenue
+              </p>
+              <ResponsiveContainer width="100%" height={80}>
                 <BarChart data={chartData}>
                   <XAxis dataKey="date" hide />
                   <YAxis hide />
                   <Tooltip formatter={v => `₹${v}`} />
                   <Bar
                     dataKey="revenue"
-                    fill="#e11d48"
+                    fill="#f43f5e"
                     radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
@@ -160,15 +150,32 @@ export default function SellerDashboard() {
             </div>
 
           </div>
-        </>
-      )}
+        )}
 
-      {/* ================= PRODUCTS ================= */}
-      {tab === "products" && <SellerProducts />}
+        {/* ================= PRODUCTS ================= */}
+        {tab === "products" && <SellerProducts />}
 
-      {/* ================= ORDERS ================= */}
-      {tab === "orders" && <SellerOrders />}
+        {/* ================= ORDERS ================= */}
+        {tab === "orders" && (
+          <div className="bg-gray-100 rounded-xl p-4">
+            <SellerOrders />
+          </div>
+        )}
 
+      </div>
+    </div>
+  );
+}
+
+/* ================= SMALL CARD ================= */
+function OverviewCard({ title, value, icon }) {
+  return (
+    <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
+      <div className="text-3xl">{icon}</div>
+      <div>
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold">{value}</p>
+      </div>
     </div>
   );
 }

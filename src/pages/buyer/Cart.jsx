@@ -1,4 +1,4 @@
-import "../../styles/cart.css";
+
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -93,119 +93,134 @@ export default function Cart() {
   const isBuyer = user?.role === "buyer";
 
   return (
-    <div className="cart-page">
-      <h2 className="cart-title">
-        Shopping Cart ({itemsToShow.length} items)
-      </h2>
+  <div className="bg-gray-100 py-8 pb-16">
+    <h2 className="max-w-6xl mx-auto mb-5 text-xl font-semibold">
+      Shopping Cart ({itemsToShow.length} items)
+    </h2>
 
-      {outOfStockItems.length > 0 && (
-        <div className="cart-warning centered">
-          Some items are currently <strong>out of stock</strong>.
-          <br />
-          They won’t be included in checkout.
-        </div>
-      )}
+    {outOfStockItems.length > 0 && (
+      <div className="max-w-6xl mx-auto mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800">
+        Some items are currently <strong>out of stock</strong>.
+        <br />
+        They won’t be included in checkout.
+      </div>
+    )}
 
-      <div className="cart-container">
-        <div className="cart-left">
-          {itemsToShow.map((item) => (
-            <CartItem key={item.id} item={item} />
-          ))}
+    <div className="max-w-6xl mx-auto grid grid-cols-1 gap-8 lg:grid-cols-3">
+      {/* LEFT */}
+      <div className="lg:col-span-2 flex flex-col gap-5">
+        {itemsToShow.map((item) => (
+          <CartItem key={item.id} item={item} />
+        ))}
 
-          <div className="coupon-box">
-            <h4>Available Coupons</h4>
+        {/* COUPONS */}
+        <div className="rounded-xl bg-white p-4">
+          <h4 className="font-semibold mb-3">Available Coupons</h4>
 
-            <div className="coupon">
-              <div>
-                <strong>WELCOME10</strong>
-                <p>10% OFF on orders above ₹500</p>
-              </div>
-              <button
-                onClick={() => setCouponInput("WELCOME10")}
-              >
-                Apply
-              </button>
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-700 p-3">
+            <div>
+              <strong>WELCOME10</strong>
+              <p className="text-sm text-gray-600">
+                10% OFF on orders above ₹500
+              </p>
             </div>
-
-            <div className="coupon">
-              <div>
-                <strong>SAVE500</strong>
-                <p>₹500 OFF on orders above ₹2000</p>
-              </div>
-              <button
-                onClick={() => setCouponInput("SAVE500")}
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="cart-right">
-          <h4>Price Details</h4>
-
-          <div className="coupon-input">
-            <input
-              value={couponInput}
-              onChange={(e) =>
-                setCouponInput(e.target.value)
-              }
-              placeholder="Enter coupon code"
-            />
-            <button onClick={handleApply}>Apply</button>
-          </div>
-
-          {error && <p style={{ color: "red" }}>{error}</p>}
-
-          <div className="price-row">
-            <span>Subtotal</span>
-            <span>₹{subtotal}</span>
-          </div>
-
-          <div className="price-row">
-            <span>Shipping</span>
-            <span>₹{subtotal > 0 ? 99 : 0}</span>
-          </div>
-
-          <div className="price-row">
-            <span>GST (18%)</span>
-            <span>₹{gst}</span>
-          </div>
-
-          {discount > 0 && (
-            <div
-              className="price-row"
-              style={{ color: "green" }}
-            >
-              <span>Coupon Discount</span>
-              <span>-₹{discount}</span>
-            </div>
-          )}
-
-          <hr />
-
-          <div className="price-total">
-            <span>Total Amount</span>
-            <span>₹{total}</span>
-          </div>
-
-          {isBuyer && (
             <button
-              className="checkout-btn"
-              disabled={inStockItems.length === 0}
-              onClick={() =>
-                navigate("/checkout/address", {
-                  state: { checkoutItems: inStockItems },
-                })
-              }
+              onClick={() => setCouponInput("WELCOME10")}
+              className="rounded-md bg-red-700 px-4 py-1.5 text-white"
             >
-              {inStockItems.length === 0
-                ? "No available items to checkout"
-                : "Proceed to Checkout →"}
+              Apply
             </button>
-          )}
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-red-700 p-3">
+            <div>
+              <strong>SAVE500</strong>
+              <p className="text-sm text-gray-600">
+                ₹500 OFF on orders above ₹2000
+              </p>
+            </div>
+            <button
+              onClick={() => setCouponInput("SAVE500")}
+              className="rounded-md bg-red-700 px-4 py-1.5 text-white"
+            >
+              Apply
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* RIGHT */}
+      <div className="h-fit rounded-xl bg-white p-5 shadow">
+        <h4 className="font-semibold mb-4">Price Details</h4>
+
+        <div className="mb-4 flex gap-2">
+          <input
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value)}
+            placeholder="Enter coupon code"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2"
+          />
+          <button
+            onClick={handleApply}
+            className="rounded-md bg-red-700 px-4 py-2 text-white"
+          >
+            Apply
+          </button>
+        </div>
+
+        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+
+        <div className="flex justify-between my-2">
+          <span>Subtotal</span>
+          <span>₹{subtotal}</span>
+        </div>
+
+        <div className="flex justify-between my-2">
+          <span>Shipping</span>
+          <span>₹{subtotal > 0 ? 99 : 0}</span>
+        </div>
+
+        <div className="flex justify-between my-2">
+          <span>GST (18%)</span>
+          <span>₹{gst}</span>
+        </div>
+
+        {discount > 0 && (
+          <div className="flex justify-between my-2 text-green-600">
+            <span>Coupon Discount</span>
+            <span>-₹{discount}</span>
+          </div>
+        )}
+
+        <hr className="my-3" />
+
+        <div className="flex justify-between text-lg font-bold">
+          <span>Total Amount</span>
+          <span>₹{total}</span>
+        </div>
+
+        {isBuyer && (
+          <button
+            disabled={inStockItems.length === 0}
+            onClick={() =>
+              navigate("/checkout/address", {
+                state: { checkoutItems: inStockItems },
+              })
+            }
+            className={`mt-5 w-full rounded-lg py-3 text-white text-sm
+              ${
+                inStockItems.length === 0
+                  ? "cursor-not-allowed bg-gray-300"
+                  : "bg-red-800 hover:bg-red-900"
+              }`}
+          >
+            {inStockItems.length === 0
+              ? "No available items to checkout"
+              : "Proceed to Checkout →"}
+          </button>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
 }
