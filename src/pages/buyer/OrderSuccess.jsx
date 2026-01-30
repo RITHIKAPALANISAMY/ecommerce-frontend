@@ -1,20 +1,21 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
-import { useSellerProducts } from "../../context/SellerProductContext";
 import { jsPDF } from "jspdf";
-import "../../styles/orderSuccess.css";
 
 export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const navigate = useNavigate();
 
-  const { removeItem } = useCart();
-  const { reduceStockAfterOrder } = useSellerProducts();
-
-  const processedRef = useRef(false);
-
   useEffect(() => {
+    // ✅ ONLY TRUST orderPlaced FLAG
+    const placed = localStorage.getItem("orderPlaced");
+    
+    if (!placed) {
+      navigate("/cart", { replace: true });
+      return;
+    }
+
+    // ✅ GET LATEST ORDER SAFELY
     const orders =
       JSON.parse(localStorage.getItem("orders")) || [];
 
@@ -25,21 +26,14 @@ export default function OrderSuccess() {
 
     const latestOrder = orders[orders.length - 1];
     setOrder(latestOrder);
+    
 
-    if (processedRef.current) return;
-    processedRef.current = true;
+    // ✅ CLEAR FLAG AFTER LOAD
+    setTimeout(() => {
+  localStorage.removeItem("orderPlaced");
+}, 500);
 
-    // Clear order flag
-    localStorage.removeItem("orderPlaced");
-
-    // Reduce stock
-    reduceStockAfterOrder(latestOrder.items);
-
-    // Remove purchased items from cart
-    latestOrder.items.forEach((item) => {
-      removeItem(item.productId);
-    });
-  }, [navigate, removeItem, reduceStockAfterOrder]);
+  }, [navigate]);
 
   if (!order) return null;
 
@@ -55,7 +49,7 @@ export default function OrderSuccess() {
     doc.setFontSize(11);
     doc.text(`Order ID: ${order.id}`, 14, y);
     y += 6;
-    doc.text(`Order Date: ${order.date}`, 14, y);
+    doc.text(`Order Date: ${order.placedDate}`, 14, y);
 
     y += 10;
     doc.setFontSize(13);
@@ -93,7 +87,7 @@ export default function OrderSuccess() {
 
     y += 8;
     doc.setFontSize(12);
-    doc.text(`Total Paid: ₹${order.total}`, 14, y);
+    doc.text(`Total Paid: ₹${order.amount?.total}`, 14, y);
 
     y += 6;
     doc.text(
@@ -102,95 +96,127 @@ export default function OrderSuccess() {
       y
     );
 
-    y += 10;
-    doc.setFontSize(10);
-    doc.text(
-      "Thank you for shopping with ShopVerse!",
-      14,
-      y
-    );
-
     doc.save(`Invoice_${order.id}.pdf`);
   };
 
   return (
-    <div className="os-page">
-      <div className="os-success-icon">✔</div>
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+    <div className="w-full max-w-3xl">
+      
+      {/* Success Header */}
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-600">
+          ✔
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Order Placed Successfully!
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Thank you for shopping with ShopVerse
+        </p>
+      </div>
 
-      <h2>Order Placed Successfully!</h2>
-      <p>Thank you for shopping with ShopVerse</p>
+      {/* Invoice Button */}
+      <div className="mb-6 flex justify-center">
+        <button
+          onClick={downloadInvoice}
+          className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
+        >
+          ⬇ Download Invoice (PDF)
+        </button>
+      </div>
 
-      <button
-        onClick={downloadInvoice}
-        style={{
-          margin: "16px 0",
-          padding: "10px 18px",
-          background: "#8b0020",
-          color: "#fff",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "600",
-        }}
-      >
-        ⬇ Download Invoice (PDF)
-      </button>
-
-      <div className="os-card">
-        <div className="os-row">
-          <span>Order ID</span>
-          <strong>{order.id}</strong>
+      {/* Order Card */}
+      <div className="rounded-2xl bg-white p-6 shadow-md">
+        
+        {/* Order Info */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-gray-500">Order ID</p>
+            <p className="font-semibold">{order.id}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Order Date</p>
+            <p className="font-semibold">{order.placedDate}</p>
+          </div>
         </div>
 
-        <div className="os-row">
-          <span>Order Date</span>
-          <strong>{order.date}</strong>
-        </div>
+        <hr className="my-6" />
 
-        <hr />
-
-        <h4>Delivery Address</h4>
-        <p>{order.address?.name}</p>
-        <p>{order.address?.phone}</p>
-        <p>
+        {/* Address */}
+        <h4 className="mb-2 font-semibold text-gray-800">
+          Delivery Address
+        </h4>
+        <p className="text-sm text-gray-600">{order.address?.name}</p>
+        <p className="text-sm text-gray-600">{order.address?.phone}</p>
+        <p className="text-sm text-gray-600">
           {order.address?.address}, {order.address?.city},{" "}
           {order.address?.state} - {order.address?.pincode}
         </p>
 
-        <hr />
+        <hr className="my-6" />
 
-        <h4>Order Items</h4>
-        {order.items.map((item, index) => (
-          <div key={index} className="os-item">
-            <strong>{item.title}</strong>
-            <p>Qty: {item.quantity}</p>
-            <p>₹{item.price}</p>
-          </div>
-        ))}
+        {/* Items */}
+        <h4 className="mb-3 font-semibold text-gray-800">
+          Order Items
+        </h4>
 
-        <hr />
-
-        <div className="os-total">
-          <span>Total Paid</span>
-          <strong>₹{order.total}</strong>
+        <div className="space-y-4">
+          {order.items.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between rounded-lg border p-3"
+            >
+              <div>
+                <p className="font-medium text-gray-800">
+                  {item.title}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Qty: {item.quantity}
+                </p>
+              </div>
+              <p className="font-semibold text-gray-800">
+                ₹{item.price}
+              </p>
+            </div>
+          ))}
         </div>
 
-        <p className="os-payment">
+        <hr className="my-6" />
+
+        {/* Total */}
+        <div className="flex items-center justify-between text-lg font-semibold">
+          <span>Total Paid</span>
+          <span className="text-green-600">
+            ₹{order.amount?.total}
+          </span>
+        </div>
+
+        <p className="mt-2 text-sm text-gray-600">
           Payment Method:{" "}
-          <strong>
-            {order.paymentMethod || "Cash on Delivery"}
+          <strong className="text-gray-800">
+            {order.paymentMethod}
           </strong>
         </p>
       </div>
 
-      <div className="os-actions">
-        <button onClick={() => navigate("/orders")}>
+      {/* Actions */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <button
+          onClick={() => navigate("/orders")}
+          className="rounded-lg border px-6 py-2 text-sm font-medium hover:bg-gray-100 transition"
+        >
           View Orders
         </button>
-        <button onClick={() => navigate("/")}>
+        <button
+          onClick={() => navigate("/")}
+          className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
+        >
           Continue Shopping
         </button>
       </div>
     </div>
-  );
+  </div>
+);
+
 }

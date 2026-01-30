@@ -19,16 +19,16 @@ export function SellerProductProvider({ children }) {
 
   /* ================= ADD PRODUCT ================= */
   const addSellerProduct = (product) => {
-    if (!user) return;
+  if (!user) return;
 
-    const productWithSeller = {
-      ...product,
-      sellerEmail: user.email, // 🔑 link product to seller
-    };
-
-    setProducts((prev) => [...prev, productWithSeller]);
+  const productWithSeller = {
+    ...product,
+    sellerId: user.email, // ✅ FIXED
   };
 
+  setProducts((prev) => [...prev, productWithSeller]);
+};
+``
   /* ================= DELETE PRODUCT ================= */
   const deleteSellerProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));

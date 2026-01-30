@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./Users.css";
 
 const STORAGE_KEY = "admin_users";
 
@@ -22,28 +21,9 @@ const defaultUsers = [
     approved: false,
     suspicious: false,
   },
-  {
-    id: 3,
-    name: "Rahul M",
-    email: "rahul@gmail.com",
-    role: "Buyer",
-    status: "Blocked",
-    approved: true,
-    suspicious: true,
-  },
-  {
-    id: 4,
-    name: "Sneha R",
-    email: "sneha@gmail.com",
-    role: "Seller",
-    status: "Active",
-    approved: true,
-    suspicious: false,
-  },
 ];
 
-const Users = () => {
-  /* ===== STATE ===== */
+export default function AdminUsers() {
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : defaultUsers;
@@ -51,152 +31,156 @@ const Users = () => {
 
   const [viewUser, setViewUser] = useState(null);
 
-  /* ===== SAVE TO STORAGE ===== */
+  /* ===== persist ===== */
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   }, [users]);
 
-  /* ===== BLOCK / UNBLOCK ===== */
-  const toggleBlock = (user) => {
-    const action = user.status === "Active" ? "Block" : "Unblock";
-    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+  /* ===== generic admin action ===== */
+  const handleUserAction = (action, user) => {
+    switch (action) {
+      case "block":
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id
+              ? { ...u, status: u.status === "Active" ? "Blocked" : "Active" }
+              : u
+          )
+        );
+        break;
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === user.id
-          ? { ...u, status: u.status === "Active" ? "Blocked" : "Active" }
-          : u
-      )
-    );
-  };
+      case "approve":
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id ? { ...u, approved: true } : u
+          )
+        );
+        break;
 
-  /* ===== APPROVE USER ===== */
-  const approveUser = (user) => {
-    if (!window.confirm("Approve this user?")) return;
+      case "flag":
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id ? { ...u, suspicious: !u.suspicious } : u
+          )
+        );
+        break;
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === user.id ? { ...u, approved: true } : u
-      )
-    );
-  };
+      case "view":
+        setViewUser(user);
+        break;
 
-  /* ===== FLAG SUSPICIOUS ===== */
-  const toggleSuspicious = (user) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === user.id
-          ? { ...u, suspicious: !u.suspicious }
-          : u
-      )
-    );
+      default:
+        console.log("Future action:", action, user);
+    }
   };
 
   return (
-    <div className="users-page">
-      <h2 className="page-title">Users Management</h2>
+    <div className="p-6">
+      <h2 className="text-xl font-semibold mb-6">Users Management</h2>
 
-      <table className="users-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Approval</th>
-            <th>Risk</th>
-            <th style={{ textAlign: "center" }}>Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              {/* NAME */}
-              <td className="name-cell">
-                <div className="user-name">{user.name}</div>
-              </td>
-
-              {/* EMAIL */}
-              <td className="email-cell">{user.email}</td>
-
-              {/* ROLE */}
-              <td>
-                <span className={`role-badge ${user.role.toLowerCase()}`}>
-                  {user.role}
-                </span>
-              </td>
-
-              {/* STATUS */}
-              <td>
-                <span className={`status-badge ${user.status.toLowerCase()}`}>
-                  {user.status}
-                </span>
-              </td>
-
-              {/* APPROVAL */}
-              <td>
-                {user.approved ? (
-                  <span className="approved-badge">Approved</span>
-                ) : (
-                  <button
-                    className="approve-btn"
-                    onClick={() => approveUser(user)}
-                  >
-                    Approve
-                  </button>
-                )}
-              </td>
-
-              {/* SUSPICIOUS */}
-              <td>
-                {user.suspicious ? (
-                  <span className="risk-badge">⚠ Flagged</span>
-                ) : (
-                  <span className="safe-badge">Safe</span>
-                )}
-              </td>
-
-              {/* ACTIONS */}
-              <td className="actions">
-                <button className="view-btn" onClick={() => setViewUser(user)}>
-                  View
-                </button>
-
-                <button
-                  className={`block-btn ${
-                    user.status === "Blocked" ? "unblock" : ""
-                  }`}
-                  onClick={() => toggleBlock(user)}
-                >
-                  {user.status === "Blocked" ? "Unblock" : "Block"}
-                </button>
-
-                <button
-                  className="flag-btn"
-                  onClick={() => toggleSuspicious(user)}
-                >
-                  {user.suspicious ? "Unflag" : "Flag"}
-                </button>
-              </td>
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600">
+            <tr>
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">Email</th>
+              <th className="p-3">Role</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Approval</th>
+              <th className="p-3">Risk</th>
+              <th className="p-3">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
 
-      {/* ===== VIEW MODAL ===== */}
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-t hover:bg-gray-50">
+                <td className="p-3 font-medium">{u.name}</td>
+                <td className="p-3">{u.email}</td>
+
+                <td className="p-3">
+                  <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-600">
+                    {u.role}
+                  </span>
+                </td>
+
+                <td className="p-3">
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      u.status === "Active"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {u.status}
+                  </span>
+                </td>
+
+                <td className="p-3">
+                  {u.approved ? (
+                    <span className="text-green-600 font-semibold">
+                      Approved
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleUserAction("approve", u)}
+                      className="text-xs px-3 py-1 bg-primary text-white rounded"
+                    >
+                      Approve
+                    </button>
+                  )}
+                </td>
+
+                <td className="p-3">
+                  {u.suspicious ? (
+                    <span className="text-red-600">⚠ Flagged</span>
+                  ) : (
+                    <span className="text-green-600">Safe</span>
+                  )}
+                </td>
+
+                <td className="p-3 flex gap-2">
+                  <button
+                    onClick={() => handleUserAction("view", u)}
+                    className="text-primary text-xs"
+                  >
+                    View
+                  </button>
+
+                  <button
+                    onClick={() => handleUserAction("block", u)}
+                    className="text-xs text-red-600"
+                  >
+                    {u.status === "Blocked" ? "Unblock" : "Block"}
+                  </button>
+
+                  <button
+                    onClick={() => handleUserAction("flag", u)}
+                    className="text-xs text-orange-600"
+                  >
+                    {u.suspicious ? "Unflag" : "Flag"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* VIEW PANEL */}
       {viewUser && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>User Details</h3>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl w-[320px]">
+            <h3 className="font-semibold mb-3">User Details</h3>
             <p><b>Name:</b> {viewUser.name}</p>
             <p><b>Email:</b> {viewUser.email}</p>
             <p><b>Role:</b> {viewUser.role}</p>
             <p><b>Status:</b> {viewUser.status}</p>
-            <p><b>Approved:</b> {viewUser.approved ? "Yes" : "No"}</p>
-            <p><b>Suspicious:</b> {viewUser.suspicious ? "Yes" : "No"}</p>
 
-            <button className="close-btn" onClick={() => setViewUser(null)}>
+            <button
+              onClick={() => setViewUser(null)}
+              className="mt-4 px-4 py-2 bg-primary text-white rounded"
+            >
               Close
             </button>
           </div>
@@ -204,6 +188,4 @@ const Users = () => {
       )}
     </div>
   );
-};
-
-export default Users;
+}

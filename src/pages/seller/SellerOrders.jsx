@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useOrders } from "../../context/OrderContext";
 import { useAuth } from "../../context/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
+import SoftStatCard from "./StatCardSoft";
 
 export default function SellerOrders() {
   const {
@@ -16,28 +18,41 @@ export default function SellerOrders() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [search, setSearch] = useState("");
 
-  /* ================= SELLER ORDERS ONLY ================= */
+  /* ================= SELLER ORDERS ================= */
   const sellerOrders = useMemo(() => {
     if (!sellerId) return [];
 
     return orders
-      .map((order) => {
+      .map(order => {
         const items = order.items?.filter(
-          (item) => item.sellerId === sellerId
+          i => i.sellerId === sellerId
         );
         return items?.length ? { ...order, items } : null;
       })
       .filter(Boolean);
   }, [orders, sellerId]);
 
-  /* ================= FILTER ================= */
-  const filteredOrders =
-    statusFilter === "ALL"
-      ? sellerOrders
-      : sellerOrders.filter((order) => order.status === statusFilter);
+  /* ================= DERIVED ORDER STATUS ================= */
+  const getOrderStatus = (order) => {
+    if (order.items.every(i => i.status === "Cancelled"))
+      return "Cancelled";
 
-  /* ================= SEARCH ================= */
-  const searchedOrders = filteredOrders.filter((order) => {
+    if (order.items.every(i => i.status === "Delivered"))
+      return "Delivered";
+
+    if (order.items.some(i => i.status === "Shipped"))
+      return "Shipped";
+
+    return "Placed";
+  };
+
+  /* ================= FILTER + SEARCH ================= */
+  const filteredOrders = sellerOrders.filter(order => {
+    const status = getOrderStatus(order);
+    return statusFilter === "ALL" || status === statusFilter;
+  });
+
+  const searchedOrders = filteredOrders.filter(order => {
     const q = search.toLowerCase();
     return (
       String(order.id).includes(q) ||
@@ -46,29 +61,32 @@ export default function SellerOrders() {
   });
 
   /* ================= METRICS ================= */
-  const totalRevenue = searchedOrders.reduce(
-    (sum, order) =>
-      sum +
-      order.items.reduce(
-        (s, i) =>
-          i.status === "Cancelled"
-            ? s
-            : s + i.price * i.quantity,
-        0
-      ),
-    0
-  );
+ const totalRevenue = searchedOrders.reduce(
+  (sum, order) =>
+    sum +
+    order.items.reduce((s, i) => {
+      if (i.status === "Cancelled") return s;
+
+      const price = Number(i.price || 0);
+      const qty = Number(i.quantity || 1);
+
+      return s + price * qty;
+    }, 0),
+  0
+);
+
 
   const deliveredCount = searchedOrders.filter(
-    (o) => o.status === "Delivered"
+    o => getOrderStatus(o) === "Delivered"
   ).length;
 
   const cancelledCount = searchedOrders.filter(
-    (o) => o.status === "Cancelled"
+    o => getOrderStatus(o) === "Cancelled"
   ).length;
 
   /* ================= DATE HELPERS ================= */
-  const today = () => new Date().toISOString().split("T")[0];
+  const today = () =>
+    new Date().toISOString().split("T")[0];
 
   const expectedDelivery = () => {
     const d = new Date();
@@ -82,43 +100,39 @@ export default function SellerOrders() {
         My Orders
       </h2>
 
-      {/* ================= PRO STATS ================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <StatCard
+      {/* ================= STATS ================= */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10"
+      >
+        <SoftStatCard
           title="Total Orders"
           value={searchedOrders.length}
-          icon="📦"
-          from="from-indigo-500"
-          to="to-indigo-700"
+          type="orders"
         />
-        <StatCard
+        <SoftStatCard
           title="Revenue"
           value={`₹${totalRevenue}`}
-          icon="💰"
-          from="from-emerald-500"
-          to="to-emerald-700"
+          type="revenue"
         />
-        <StatCard
+        <SoftStatCard
           title="Delivered"
           value={deliveredCount}
-          icon="✅"
-          from="from-sky-500"
-          to="to-sky-700"
+          type="delivered"
         />
-        <StatCard
+        <SoftStatCard
           title="Cancelled"
           value={cancelledCount}
-          icon="❌"
-          from="from-rose-500"
-          to="to-rose-700"
+          type="cancelled"
         />
-      </div>
+      </motion.div>
 
-      {/* ================= FILTER BAR ================= */}
+      {/* ================= FILTER ================= */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={e => setStatusFilter(e.target.value)}
           className="rounded-md border px-3 py-2"
         >
           <option value="ALL">All Orders</option>
@@ -129,71 +143,80 @@ export default function SellerOrders() {
         </select>
 
         <input
-          type="text"
           placeholder="Search by Order ID or Buyer"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="flex-1 rounded-md border px-3 py-2"
         />
       </div>
 
-      {/* ================= ORDERS LIST ================= */}
+      {/* ================= ORDERS ================= */}
       <div className="space-y-5">
-        {searchedOrders.map((order) => {
-          const expanded = expandedOrderId === order.id;
-          const status = order.status?.toLowerCase();
+        <AnimatePresence>
+          {searchedOrders.map(order => {
+            const expanded = expandedOrderId === order.id;
+            const status = getOrderStatus(order);
 
-          const amount = order.items.reduce(
-            (s, i) =>
-              i.status === "Cancelled"
-                ? s
-                : s + i.price * i.quantity,
-            0
-          );
+            const amount = order.items.reduce((sum, item) => {
+  if (item.status !== "Delivered") return sum;
 
-          return (
-            <div
-              key={order.id}
-              className="rounded-xl bg-white shadow p-5"
-            >
-              <div className="flex flex-col md:flex-row md:justify-between gap-4">
-                <div>
-                  <p className="font-semibold">
-                    Order ID: {order.id}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {order.placedDate}
-                  </p>
-                  <p className="text-sm">
-                    {order.buyerEmail}
-                  </p>
+  const price = Number(item.price || 0);
+  const qty = Number(item.quantity || 1); // ✅ DEFAULT TO 1
+
+  return sum + price * qty;
+}, 0);
+
+
+
+            return (
+              <motion.div
+                key={order.id}
+                layout
+                className="rounded-xl bg-white shadow p-5"
+              >
+                <div className="flex justify-between">
+                  <div>
+                    <p className="font-semibold">
+                      Order ID: {order.id}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {order.placedDate}
+                    </p>
+                    <p className="text-sm">
+                      {order.buyerEmail}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <StatusBadge status={status} />
+                    <div className="text-right">
+  <p className="font-semibold">
+    {amount > 0 ? `₹${amount}` : "—"}
+  </p>
+  <p className="text-xs text-gray-500">
+    Qty: {order.items.reduce(
+      (q, i) => q + Number(i.quantity || 1),
+      0
+    )}
+  </p>
+</div>
+
+                    <button
+                      onClick={() =>
+                        setExpandedOrderId(
+                          expanded ? null : order.id
+                        )
+                      }
+                      className="text-red-600 text-sm"
+                    >
+                      {expanded ? "Hide" : "View"}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <StatusBadge status={status} />
-
-                  <span className="font-semibold">
-                    ₹{amount}
-                  </span>
-
-                  <button
-                    className="text-blue-600 text-sm"
-                    onClick={() =>
-                      setExpandedOrderId(
-                        expanded ? null : order.id
-                      )
-                    }
-                  >
-                    {expanded ? "Hide" : "View"}
-                  </button>
-                </div>
-              </div>
-
-              {/* ================= EXPANDED ================= */}
-              {expanded && (
-                <>
-                  <div className="mt-4 space-y-2 text-sm">
-                    {order.items.map((item) => (
+                {expanded && (
+                  <div className="mt-4 space-y-3 text-sm">
+                    {order.items.map(item => (
                       <div
                         key={item.productId}
                         className="flex justify-between"
@@ -203,118 +226,81 @@ export default function SellerOrders() {
                         <span>₹{item.price}</span>
                       </div>
                     ))}
-                  </div>
 
-                  {/* TRACKING */}
-                  <div className="mt-4 text-sm text-gray-600 space-y-1">
-                    {order.shippedDate && (
-                      <p>📦 Shipped: {order.shippedDate}</p>
-                    )}
-                    {order.expectedDeliveryDate && (
-                      <p>
-                        🚚 Expected:{" "}
-                        {order.expectedDeliveryDate}
-                      </p>
-                    )}
-                    {order.deliveredDate && (
-                      <p>✅ Delivered: {order.deliveredDate}</p>
-                    )}
-                    {order.cancelledDate && (
-                      <p>❌ Cancelled: {order.cancelledDate}</p>
-                    )}
-                  </div>
+                    <div className="flex gap-3 mt-4">
+                      {status === "Placed" && (
+                        <>
+                          <ActionButton
+                            label="Mark Shipped"
+                            color="blue"
+                            onClick={() =>
+                              updateSellerOrderStatus(
+                                order.id,
+                                sellerId,
+                                "Shipped",
+                                {
+                                  shippedDate: today(),
+                                  expectedDelivery: expectedDelivery(),
+                                }
+                              )
+                            }
+                          />
+                          <ActionButton
+                            label="Cancel"
+                            color="red"
+                            onClick={() =>
+                              cancelOrderBySeller(
+                                order.id,
+                                sellerId
+                              )
+                            }
+                          />
+                        </>
+                      )}
 
-                  {/* ACTIONS */}
-                  <div className="mt-5 flex gap-3">
-                    {status === "placed" && (
-                      <>
+                      {status === "Shipped" && (
                         <ActionButton
-                          color="blue"
-                          label="Mark Shipped"
+                          label="Mark Delivered"
+                          color="green"
                           onClick={() =>
                             updateSellerOrderStatus(
                               order.id,
                               sellerId,
-                              "Shipped",
+                              "Delivered",
                               {
-                                shippedDate: today(),
-                                expectedDeliveryDate:
-                                  expectedDelivery(),
+                                deliveredDate: today(),
                               }
                             )
                           }
                         />
-                        <ActionButton
-                          color="red"
-                          label="Cancel"
-                          onClick={() =>
-                            cancelOrderBySeller(
-                              order.id,
-                              sellerId
-                            )
-                          }
-                        />
-                      </>
-                    )}
-
-                    {status === "shipped" && (
-                      <ActionButton
-                        color="green"
-                        label="Mark Delivered"
-                        onClick={() =>
-                          updateSellerOrderStatus(
-                            order.id,
-                            sellerId,
-                            "Delivered",
-                            { deliveredDate: today() }
-                          )
-                        }
-                      />
-                    )}
+                      )}
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );
 }
 
-/* ================= SMALL COMPONENTS ================= */
-
-function StatCard({ title, value, icon, from, to }) {
-  return (
-    <div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${from} ${to} p-5 text-white shadow-lg`}
-    >
-      <div className="absolute right-4 top-4 text-3xl opacity-30">
-        {icon}
-      </div>
-      <p className="text-sm uppercase tracking-wide opacity-80">
-        {title}
-      </p>
-      <p className="mt-2 text-3xl font-bold">{value}</p>
-    </div>
-  );
-}
+/* ================= HELPERS ================= */
 
 function StatusBadge({ status }) {
   const styles = {
-    placed: "bg-yellow-100 text-yellow-700",
-    shipped: "bg-blue-100 text-blue-700",
-    delivered: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
+    Placed: "bg-yellow-100 text-yellow-700",
+    Shipped: "bg-blue-100 text-blue-700",
+    Delivered: "bg-green-100 text-green-700",
+    Cancelled: "bg-red-100 text-red-700",
   };
 
   return (
     <span
-      className={`rounded-full px-3 py-1 text-sm font-medium ${
-        styles[status] || ""
-      }`}
+      className={`rounded-full px-3 py-1 text-sm font-medium ${styles[status]}`}
     >
-      {status?.toUpperCase()}
+      {status}
     </span>
   );
 }

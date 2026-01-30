@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useSellerProducts } from "../../context/SellerProductContext";
-import "../../styles/seller/addProduct.css";
 
 export default function SellerEditProduct({ product, onClose }) {
   const { updateSellerProduct } = useSellerProducts();
 
+  /* LOCK BACKGROUND SCROLL */
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -79,111 +79,185 @@ export default function SellerEditProduct({ product, onClose }) {
   };
 
   return (
-    /* ================= OVERLAY (FIXED) ================= */
-    <div className="add-product-overlay">
+    /* OVERLAY */
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      
+      {/* MODAL */}
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="mb-4 text-xl font-semibold text-gray-800">
+          Edit Product
+        </h3>
 
-      {/* ================= MODAL CARD ================= */}
-      <div className="add-product-container">
-        <h3>Edit Product</h3>
+        {/* FORM */}
+        <div className="space-y-6">
+          {/* BASIC INFO */}
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Basic Information
+            </h4>
 
-        <div className="add-product-form">
-          <h4>Basic Information</h4>
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-          />
-
-          <input
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-          />
-
-          <h4>Pricing</h4>
-          <input
-            name="mrp"
-            value={form.mrp}
-            onChange={handleChange}
-          />
-
-          <input
-            name="discount"
-            value={form.discount}
-            onChange={handleChange}
-          />
-
-          <p>Selling Price: ₹{calculatePrice()}</p>
-
-          <input
-            name="stock"
-            value={form.stock}
-            onChange={handleChange}
-          />
-
-          <h4>Description</h4>
-          <textarea
-            name="about"
-            value={form.about}
-            onChange={handleChange}
-          />
-
-          <textarea
-            name="highlights"
-            value={form.highlights}
-            onChange={handleChange}
-          />
-
-          <input
-            name="material"
-            value={form.material}
-            onChange={handleChange}
-          />
-
-          <input
-            name="usage"
-            value={form.usage}
-            onChange={handleChange}
-          />
-
-          <input
-            name="care"
-            value={form.care}
-            onChange={handleChange}
-          />
-
-          <input
-            name="warranty"
-            value={form.warranty}
-            onChange={handleChange}
-          />
-
-          <input
-            name="expiryDate"
-            value={form.expiryDate}
-            onChange={handleChange}
-          />
-
-          <h4>Product Images</h4>
-          {form.images.map((img, i) => (
             <input
-              key={i}
-              value={img}
-              onChange={(e) =>
-                handleImageChange(i, e.target.value)
-              }
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              placeholder="Product Name *"
+              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-          ))}
 
-          <button onClick={addImageField}>+ Add Image</button>
+            <input
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              placeholder="Category"
+              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          {/* PRICING */}
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Pricing
+            </h4>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                name="mrp"
+                value={form.mrp}
+                onChange={handleChange}
+                placeholder="MRP *"
+                className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+
+              <input
+                name="discount"
+                value={form.discount}
+                onChange={handleChange}
+                placeholder="Discount (%)"
+                className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+
+            <p className="mt-2 text-sm text-gray-600">
+              Selling Price:{" "}
+              <strong>₹{calculatePrice()}</strong>
+            </p>
+
+            <input
+              name="stock"
+              value={form.stock}
+              onChange={handleChange}
+              placeholder="Stock *"
+              className="mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          {/* DESCRIPTION */}
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Description
+            </h4>
+
+            <textarea
+              name="about"
+              value={form.about}
+              onChange={handleChange}
+              rows={3}
+              placeholder="About this product"
+              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <textarea
+              name="highlights"
+              value={form.highlights}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Highlights (one per line)"
+              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          {/* EXTRA DETAILS */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input
+              name="material"
+              value={form.material}
+              onChange={handleChange}
+              placeholder="Material"
+              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <input
+              name="usage"
+              value={form.usage}
+              onChange={handleChange}
+              placeholder="Usage"
+              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <input
+              name="care"
+              value={form.care}
+              onChange={handleChange}
+              placeholder="Care Instructions"
+              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <input
+              name="warranty"
+              value={form.warranty}
+              onChange={handleChange}
+              placeholder="Warranty"
+              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <input
+              name="expiryDate"
+              value={form.expiryDate}
+              onChange={handleChange}
+              placeholder="Expiry Date"
+              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          {/* IMAGES */}
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Product Images
+            </h4>
+
+            {form.images.map((img, i) => (
+              <input
+                key={i}
+                value={img}
+                onChange={(e) =>
+                  handleImageChange(i, e.target.value)
+                }
+                placeholder="Image URL"
+                className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            ))}
+
+            <button
+              onClick={addImageField}
+              className="text-sm text-red-600 hover:underline"
+            >
+              + Add Image
+            </button>
+          </div>
         </div>
 
-        {/* FOOTER — SINGLE ONLY */}
-        <div className="form-actions">
-          <button className="close-btn" onClick={onClose}>
+        {/* FOOTER */}
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
+          >
             Cancel
           </button>
-          <button className="save-btn" onClick={handleSave}>
+          <button
+            onClick={handleSave}
+            className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
             Update Product
           </button>
         </div>

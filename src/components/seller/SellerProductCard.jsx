@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { Pencil, Trash2, AlertTriangle, XCircle } from "lucide-react";
 import { useSellerProducts } from "../../context/SellerProductContext";
 import SellerEditProduct from "../../pages/seller/SellerEditProduct";
+import { useState } from "react";
 
 export default function SellerProductCard({
   product,
@@ -8,99 +9,80 @@ export default function SellerProductCard({
   outOfStock,
 }) {
   const { deleteSellerProduct } = useSellerProducts();
-  const [editing, setEditing] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const image =
+    product.images?.[0] ||
+    product.image ||
+    "/placeholder.png";
 
   return (
     <>
-      <div
-        className={`seller-product-card
-          ${outOfStock ? "out-of-stock" : ""}
-          ${lowStock && !outOfStock ? "low-stock" : ""}
-        `}
-      >
-        {/* STOCK BADGES */}
+      <div className="relative rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md">
+
+        {/* 🔴 ALERT BADGES */}
         {outOfStock && (
-          <span className="stock-badge out">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+            <XCircle size={14} />
             Out of Stock
           </span>
         )}
 
         {!outOfStock && lowStock && (
-          <span className="stock-badge low">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
+            <AlertTriangle size={14} />
             Low Stock
           </span>
         )}
 
-        {/* PRODUCT IMAGE */}
+        {/* IMAGE */}
         <img
-          src={product.images?.[0]}
+          src={image}
           alt={product.title}
-          className="seller-product-image"
+          className="mb-3 h-44 w-full rounded-lg object-cover"
         />
 
-        {/* PRODUCT INFO */}
-        <div className="seller-product-info">
-          <h4>{product.title}</h4>
-          <p className="category">{product.category}</p>
+        {/* INFO */}
+        <h4 className="font-semibold text-gray-800">
+          {product.title}
+        </h4>
+        <p className="text-sm text-gray-500">
+          {product.category}
+        </p>
 
-          <div className="price-row">
-  <span className="price">₹{product.price}</span>
-  <span className="stock">
-    Stock: {product.stock}
-  </span>
-</div>
+        <div className="mt-2 space-y-1 text-sm">
+          <p>
+            <strong>₹{product.price}</strong>
+          </p>
+          <p>Stock: {product.stock}</p>
+          <p>Sold: {product.sold}</p>
+          <p>Revenue: ₹{product.revenue}</p>
+        </div>
 
+        {/* ACTIONS */}
+        <div className="mt-4 flex gap-4 text-sm">
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-1 text-blue-600 hover:underline"
+          >
+            <Pencil size={14} /> Edit
+          </button>
 
-          {/* 🔥 BUSINESS METRICS (NEW) */}
-          <div className="product-metrics">
-            <span>
-              Sold: <strong>{product.sold || 0}</strong>
-            </span>
-            <span>
-              Revenue:{" "}
-              <strong>
-                ₹{product.revenue || 0}
-              </strong>
-            </span>
-          </div>
-
-          {/* ACTIONS */}
-          <div className="card-actions">
-            <button
-              className="edit-btn"
-              onClick={() => setEditing(true)}
-            >
-              Edit
-            </button>
-
-            <button
-              className="delete-btn"
-              onClick={() =>
-                deleteSellerProduct(product.id)
-              }
-            >
-              Delete
-            </button>
-          </div>
+          <button
+            onClick={() => deleteSellerProduct(product.id)}
+            className="flex items-center gap-1 text-red-600 hover:underline"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
         </div>
       </div>
 
       {/* EDIT MODAL */}
-      {editing && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <SellerEditProduct
-              product={product}
-              onClose={() => setEditing(false)}
-            />
-            <button
-              className="close-btn"
-              onClick={() => setEditing(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
+      {editOpen && (
+        <SellerEditProduct
+          product={product}
+          onClose={() => setEditOpen(false)}
+        />
       )}
     </>
   );

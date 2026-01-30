@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 
+/* ===== CONTEXT PROVIDERS ===== */
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { SellerProductProvider } from "./context/SellerProductContext";
@@ -10,11 +11,13 @@ import { ProductProvider } from "./context/ProductContext";
 import { OrderProvider } from "./context/OrderContext";
 import { WishlistProvider } from "./context/WishlistContext";
 
+/* ===== GLOBAL STYLES ===== */
+import "./index.css";
 import "./styles/global.css";
 
 /* ================= APP VERSION CONTROL ================= */
-/* CHANGE VERSION WHEN YOU MAKE MAJOR DATA STRUCTURE CHANGES */
-const APP_VERSION = "1.0.0";
+/* 🔥 VERSION BUMP TO CLEAR OLD / HARDCODED DATA */
+const APP_VERSION = "1.0.1"; // updated from 1.0.0
 
 const storedVersion = localStorage.getItem("app_version");
 

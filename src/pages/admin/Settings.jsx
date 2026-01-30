@@ -1,39 +1,16 @@
-import { useEffect, useState, useRef } from "react";
-import "./Settings.css";
+import { useEffect, useState } from "react";
 
-const Settings = () => {
-  /* ===== TOAST ===== */
-  const showToast = (message, type = "success") => {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  };
-
-  /* ===== DARK MODE ===== */
+export default function Settings() {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
+  const [darkMsg, setDarkMsg] = useState("");
 
-  /* ===== NOTIFICATIONS ===== */
   const [notifications, setNotifications] = useState(
     localStorage.getItem("notifications") !== "false"
   );
-  const prevNotifications = useRef(notifications);
+  const [notifyMsg, setNotifyMsg] = useState("");
 
-  /* ===== PASSWORD ===== */
-  const [form, setForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  /* ===== PROFILE ===== */
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem("adminProfile");
     return saved
@@ -41,143 +18,185 @@ const Settings = () => {
       : { name: "Admin", email: "admin@shopverse.com", phone: "" };
   });
 
-  /* ===== EFFECTS ===== */
+  const [passwords, setPasswords] = useState({
+    current: "",
+    next: "",
+    confirm: "",
+  });
+
+  const [show, setShow] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
+
   useEffect(() => {
-    document.body.classList.toggle("dark-mode", darkMode);
+    document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
   useEffect(() => {
     localStorage.setItem("notifications", notifications);
-    if (prevNotifications.current !== notifications) {
-      showToast(
-        notifications ? "Notifications Enabled 🔔" : "Notifications Disabled 🔕",
-        notifications ? "success" : "warning"
-      );
-    }
-    prevNotifications.current = notifications;
   }, [notifications]);
 
-  /* ===== HANDLERS ===== */
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!form.currentPassword || !form.newPassword || !form.confirmPassword)
-      return alert("All fields required");
-    if (form.newPassword.length < 6)
-      return alert("Password must be at least 6 characters");
-    if (form.newPassword !== form.confirmPassword)
-      return alert("Passwords do not match");
-
-    showToast("Password updated successfully 🔐");
-    setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const toggleDarkMode = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    setDarkMsg(next ? "Dark mode enabled" : "Dark mode disabled");
+    setTimeout(() => setDarkMsg(""), 2000);
   };
 
-  const handleProfileChange = (e) =>
-    setProfile({ ...profile, [e.target.name]: e.target.value });
+  const toggleNotifications = () => {
+    const next = !notifications;
+    setNotifications(next);
+    setNotifyMsg(
+      next ? "Notifications enabled" : "Notifications disabled"
+    );
+    setTimeout(() => setNotifyMsg(""), 2000);
+  };
 
   const saveProfile = () => {
     localStorage.setItem("adminProfile", JSON.stringify(profile));
-    showToast("Profile Updated 👤");
+    alert("Profile updated");
+  };
+
+  const updatePassword = (e) => {
+    e.preventDefault();
+
+    if (!passwords.current || !passwords.next || !passwords.confirm)
+      return alert("All fields required");
+
+    if (passwords.next.length < 6)
+      return alert("Password too short");
+
+    if (passwords.next !== passwords.confirm)
+      return alert("Passwords do not match");
+
+    alert("Password updated");
+    setPasswords({ current: "", next: "", confirm: "" });
   };
 
   return (
-    <div className="settings-container">
-      <h2>⚙️ Settings</h2>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-xl font-semibold mb-6">⚙️ Admin Settings</h2>
 
-      {/* APPEARANCE */}
-      <div className="settings-card">
-        <h3>Appearance</h3>
-        <div className="setting-row">
+      <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <h3 className="font-semibold mb-4">Appearance</h3>
+
+        <div className="flex justify-between items-center">
           <div>
-            <p className="setting-title">Dark Mode</p>
-            <span className="setting-desc">Enable dark theme</span>
+            <p className="font-medium">Dark Mode</p>
+            <p className="text-sm text-gray-500">Enable dark theme</p>
+            {darkMsg && (
+              <p className="text-sm text-green-600 mt-1">{darkMsg}</p>
+            )}
           </div>
-          <label className="switch">
+
+          <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={darkMode}
-              onChange={() => setDarkMode(!darkMode)}
+              onChange={toggleDarkMode}
+              className="sr-only peer"
             />
-            <span className="slider"></span>
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#931012]
+              after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+              after:bg-white after:h-5 after:w-5 after:rounded-full
+              after:transition-all peer-checked:after:translate-x-full" />
           </label>
         </div>
       </div>
 
-      {/* NOTIFICATIONS */}
-      <div className="settings-card">
-        <h3>Notifications</h3>
-        <div className="setting-row">
+      <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <h3 className="font-semibold mb-4">Notifications</h3>
+
+        <div className="flex justify-between items-center">
           <div>
-            <p className="setting-title">Admin Notifications</p>
-            <span className="setting-desc">Order & system alerts</span>
+            <p className="font-medium">Admin Alerts</p>
+            <p className="text-sm text-gray-500">
+              Orders & system updates
+            </p>
+            {notifyMsg && (
+              <p className="text-sm text-green-600 mt-1">{notifyMsg}</p>
+            )}
           </div>
-          <label className="switch">
+
+          <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={notifications}
-              onChange={() => setNotifications(!notifications)}
+              onChange={toggleNotifications}
+              className="sr-only peer"
             />
-            <span className="slider"></span>
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#931012]
+              after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+              after:bg-white after:h-5 after:w-5 after:rounded-full
+              after:transition-all peer-checked:after:translate-x-full" />
           </label>
         </div>
       </div>
 
-      {/* PROFILE + PASSWORD SIDE BY SIDE */}
-      <div className="settings-grid">
-        {/* PROFILE */}
-        <div className="settings-card">
-          <h3>👤 Admin Profile</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">👤 Admin Profile</h3>
 
-          <div className="form-group">
-            <label>Name</label>
-            <input name="name" value={profile.name} onChange={handleProfileChange} />
-          </div>
+          {["name", "email", "phone"].map((field) => (
+            <div key={field} className="mb-3">
+              <label className="text-sm capitalize">{field}</label>
+              <input
+                value={profile[field]}
+                onChange={(e) =>
+                  setProfile({ ...profile, [field]: e.target.value })
+                }
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+          ))}
 
-          <div className="form-group">
-            <label>Email</label>
-            <input name="email" value={profile.email} onChange={handleProfileChange} />
-          </div>
-
-          <div className="form-group">
-            <label>Phone</label>
-            <input name="phone" value={profile.phone} onChange={handleProfileChange} />
-          </div>
-
-          <button className="save-btn" onClick={saveProfile}>
+          <button
+            onClick={saveProfile}
+            className="mt-3 bg-[#931012] text-white px-4 py-2 rounded"
+          >
             Save Profile
           </button>
         </div>
 
-        {/* PASSWORD */}
-        <div className="settings-card">
-          <h3>🔐 Change Password</h3>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">🔐 Change Password</h3>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={updatePassword}>
             {[
-              ["currentPassword", showCurrent, setShowCurrent],
-              ["newPassword", showNew, setShowNew],
-              ["confirmPassword", showConfirm, setShowConfirm],
-            ].map(([name, show, toggle], i) => (
-              <div className="form-group" key={i}>
-                <label>{name.replace(/([A-Z])/g, " $1")}</label>
-                <div className="password-field">
+              ["current", "Current Password"],
+              ["next", "New Password"],
+              ["confirm", "Confirm Password"],
+            ].map(([key, label]) => (
+              <div key={key} className="mb-3">
+                <label className="text-sm">{label}</label>
+                <div className="flex items-center border rounded px-3 py-2">
                   <input
-                    type={show ? "text" : "password"}
-                    name={name}
-                    value={form[name]}
-                    onChange={handleChange}
+                    type={show[key] ? "text" : "password"}
+                    value={passwords[key]}
+                    onChange={(e) =>
+                      setPasswords({ ...passwords, [key]: e.target.value })
+                    }
+                    className="flex-1 outline-none"
                   />
-                  <span onClick={() => toggle(!show)}>
-                    {show ? "🙈" : "👁️"}
+                  <span
+                    onClick={() =>
+                      setShow({ ...show, [key]: !show[key] })
+                    }
+                    className="cursor-pointer"
+                  >
+                    {show[key] ? "🙈" : "👁️"}
                   </span>
                 </div>
               </div>
             ))}
 
-            <button className="save-btn" type="submit">
+            <button
+              type="submit"
+              className="mt-3 bg-[#931012] text-white px-4 py-2 rounded"
+            >
               Update Password
             </button>
           </form>
@@ -185,6 +204,4 @@ const Settings = () => {
       </div>
     </div>
   );
-};
-
-export default Settings;
+}

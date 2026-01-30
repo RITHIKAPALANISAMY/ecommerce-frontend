@@ -1,193 +1,154 @@
-import "../../styles/checkoutPayment.css";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import CheckoutSteps from "./CheckoutSteps";
-import { useState } from "react";
-import { useOrders } from "../../context/OrderContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSellerProducts } from "../../context/SellerProductContext";
+import { useState } from "react";
 
 export default function CheckoutPayment() {
   const navigate = useNavigate();
-  const { placeOrder } = useOrders();
+  const { clearCart } = useCart();
   const { user } = useAuth();
-  const { cartItems, setCartItems } = useCart();
   const { reduceStockAfterOrder } = useSellerProducts();
 
   const [method, setMethod] = useState("cod");
   const [error, setError] = useState("");
 
-  const checkoutItems = cartItems.filter(
-    (item) => item.stock === undefined || item.stock > 0
+  /* 🔑 SNAPSHOT CHECKOUT DATA */
+  const [checkoutAmount] = useState(() =>
+    JSON.parse(localStorage.getItem("checkoutAmount"))
   );
 
-  const subtotal = checkoutItems.reduce(
-    (sum, i) => sum + i.price * i.qty,
-    0
+  const [checkoutAddress] = useState(() =>
+    JSON.parse(localStorage.getItem("checkoutAddress"))
   );
 
-  const delivery = subtotal > 0 ? 99 : 0;
-  const gst = Math.round(subtotal * 0.18);
-  const total = subtotal + delivery + gst;
-
-  const sellerItemsForStock = checkoutItems
-    .filter((item) => item.sellerId)
-    .map((item) => ({
-      productId: item.id,
-      quantity: item.qty,
-    }));
+  const checkoutItems =
+    JSON.parse(localStorage.getItem("cart")) || [];
 
   const handlePlaceOrder = () => {
-    setError("");
-
-    if (checkoutItems.length === 0) {
-      setError("No available items to place order.");
+    if (!checkoutItems || checkoutItems.length === 0) {
+      setError("Cart is empty");
       return;
     }
 
-    const orderItems = checkoutItems.map((item) => ({
-      productId: item.id,
-      title: item.title,
-      price: item.price,
-      quantity: item.qty,
-      sellerId: item.sellerId || "admin",
-    }));
+    const existingOrders =
+      JSON.parse(localStorage.getItem("orders")) || [];
 
-    // ✅ ADDED: tracking id
-    const trackingId = `TRK-${Date.now()}-${Math.floor(
-      Math.random() * 1000
-    )}`;
-
-    // ✅ ADDED: date helpers
-    const today = new Date().toISOString().split("T")[0];
-
-    const order = {
+    const newOrder = {
       id: Date.now(),
-      buyerEmail: user.email,
-      items: orderItems,
-      address:
-        JSON.parse(localStorage.getItem("checkoutAddress")) || null,
-      total,
-
-      // existing
-      date: new Date().toLocaleDateString(),
-      status: "Placed",
+      items: checkoutItems,
+      amount: checkoutAmount,
+      address: checkoutAddress,
       paymentMethod: method,
-
-      // ✅ ADDED (required by Orders & Seller pages)
-      placedDate: today,
-      trackingId,
-
-      shippedDate: null,
-      expectedDeliveryDate: null,
-      deliveredDate: null,
-      cancelledDate: null,
+      placedDate: new Date().toLocaleString(),
     };
 
-    placeOrder(order);
-
-    if (sellerItemsForStock.length > 0) {
-      reduceStockAfterOrder(sellerItemsForStock);
-    }
-
-    setCartItems((prev) =>
-      prev.filter(
-        (item) =>
-          !checkoutItems.some((p) => p.id === item.id)
-      )
+    localStorage.setItem(
+      "orders",
+      JSON.stringify([...existingOrders, newOrder])
     );
 
+    // ✅ order-success flag
     localStorage.setItem("orderPlaced", "true");
-    navigate("/order-success", { replace: true });
+
+    // ✅ Navigate first
+    navigate("/order-success");
+
+    // ✅ Clear cart AFTER navigation
+    setTimeout(() => {
+      clearCart();
+    }, 1000);
   };
 
   return (
-    <div className="checkout-wrapper">
+    <div className="min-h-[calc(100vh-80px)] bg-gray-50 px-4 py-4">
       <CheckoutSteps currentStep={3} />
 
-      <div className="checkout-grid">
-        <div className="payment-card">
-          <h2>Payment Options</h2>
+      <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 items-start">
+        
+        {/* LEFT: PAYMENT OPTIONS */}
+        <div className="md:col-span-2 rounded-xl bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-gray-800">
+            Payment Options
+          </h2>
 
           {error && (
-            <div className="checkout-error">⚠️ {error}</div>
+            <div className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
+              ⚠️ {error}
+            </div>
           )}
 
-          <div
-            className={`payment-option ${method === "upi" ? "active" : ""}`}
-            onClick={() => setMethod("upi")}
-          >
-            📱 <strong>UPI</strong>
-          </div>
+          {[
+            ["upi", "📱 UPI"],
+            ["card", "💳 Card"],
+            ["netbanking", "🏦 Net Banking"],
+            ["wallet", "👛 Wallet"],
+            ["cod", "💵 Cash on Delivery"],
+          ].map(([key, label]) => (
+            <div
+              key={key}
+              onClick={() => setMethod(key)}
+              className={`mb-2 cursor-pointer rounded-lg border px-4 py-3 font-medium transition ${
+                method === key
+                  ? "border-red-600 bg-red-50"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              {label}
+            </div>
+          ))}
 
-          <div
-            className={`payment-option ${method === "card" ? "active" : ""}`}
-            onClick={() => setMethod("card")}
-          >
-            💳 <strong>Card</strong>
-          </div>
-
-          <div
-            className={`payment-option ${method === "netbanking" ? "active" : ""}`}
-            onClick={() => setMethod("netbanking")}
-          >
-            🏦 <strong>Net Banking</strong>
-          </div>
-
-          <div
-            className={`payment-option ${method === "wallet" ? "active" : ""}`}
-            onClick={() => setMethod("wallet")}
-          >
-            👛 <strong>Wallet</strong>
-          </div>
-
-          <div
-            className={`payment-option ${method === "cod" ? "active" : ""}`}
-            onClick={() => setMethod("cod")}
-          >
-            💵 <strong>Cash on Delivery</strong>
-          </div>
-
-          <div className="payment-actions">
+          <div className="mt-4 flex justify-between">
             <button
-              className="back-btn"
               onClick={() => navigate("/checkout/summary")}
+              className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
             >
               Back
             </button>
 
             <button
-              className="place-btn"
               onClick={handlePlaceOrder}
+              className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
               Place Order →
             </button>
           </div>
         </div>
 
-        <div className="price-card">
-          <h3>Price Details</h3>
+        {/* RIGHT: PRICE DETAILS */}
+        <div className="rounded-xl bg-white p-5 shadow-sm sticky top-24">
+          <h3 className="mb-4 font-semibold text-gray-800">
+            Price Details
+          </h3>
 
-          <div className="price-row">
-            <span>Subtotal ({checkoutItems.length} item)</span>
-            <span>₹{subtotal}</span>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Subtotal</span>
+            <span>₹{checkoutAmount?.subtotal}</span>
           </div>
 
-          <div className="price-row">
-            <span>Delivery</span>
-            <span>₹{delivery}</span>
+          <div className="mt-1 flex justify-between text-sm text-gray-600">
+            <span>Shipping</span>
+            <span>₹{checkoutAmount?.shipping}</span>
           </div>
 
-          <div className="price-row">
-            <span>GST (18%)</span>
-            <span>₹{gst}</span>
+          <div className="mt-1 flex justify-between text-sm text-gray-600">
+            <span>GST</span>
+            <span>₹{checkoutAmount?.gst}</span>
           </div>
 
-          <hr />
+          {checkoutAmount?.discount > 0 && (
+            <div className="mt-1 flex justify-between text-sm text-green-600">
+              <span>Discount</span>
+              <span>-₹{checkoutAmount.discount}</span>
+            </div>
+          )}
 
-          <div className="price-total">
-            <span>Total Amount</span>
-            <span>₹{total}</span>
+          <hr className="my-3" />
+
+          <div className="flex justify-between font-semibold text-gray-800">
+            <span>Total</span>
+            <span>₹{checkoutAmount?.total}</span>
           </div>
         </div>
       </div>

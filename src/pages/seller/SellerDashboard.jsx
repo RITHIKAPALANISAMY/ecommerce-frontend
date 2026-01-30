@@ -1,181 +1,213 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useProducts } from "../../context/ProductContext";
+import { useSellerProducts } from "../../context/SellerProductContext";
 import { useOrders } from "../../context/OrderContext";
 
 import SellerProducts from "./SellerProducts";
 import SellerOrders from "./SellerOrders";
+import SellerRevenueReport from "../../components/seller/SellerRevenueReport";
 
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
+  Package,
+  ShoppingCart,
+  IndianRupee,
+  Clock,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 
 export default function SellerDashboard() {
   const { user } = useAuth();
-  const { products = [] } = useProducts();
-
-  const orderContext = useOrders() || {};
-  const getSellerOrders =
-    typeof orderContext.getSellerOrders === "function"
-      ? orderContext.getSellerOrders
-      : () => [];
-
-  const getSellerRevenue =
-    typeof orderContext.getSellerRevenue === "function"
-      ? orderContext.getSellerRevenue
-      : () => 0;
+  const { sellerProducts } = useSellerProducts();
+  const { orders } = useOrders();
 
   const [tab, setTab] = useState("overview");
 
-  const sellerId = user?.email || "";
+  const sellerId = user?.email;
   const seller = user?.sellerInfo;
 
-  /* ================= DATA ================= */
-  const sellerProducts = useMemo(
-    () => products.filter(p => p.sellerId === sellerId),
-    [products, sellerId]
-  );
+  /* ================= SELLER ORDERS (REAL TIME) ================= */
+  const sellerOrders = useMemo(() => {
+    if (!sellerId) return [];
 
-  const sellerOrders = useMemo(
-    () => (sellerId ? getSellerOrders(sellerId) : []),
-    [sellerId, getSellerOrders]
-  );
-
-  const revenue = useMemo(
-    () => (sellerId ? getSellerRevenue(sellerId) : 0),
-    [sellerId, getSellerRevenue]
-  );
-
-  /* ================= DAILY REVENUE ================= */
-  const chartData = useMemo(() => {
-    return Object.values(
-      sellerOrders.reduce((acc, order) => {
-        const date = order.date;
-        const amount = order.items.reduce(
-          (s, i) => s + i.price * i.quantity,
-          0
+    return orders
+      .map((order) => {
+        const items = order.items.filter(
+          (i) => i.sellerId === sellerId
         );
 
-        if (!acc[date]) acc[date] = { date, revenue: 0 };
-        acc[date].revenue += amount;
-        return acc;
-      }, {})
-    );
+        return items.length
+          ? { ...order, items }
+          : null;
+      })
+      .filter(Boolean);
+  }, [orders, sellerId]);
+
+  /* ================= REVENUE (EXCLUDE CANCELLED) ================= */
+  const revenue = useMemo(() => {
+    return sellerOrders.reduce((total, order) => {
+      if (order.status === "Cancelled") return total;
+
+      const orderRevenue = order.items.reduce((sum, item) => {
+        if (item.status === "Cancelled") return sum;
+
+        const price = Number(item.price || 0);
+        const qty = Number(item.quantity || 1);
+
+        return sum + price * qty;
+      }, 0);
+
+      return total + orderRevenue;
+    }, 0);
   }, [sellerOrders]);
 
-  return (
-    <div className="bg-gray-50 min-h-screen py-6">
-      <div className="max-w-6xl mx-auto px-4 space-y-6">
+  /* ================= METRICS ================= */
+  const pendingOrders = sellerOrders.filter(
+    (o) => o.status === "Placed" || o.status === "Shipped"
+  ).length;
 
-        {/* ================= HEADER ================= */}
-        <div>
-          <h2 className="text-2xl font-semibold">
+  const LOW_STOCK_LIMIT = 5;
+
+  const lowStock = sellerProducts.filter(
+    (p) => p.stock > 0 && p.stock <= LOW_STOCK_LIMIT
+  ).length;
+
+  const outOfStock = sellerProducts.filter(
+    (p) => p.stock === 0
+  ).length;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-6">
+      <div className="mx-auto max-w-7xl">
+
+        {/* HEADER */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800">
             Seller Dashboard
           </h2>
-          <p className="text-sm text-gray-500">
-            {user?.email}
-          </p>
+          <p className="text-sm text-gray-500">{user?.email}</p>
         </div>
 
-        {/* ================= SELLER INFO ================= */}
+        {/* SELLER INFO */}
         {seller && (
-          <div className="bg-white rounded-xl shadow p-5">
-            <h3 className="text-lg font-semibold">
+          <div className="mb-8 rounded-2xl bg-white p-6 shadow-md border-l-4 border-red-500">
+            <h3 className="text-lg font-semibold text-gray-800">
               {seller.storeName}
             </h3>
-            <p className="text-sm text-gray-600">
-              <strong>Owner:</strong> {seller.ownerName || "—"}
-            </p>
-            <p className="text-sm">
-              <strong>Phone:</strong> {seller.phone}
-            </p>
-            {seller.gst && (
-              <p className="text-sm">
-                <strong>GST:</strong> {seller.gst}
-              </p>
-            )}
-            <p className="text-sm text-gray-500">
-              {seller.address}
-            </p>
+
+            <div className="mt-2 grid gap-1 text-sm text-gray-600">
+              <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
+              <p><strong>Phone:</strong> {seller.phone}</p>
+              {seller.gst && (
+                <p><strong>GST:</strong> {seller.gst}</p>
+              )}
+              <p>{seller.address}</p>
+            </div>
           </div>
         )}
 
-        {/* ================= TABS ================= */}
-        <div className="flex gap-3">
-          {["overview", "products", "orders"].map(t => (
+        {/* TABS */}
+        <div className="mb-8 inline-flex rounded-xl bg-white p-1 shadow-sm">
+          {["overview", "products", "orders"].map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition
-                ${
-                  tab === t
-                    ? "bg-rose-500 text-white shadow"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
+              className={`rounded-lg px-5 py-2 text-sm font-medium transition ${
+                tab === t
+                  ? "bg-red-600 text-white shadow"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               {t.toUpperCase()}
             </button>
           ))}
         </div>
 
-        {/* ================= OVERVIEW ================= */}
+        {/* OVERVIEW */}
         {tab === "overview" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <>
+            <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
+              <h3 className="mb-6 text-lg font-semibold text-gray-800">
+                Store Performance
+              </h3>
 
-            <OverviewCard title="Products" value={sellerProducts.length} icon="📦" />
-            <OverviewCard title="Orders" value={sellerOrders.length} icon="🧾" />
-            <OverviewCard title="Revenue" value={`₹${revenue}`} icon="💰" />
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <StatCard
+                  title="Products"
+                  value={sellerProducts.length}
+                  icon={Package}
+                  accent="bg-indigo-100 text-indigo-600"
+                />
 
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="text-sm font-medium mb-2">
-                Daily Revenue
-              </p>
-              <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={chartData}>
-                  <XAxis dataKey="date" hide />
-                  <YAxis hide />
-                  <Tooltip formatter={v => `₹${v}`} />
-                  <Bar
-                    dataKey="revenue"
-                    fill="#f43f5e"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+                <StatCard
+                  title="Orders"
+                  value={sellerOrders.length}
+                  icon={ShoppingCart}
+                  accent="bg-blue-100 text-blue-600"
+                />
+
+                <StatCard
+                  title="Revenue"
+                  value={`₹${revenue}`}
+                  icon={IndianRupee}
+                  accent="bg-green-100 text-green-600"
+                />
+
+                <StatCard
+                  title="Pending Orders"
+                  value={pendingOrders}
+                  icon={Clock}
+                  accent="bg-yellow-100 text-yellow-600"
+                />
+
+                <StatCard
+                  title="Low Stock"
+                  value={lowStock}
+                  icon={AlertTriangle}
+                  accent="bg-orange-100 text-orange-600"
+                />
+
+                <StatCard
+                  title="Out of Stock"
+                  value={outOfStock}
+                  icon={XCircle}
+                  accent="bg-red-100 text-red-600"
+                />
+              </div>
             </div>
 
-          </div>
+            <div className="rounded-2xl bg-white p-6 shadow-md">
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                Revenue Overview
+              </h3>
+              <SellerRevenueReport />
+            </div>
+          </>
         )}
 
-        {/* ================= PRODUCTS ================= */}
         {tab === "products" && <SellerProducts />}
-
-        {/* ================= ORDERS ================= */}
-        {tab === "orders" && (
-          <div className="bg-gray-100 rounded-xl p-4">
-            <SellerOrders />
-          </div>
-        )}
-
+        {tab === "orders" && <SellerOrders />}
       </div>
     </div>
   );
 }
 
-/* ================= SMALL CARD ================= */
-function OverviewCard({ title, value, icon }) {
+/* ================= STAT CARD ================= */
+function StatCard({ title, value, icon: Icon, accent }) {
   return (
-    <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
-      <div className="text-3xl">{icon}</div>
-      <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold">{value}</p>
+    <div className="group rounded-xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
+
+      <p className="mt-4 text-3xl font-bold text-gray-800">
+        {value}
+      </p>
+
+      <div className="mt-2 h-1 w-10 rounded-full bg-gray-200 group-hover:bg-red-500 transition" />
     </div>
   );
 }

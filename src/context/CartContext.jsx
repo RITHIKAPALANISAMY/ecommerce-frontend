@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  // ✅ LOAD CART
   const [cartItems, setCartItems] = useState(() => {
     const saved = localStorage.getItem("cart");
     return saved ? JSON.parse(saved) : [];
@@ -11,33 +10,32 @@ export function CartProvider({ children }) {
 
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // ✅ SAVE CART
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // ✅ ADD TO CART (STOCK-SAFE)
+  /* ✅ ADD TO CART – FINAL, SAFE VERSION */
   const addToCart = (product) => {
     setCartItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
 
-      const stock =
-        product.stock !== undefined
-          ? Number(product.stock)
-          : 0; // 🔴 DEFAULT SAFE
-
+      const stock = product.stock ?? Infinity;
       const qtyToAdd = Number(product.qty) || 1;
 
+      // 🔑 IMAGE NORMALIZATION (CORE FIX)
+      const resolvedImage =
+        product.image ||
+        product.images?.[0] ||
+        null;
+
       if (existing) {
-        // ❌ DO NOT ADD IF OUT OF STOCK
-        if (stock === 0) return prev;
+        if (existing.qty >= stock) return prev;
 
         return prev.map((i) =>
           i.id === product.id
             ? {
                 ...i,
                 qty: Math.min(i.qty + qtyToAdd, stock),
-                stock, // ✅ KEEP UPDATED
               }
             : i
         );
@@ -47,28 +45,21 @@ export function CartProvider({ children }) {
         ...prev,
         {
           ...product,
-          image: product.image || product.images?.[0],
-          qty: stock === 0 ? 1 : Math.min(qtyToAdd, stock),
-          stock, // ✅ CRITICAL FIX
+          image: resolvedImage, // ✅ ALWAYS SAVE IMAGE HERE
+          qty: Math.min(qtyToAdd, stock),
         },
       ];
     });
   };
 
-  // ✅ INCREASE QTY (BLOCK OOS)
-  const addQty = (id) => {
+  const addQty = (id) =>
     setCartItems((items) =>
-      items.map((i) => {
-        if (i.id !== id) return i;
-        if (i.stock === 0) return i;
-        if (i.stock !== null && i.qty >= i.stock) return i;
-        return { ...i, qty: i.qty + 1 };
-      })
+      items.map((i) =>
+        i.id === id ? { ...i, qty: i.qty + 1 } : i
+      )
     );
-  };
 
-  // ✅ DECREASE QTY
-  const reduceQty = (id) => {
+  const reduceQty = (id) =>
     setCartItems((items) =>
       items.map((i) =>
         i.id === id && i.qty > 1
@@ -76,24 +67,28 @@ export function CartProvider({ children }) {
           : i
       )
     );
+
+  const removeItem = (id) =>
+    setCartItems((items) =>
+      items.filter((i) => i.id !== id)
+    );
+
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem("cart");
+    setAppliedCoupon(null);
   };
 
-  // ✅ REMOVE ITEM
-  const removeItem = (id) => {
-    setCartItems((items) => items.filter((i) => i.id !== id));
-  };
-
-  // ✅ APPLY COUPON
   const applyCoupon = (code, subtotal) => {
     if (code === "WELCOME10") {
       if (subtotal < 500) return "Minimum ₹500 required";
-      setAppliedCoupon({ code, type: "PERCENT", value: 10 });
+      setAppliedCoupon({ type: "PERCENT", value: 10 });
       return null;
     }
 
     if (code === "SAVE500") {
       if (subtotal < 2000) return "Minimum ₹2000 required";
-      setAppliedCoupon({ code, type: "FLAT", value: 500 });
+      setAppliedCoupon({ type: "FLAT", value: 500 });
       return null;
     }
 
@@ -106,11 +101,11 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cartItems,
-        setCartItems,
         addToCart,
         addQty,
         reduceQty,
         removeItem,
+        clearCart,
         applyCoupon,
         removeCoupon,
         appliedCoupon,

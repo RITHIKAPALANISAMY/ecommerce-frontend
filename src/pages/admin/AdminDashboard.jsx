@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { Doughnut, Line } from "react-chartjs-2";
+import jsPDF from "jspdf";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -12,6 +12,9 @@ import {
   LineElement,
 } from "chart.js";
 
+import { useOrders } from "../../context/OrderContext";
+import { useProducts } from "../../context/ProductContext";
+
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -22,100 +25,110 @@ ChartJS.register(
   LineElement
 );
 
-import { useAuth } from "../../context/AuthContext";
-import { useOrders } from "../../context/OrderContext";
-import { useProducts } from "../../context/ProductContext";
-
-import "./AdminDashboard.css";
-
-import Users from "./Users";
-import Products from "./Products";
-import AdminOrders from "./AdminOrders";
-import Coupons from "./Coupons";
-import Analytics from "./Analytics";
-import Deals from "./Deals";
-import Settings from "./Settings";
-import Payments from "./Payments";
-import Returns from "./Returns";
-import Refunds from "./Refunds";
-
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-
   const { orders = [] } = useOrders();
   const { products = [] } = useProducts();
   const users = JSON.parse(localStorage.getItem("admin_users")) || [];
 
-  /* ================= KPI DATA ================= */
-  const totalOrders = orders.length;
+  /* ================= TOTAL SELLERS (ADDED) ================= */
+  const totalSellers = useMemo(() => {
+    // 1️⃣ derive from products (real seller activity)
+    const sellerIds = products
+      .map((p) => p.sellerId)
+      .filter(Boolean);
 
-  const totalRevenue = useMemo(() => {
-    return orders.reduce((sum, o) => sum + (o.amount || 0), 0);
-  }, [orders]);
+    const uniqueSellers = new Set(sellerIds);
 
-  const recentOrders = useMemo(() => {
-    return [...orders]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-  }, [orders]);
+    if (uniqueSellers.size > 0) {
+      return uniqueSellers.size;
+    }
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
-  };
+    // 2️⃣ fallback: users with Seller role
+    return users.filter((u) => u.role === "Seller").length;
+  }, [products, users]);
+  /* ========================================================= */
 
-  /* ================= ORDER STATUS COUNTS ================= */
+  const totalRevenue = useMemo(
+    () => orders.reduce((sum, o) => sum + (o.amount || 0), 0),
+    [orders]
+  );
+
   const orderStatusCounts = useMemo(() => {
     const counts = {
       PLACED: 0,
-      Approved: 0,
-      Cancelled: 0,
-      Delivered: 0,
+      APPROVED: 0,
+      CANCELLED: 0,
+      DELIVERED: 0,
     };
-
     orders.forEach((o) => {
       counts[o.status] = (counts[o.status] || 0) + 1;
     });
-
     return counts;
   }, [orders]);
 
-  /* ================= MONTHLY SALES ================= */
-  const monthlySales = useMemo(() => {
-    const map = {};
-    orders.forEach((o) => {
-      const key = new Date(o.createdAt).toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
-      map[key] = (map[key] || 0) + (o.amount || 0);
-    });
-    return map;
-  }, [orders]);
+  /* ================= EXPORT PDF (EXISTING) ================= */
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    let y = 20;
 
-  /* ================= CHART DATA ================= */
+    doc.setFontSize(18);
+    doc.text("Admin Dashboard Report", 14, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, y);
+    y += 10;
+
+    doc.setFontSize(14);
+    doc.text("Key Metrics", 14, y);
+    y += 8;
+
+    doc.setFontSize(11);
+    doc.text(`Total Users: ${users.length}`, 14, y);
+    y += 6;
+    doc.text(`Total Sellers: ${totalSellers}`, 14, y);
+    y += 6;
+    doc.text(`Total Products: ${products.length}`, 14, y);
+    y += 6;
+    doc.text(`Total Orders: ${orders.length}`, 14, y);
+    y += 6;
+    doc.text(`Total Revenue: ₹${totalRevenue}`, 14, y);
+    y += 10;
+
+    doc.setFontSize(14);
+    doc.text("Order Status Breakdown", 14, y);
+    y += 8;
+
+    Object.entries(orderStatusCounts).forEach(([status, count]) => {
+      doc.setFontSize(11);
+      doc.text(`${status}: ${count}`, 14, y);
+      y += 6;
+    });
+
+    doc.save("admin-dashboard-report.pdf");
+  };
+  /* ========================================================= */
+
   const donutData = {
     labels: Object.keys(orderStatusCounts),
     datasets: [
       {
         data: Object.values(orderStatusCounts),
-        backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"],
+        backgroundColor: ["#f59e0b", "#16a34a", "#dc2626", "#2563eb"],
       },
     ],
   };
 
   const lineData = {
-    labels: Object.keys(monthlySales),
+    labels: ["Sales"],
     datasets: [
       {
-        label: "Sales",
-        data: Object.values(monthlySales),
+        label: "Revenue",
+        data: [totalRevenue],
         borderColor: "#931012",
-        backgroundColor: "rgba(147,16,18,0.1)",
-        fill: true,
+        backgroundColor: "rgba(147,16,18,0.15)",
         tension: 0.4,
+        fill: true,
       },
     ],
   };
@@ -126,179 +139,58 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="admin-container">
-      {/* ================= HEADER ================= */}
-      <div className="admin-header">
-        <div>
-          <h1>Admin Dashboard</h1>
-          <p>Complete platform control and management</p>
-        </div>
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
+    <>
+      {/* EXPORT BUTTON */}
+      <div className="flex justify-end mb-5">
+        <button
+          onClick={exportPDF}
+          className="bg-[#931012] text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition"
+        >
+          Export PDF
         </button>
       </div>
 
-      {/* ================= TABS ================= */}
-      <div className="admin-tabs">
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         {[
-          "overview",
-          "users",
-          "products",
-          "orders",
-          "coupons",
-          "deals",
-          "analytics",
-          "payments",
-          "returns",
-          "refunds",
-          "settings",
-        ].map((tab) => (
-          <span
-            key={tab}
-            className={activeTab === tab ? "active" : ""}
-            onClick={() => setActiveTab(tab)}
+          ["👥", users.length, "Total Users"],
+          ["🏪", totalSellers, "Total Sellers"], // ✅ ADDED
+          ["📦", products.length, "Total Products"],
+          ["🧾", orders.length, "Total Orders"],
+          ["₹", totalRevenue, "Total Revenue"],
+        ].map(([icon, value, label], i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl shadow p-5 flex items-center gap-4"
           >
-            {tab === "deals"
-              ? "Deals & Offers"
-              : tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </span>
+            <div className="bg-red-50 p-3 rounded-xl text-xl">
+              {icon}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{value}</h2>
+              <p className="text-sm text-gray-500">{label}</p>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* ================= OVERVIEW ================= */}
-      {activeTab === "overview" && (
-        <>
-          {/* KPI */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon users">👥</div>
-              <div>
-                <h2>{users.length}</h2>
-                <p>Total Users</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon products">📊</div>
-              <div>
-                <h2>{products.length}</h2>
-                <p>Total Products</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon orders">📦</div>
-              <div>
-                <h2>{totalOrders}</h2>
-                <p>Total Orders</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon revenue">📈</div>
-              <div>
-                <h2>₹{totalRevenue.toLocaleString()}</h2>
-                <p>Total Revenue</p>
-              </div>
-            </div>
+      {/* CHARTS */}
+      <div className="grid md:grid-cols-2 gap-6 mt-10">
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h3 className="font-semibold mb-4">Orders Breakdown</h3>
+          <div className="h-[260px] flex justify-center">
+            <Doughnut data={donutData} options={chartOptions} />
           </div>
+        </div>
 
-          {/* ACTIONS */}
-          <div className="admin-actions">
-            <button onClick={() => setActiveTab("payments")}>
-              📄 Process Payment
-            </button>
-            <button onClick={() => setActiveTab("returns")}>
-              🅿️ Manage Returns
-            </button>
-            <button onClick={() => setActiveTab("refunds")}>
-              💰 Issue Refund
-            </button>
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h3 className="font-semibold mb-4">Sales Trend</h3>
+          <div className="h-[260px]">
+            <Line data={lineData} options={chartOptions} />
           </div>
-
-          {/* CHARTS */}
-          <div className="overview-charts-row">
-            <div className="chart-box">
-              <h3>Orders Breakdown</h3>
-              <div style={{ width: 220, height: 220, margin: "0 auto" }}>
-                <Doughnut data={donutData} options={chartOptions} />
-              </div>
-            </div>
-
-            <div className="chart-box">
-              <h3>Sales Trend</h3>
-              <div style={{ width: "100%", height: 250 }}>
-                <Line data={lineData} options={chartOptions} />
-              </div>
-            </div>
-          </div>
-
-          {/* RECENT ORDERS */}
-          <div className="recent-orders">
-            <div className="recent-orders-header">
-              <h3>Recent Orders</h3>
-              <button
-                className="view-all"
-                onClick={() => setActiveTab("orders")}
-              >
-                View All
-              </button>
-            </div>
-
-            <table className="recent-orders-table">
-              <thead>
-                <tr>
-                  <th style={{ width: "30%" }}>Order ID</th>
-                  <th style={{ width: "25%" }}>User</th>
-                  <th style={{ width: "20%" }}>Amount</th>
-                  <th style={{ width: "25%" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="empty-cell">
-                      No recent orders
-                    </td>
-                  </tr>
-                ) : (
-                  recentOrders.map((o) => (
-                    <tr
-                      key={o.id}
-                      className="recent-row"
-                      onClick={() => setActiveTab("orders")}
-                    >
-                      <td className="mono">#{o.id}</td>
-                      <td>{o.buyerName}</td>
-                      <td>₹{o.amount}</td>
-                      <td>
-                        <span
-                          className={`status ${o.status.toLowerCase()}`}
-                        >
-                          {o.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {/* ================= OTHER TABS ================= */}
-      {activeTab === "users" && <Users />}
-      {activeTab === "products" && <Products />}
-      {activeTab === "orders" && <AdminOrders />}
-      {activeTab === "coupons" && <Coupons />}
-      {activeTab === "deals" && <Deals />}
-      {activeTab === "analytics" && <Analytics />}
-      {activeTab === "payments" && <Payments />}
-      {activeTab === "returns" && <Returns />}
-      {activeTab === "refunds" && <Refunds />}
-      {activeTab === "settings" && <Settings />}
-    </div>
+        </div>
+      </div>
+    </>
   );
 };
 

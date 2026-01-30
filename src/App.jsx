@@ -1,13 +1,21 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import "./index.css";
 
 /* ================= ADMIN ================= */
 import AdminRoutes from "./routes/AdminRoutes";
 import AdminGuard from "./routes/AdminGuard";
+import AdminLayout from "./layouts/AdminLayout";
+
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
-import OrdersAdmin from "./pages/admin/AdminOrders"; // ✅ FIXED
+import OrdersAdmin from "./pages/admin/AdminOrders";
 import Coupons from "./pages/admin/Coupons";
+import Deals from "./pages/admin/Deals";
+import Analytics from "./pages/admin/Analytics";
+import Payments from "./pages/admin/Payments";
+import Returns from "./pages/admin/Returns";
+import Refunds from "./pages/admin/Refunds";
 import Settings from "./pages/admin/Settings";
 
 /* ================= SELLER ================= */
@@ -40,7 +48,7 @@ import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
-
+/* ================= COMMON ================= */
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./components/common/ProfilePage";
@@ -49,16 +57,22 @@ import SettingsPage from "./components/common/SettingsPage";
 export default function App() {
   return (
     <Routes>
+
       {/* ================= ADMIN (PROTECTED) ================= */}
       <Route element={<AdminGuard />}>
         <Route element={<AdminRoutes />}>
-          <Route path="/admin">
+          <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<Users />} />
             <Route path="products" element={<Products />} />
-            <Route path="orders" element={<OrdersAdmin />} /> {/* ✅ ADMIN ORDERS */}
+            <Route path="orders" element={<OrdersAdmin />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="deals" element={<Deals />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="returns" element={<Returns />} />
+            <Route path="refunds" element={<Refunds />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Route>
@@ -79,7 +93,7 @@ export default function App() {
         <Route path="category/:category" element={<CategoryPage />} />
         <Route path="search" element={<SearchResults />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="orders" element={<BuyerOrders />} /> {/* ✅ BUYER ORDERS */}
+        <Route path="orders" element={<BuyerOrders />} />
         <Route path="wishlist" element={<Wishlist />} />
 
         <Route path="checkout" element={<Checkout />}>
@@ -98,12 +112,13 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/profile" element={<ProfilePage />} />
+
       {/* ================= COMMON ================= */}
       <Route path="/become-seller" element={<BecomeSeller />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      
+
     </Routes>
   );
 }

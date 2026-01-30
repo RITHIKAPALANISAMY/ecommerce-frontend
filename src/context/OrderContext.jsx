@@ -18,22 +18,25 @@ export const OrderProvider = ({ children }) => {
     const newOrder = {
       id: Date.now(),
       buyerId: order.buyerId,
+      buyerEmail: order.buyerEmail,
       buyerName: order.buyerName || "Customer",
       items: order.items || [],
       address: order.address || {},
-      amount: Number(order.amount) || 0, // ✅ prevents NaN
-      status: "PLACED",
-      createdAt: new Date().toISOString(), // ✅ analytics safe
+      amount: Number(order.amount) || 0,
+      status: "Placed",
+      placedDate: new Date().toISOString().split("T")[0],
     };
 
     setOrders((prev) => [newOrder, ...prev]);
   };
 
-  /* ================= UPDATE STATUS (ADMIN / SELLER) ================= */
-  const updateOrderStatus = (orderId, status) => {
+  /* ================= UPDATE STATUS (GENERIC) ================= */
+  const updateOrderStatus = (orderId, status, extra = {}) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId ? { ...o, status } : o
+        o.id === orderId
+          ? { ...o, status, ...extra }
+          : o
       )
     );
   };
@@ -43,6 +46,65 @@ export const OrderProvider = ({ children }) => {
     return orders.filter((o) => o.buyerId === buyerId);
   };
 
+  /* ================= SELLER ORDERS ================= */
+  const getSellerOrders = (sellerId) => {
+    return orders
+      .map((order) => {
+        const sellerItems = order.items.filter(
+          (item) => item.sellerId === sellerId
+        );
+        return sellerItems.length
+          ? { ...order, items: sellerItems }
+          : null;
+      })
+      .filter(Boolean);
+  };
+
+  /* ================= SELLER REVENUE ================= */
+  const getSellerRevenue = (sellerId) => {
+    return getSellerOrders(sellerId).reduce(
+      (sum, order) =>
+        sum +
+        order.items.reduce(
+          (s, i) => s + i.price * i.quantity,
+          0
+        ),
+      0
+    );
+  };
+
+  /* ================= SELLER UPDATE ITEM STATUS ================= */
+  const updateSellerOrderStatus = (
+    orderId,
+    sellerId,
+    status,
+    extra = {}
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== orderId) return order;
+
+        return {
+          ...order,
+          status,
+          ...extra,
+          items: order.items.map((item) =>
+  item.sellerId === sellerId
+    ? { ...item, status }
+    : item
+),
+        };
+      })
+    );
+  };
+
+  /* ================= SELLER CANCEL ================= */
+  const cancelOrderBySeller = (orderId, sellerId) => {
+    updateSellerOrderStatus(orderId, sellerId, "Cancelled", {
+      cancelledDate: new Date().toISOString().split("T")[0],
+    });
+  };
+
   return (
     <OrderContext.Provider
       value={{
@@ -50,6 +112,10 @@ export const OrderProvider = ({ children }) => {
         placeOrder,
         updateOrderStatus,
         getBuyerOrders,
+        getSellerOrders,
+        getSellerRevenue,
+        updateSellerOrderStatus,
+        cancelOrderBySeller,
       }}
     >
       {children}
