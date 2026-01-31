@@ -19,16 +19,17 @@ export function SellerProductProvider({ children }) {
 
   /* ================= ADD PRODUCT ================= */
   const addSellerProduct = (product) => {
-  if (!user) return;
+    if (!user) return;
 
-  const productWithSeller = {
-    ...product,
-    sellerId: user.email, // ✅ FIXED
+    const newProduct = {
+      ...product,
+      id: Date.now(),
+      sellerId: user.email, // ✅ SINGLE SOURCE OF TRUTH
+    };
+
+    setProducts((prev) => [...prev, newProduct]);
   };
 
-  setProducts((prev) => [...prev, productWithSeller]);
-};
-``
   /* ================= DELETE PRODUCT ================= */
   const deleteSellerProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -45,7 +46,7 @@ export function SellerProductProvider({ children }) {
 
   /* ================= SELLER VIEW ================= */
   const sellerProducts = user
-    ? products.filter((p) => p.sellerEmail === user.email)
+    ? products.filter((p) => p.sellerId === user.email) // ✅ FIXED
     : [];
 
   /* ================= BUYER VIEW ================= */
@@ -99,8 +100,8 @@ export function SellerProductProvider({ children }) {
   return (
     <SellerProductContext.Provider
       value={{
-        products: buyerProducts,     // 👈 buyer uses this
-        sellerProducts,              // 👈 seller dashboard uses this
+        products: buyerProducts,
+        sellerProducts,
         addSellerProduct,
         deleteSellerProduct,
         updateSellerProduct,

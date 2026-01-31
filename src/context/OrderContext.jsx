@@ -20,9 +20,22 @@ export const OrderProvider = ({ children }) => {
       buyerId: order.buyerId,
       buyerEmail: order.buyerEmail,
       buyerName: order.buyerName || "Customer",
-      items: order.items || [],
+
+      /* 🔑 FINAL FIX: qty → quantity (SAFE) */
+      items: cartItems.map(item => ({
+  productId: item.id,
+  title: item.title,
+  price: item.price,
+  image: item.image,   // 🔥 ADD THIS
+  quantity: item.quantity
+})),
+
       address: order.address || {},
-      amount: Number(order.amount) || 0,
+
+      amount: {
+        total: Number(order.amount?.total ?? order.amount ?? 0),
+      },
+
       status: "Placed",
       placedDate: new Date().toISOString().split("T")[0],
     };
@@ -30,13 +43,11 @@ export const OrderProvider = ({ children }) => {
     setOrders((prev) => [newOrder, ...prev]);
   };
 
-  /* ================= UPDATE STATUS (GENERIC) ================= */
+  /* ================= UPDATE STATUS ================= */
   const updateOrderStatus = (orderId, status, extra = {}) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId
-          ? { ...o, status, ...extra }
-          : o
+        o.id === orderId ? { ...o, status, ...extra } : o
       )
     );
   };
@@ -89,10 +100,10 @@ export const OrderProvider = ({ children }) => {
           status,
           ...extra,
           items: order.items.map((item) =>
-  item.sellerId === sellerId
-    ? { ...item, status }
-    : item
-),
+            item.sellerId === sellerId
+              ? { ...item, status }
+              : item
+          ),
         };
       })
     );

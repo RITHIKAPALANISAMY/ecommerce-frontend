@@ -6,7 +6,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-export default function SoftStatCard({ title, value, type }) {
+export default function SoftStatCard({ title, value, type = "default" }) {
   const styles = {
     orders: {
       bg: "bg-red-50",
@@ -28,9 +28,16 @@ export default function SoftStatCard({ title, value, type }) {
       text: "text-gray-700",
       icon: XCircle,
     },
+
+    /* ✅ FALLBACK */
+    default: {
+      bg: "bg-slate-50",
+      text: "text-slate-700",
+      icon: Package,
+    },
   };
 
-  const { bg, text, icon: Icon } = styles[type];
+  const { bg, text, icon: Icon } = styles[type] || styles.default;
 
   return (
     <motion.div
@@ -44,9 +51,7 @@ export default function SoftStatCard({ title, value, type }) {
         </div>
 
         <div>
-          <p className="text-sm text-gray-600">
-            {title}
-          </p>
+          <p className="text-sm text-gray-600">{title}</p>
           <p className={`mt-1 text-2xl font-bold ${text}`}>
             {value}
           </p>

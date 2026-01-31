@@ -5,12 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SoftStatCard from "./StatCardSoft";
 
 export default function SellerOrders() {
-  const {
-    orders = [],
-    updateSellerOrderStatus,
-    cancelOrderBySeller,
-  } = useOrders();
-
+  const { orders = [], updateSellerOrderStatus, cancelOrderBySeller } = useOrders();
   const { user } = useAuth();
   const sellerId = user?.email || "";
 
@@ -21,73 +16,41 @@ export default function SellerOrders() {
   /* ================= SELLER ORDERS ================= */
   const sellerOrders = useMemo(() => {
     if (!sellerId) return [];
-
     return orders
-      .map(order => {
-        const items = order.items?.filter(
-          i => i.sellerId === sellerId
-        );
-        return items?.length ? { ...order, items } : null;
+      .map(o => {
+        const items = o.items?.filter(i => i.sellerId === sellerId);
+        return items?.length ? { ...o, items } : null;
       })
       .filter(Boolean);
   }, [orders, sellerId]);
 
-  /* ================= DERIVED ORDER STATUS ================= */
+  /* ================= STATUS ================= */
   const getOrderStatus = (order) => {
-    if (order.items.every(i => i.status === "Cancelled"))
-      return "Cancelled";
-
-    if (order.items.every(i => i.status === "Delivered"))
-      return "Delivered";
-
-    if (order.items.some(i => i.status === "Shipped"))
-      return "Shipped";
-
+    if (order.items.every(i => i.status === "Cancelled")) return "Cancelled";
+    if (order.items.every(i => i.status === "Delivered")) return "Delivered";
+    if (order.items.some(i => i.status === "Shipped")) return "Shipped";
     return "Placed";
   };
 
-  /* ================= FILTER + SEARCH ================= */
-  const filteredOrders = sellerOrders.filter(order => {
-    const status = getOrderStatus(order);
-    return statusFilter === "ALL" || status === statusFilter;
-  });
-
-  const searchedOrders = filteredOrders.filter(order => {
-    const q = search.toLowerCase();
-    return (
-      String(order.id).includes(q) ||
-      String(order.buyerEmail || "").toLowerCase().includes(q)
+  /* ================= FILTER ================= */
+  const searchedOrders = sellerOrders
+    .filter(o => statusFilter === "ALL" || getOrderStatus(o) === statusFilter)
+    .filter(o =>
+      String(o.id).includes(search) ||
+      String(o.buyerEmail || "").toLowerCase().includes(search.toLowerCase())
     );
-  });
 
   /* ================= METRICS ================= */
- const totalRevenue = searchedOrders.reduce(
-  (sum, order) =>
-    sum +
-    order.items.reduce((s, i) => {
-      if (i.status === "Cancelled") return s;
+  const totalRevenue = searchedOrders.reduce(
+    (sum, o) =>
+      sum + o.items.reduce(
+        (s, i) => i.status === "Cancelled" ? s : s + i.price * i.quantity,
+        0
+      ),
+    0
+  );
 
-      const price = Number(i.price || 0);
-      const qty = Number(i.quantity || 1);
-
-      return s + price * qty;
-    }, 0),
-  0
-);
-
-
-  const deliveredCount = searchedOrders.filter(
-    o => getOrderStatus(o) === "Delivered"
-  ).length;
-
-  const cancelledCount = searchedOrders.filter(
-    o => getOrderStatus(o) === "Cancelled"
-  ).length;
-
-  /* ================= DATE HELPERS ================= */
-  const today = () =>
-    new Date().toISOString().split("T")[0];
-
+  const today = () => new Date().toISOString().split("T")[0];
   const expectedDelivery = () => {
     const d = new Date();
     d.setDate(d.getDate() + 4);
@@ -96,40 +59,42 @@ export default function SellerOrders() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h2 className="text-2xl font-semibold mb-6">
-        My Orders
-      </h2>
+      <h2 className="text-2xl font-semibold mb-6">My Orders</h2>
 
-      {/* ================= STATS ================= */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10"
-      >
-        <SoftStatCard
-          title="Total Orders"
-          value={searchedOrders.length}
-          type="orders"
-        />
-        <SoftStatCard
-          title="Revenue"
-          value={`₹${totalRevenue}`}
-          type="revenue"
-        />
-        <SoftStatCard
-          title="Delivered"
-          value={deliveredCount}
-          type="delivered"
-        />
-        <SoftStatCard
-          title="Cancelled"
-          value={cancelledCount}
-          type="cancelled"
-        />
-      </motion.div>
+      {/* STATS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+  <SoftStatCard
+    title="Total Orders"
+    value={searchedOrders.length}
+    type="orders"
+  />
 
-      {/* ================= FILTER ================= */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+  <SoftStatCard
+    title="Revenue"
+    value={`₹${totalRevenue}`}
+    type="revenue"
+  />
+
+  <SoftStatCard
+    title="Delivered"
+    value={searchedOrders.filter(
+      o => getOrderStatus(o) === "Delivered"
+    ).length}
+    type="delivered"
+  />
+
+  <SoftStatCard
+    title="Cancelled"
+    value={searchedOrders.filter(
+      o => getOrderStatus(o) === "Cancelled"
+    ).length}
+    type="cancelled"
+  />
+</div>
+
+
+      {/* FILTER */}
+      <div className="flex gap-4 mb-6">
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
@@ -150,23 +115,22 @@ export default function SellerOrders() {
         />
       </div>
 
-      {/* ================= ORDERS ================= */}
+      {/* ORDERS */}
       <div className="space-y-5">
         <AnimatePresence>
           {searchedOrders.map(order => {
             const expanded = expandedOrderId === order.id;
             const status = getOrderStatus(order);
 
-            const amount = order.items.reduce((sum, item) => {
-  if (item.status !== "Delivered") return sum;
+            const totalAmount = order.items.reduce(
+              (s, i) => s + i.price * i.quantity,
+              0
+            );
 
-  const price = Number(item.price || 0);
-  const qty = Number(item.quantity || 1); // ✅ DEFAULT TO 1
-
-  return sum + price * qty;
-}, 0);
-
-
+            const totalQty = order.items.reduce(
+              (q, i) => q + i.quantity,
+              0
+            );
 
             return (
               <motion.div
@@ -174,85 +138,69 @@ export default function SellerOrders() {
                 layout
                 className="rounded-xl bg-white shadow p-5"
               >
-                <div className="flex justify-between">
+                {/* HEADER */}
+                <div className="flex justify-between items-start gap-6">
                   <div>
-                    <p className="font-semibold">
-                      Order ID: {order.id}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {order.placedDate}
-                    </p>
-                    <p className="text-sm">
-                      {order.buyerEmail}
-                    </p>
+                    <p className="font-semibold">Order ID: {order.id}</p>
+                    <p className="text-sm text-gray-500">{order.placedDate}</p>
+                    <p className="text-sm text-gray-600">{order.buyerEmail}</p>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-6">
                     <StatusBadge status={status} />
-                    <div className="text-right">
-  <p className="font-semibold">
-    {amount > 0 ? `₹${amount}` : "—"}
-  </p>
-  <p className="text-xs text-gray-500">
-    Qty: {order.items.reduce(
-      (q, i) => q + Number(i.quantity || 1),
-      0
-    )}
-  </p>
-</div>
+
+                    <div className="text-right min-w-[90px]">
+                      <p className="font-semibold">₹{totalAmount}</p>
+                      <p className="text-xs text-gray-500">Qty: {totalQty}</p>
+                    </div>
 
                     <button
                       onClick={() =>
-                        setExpandedOrderId(
-                          expanded ? null : order.id
-                        )
+                        setExpandedOrderId(expanded ? null : order.id)
                       }
-                      className="text-red-600 text-sm"
+                      className="text-red-600 text-sm font-medium"
                     >
                       {expanded ? "Hide" : "View"}
                     </button>
                   </div>
                 </div>
 
+                {/* DETAILS */}
                 {expanded && (
-                  <div className="mt-4 space-y-3 text-sm">
+                  <div className="mt-5 border-t pt-4 space-y-3 text-sm">
                     {order.items.map(item => (
                       <div
                         key={item.productId}
-                        className="flex justify-between"
+                        className="grid grid-cols-3 gap-4 items-center"
                       >
-                        <span>{item.title}</span>
-                        <span>Qty: {item.quantity}</span>
-                        <span>₹{item.price}</span>
+                        <span className="font-medium">{item.title}</span>
+                        <span className="text-gray-500 text-center">
+                          Qty: {item.quantity}
+                        </span>
+                        <span className="text-right font-medium">
+                          ₹{item.price * item.quantity}
+                        </span>
                       </div>
                     ))}
 
-                    <div className="flex gap-3 mt-4">
+                    <div className="mt-4 flex gap-3">
                       {status === "Placed" && (
                         <>
                           <ActionButton
                             label="Mark Shipped"
                             color="blue"
                             onClick={() =>
-                              updateSellerOrderStatus(
-                                order.id,
-                                sellerId,
-                                "Shipped",
-                                {
-                                  shippedDate: today(),
-                                  expectedDelivery: expectedDelivery(),
-                                }
-                              )
+                              updateSellerOrderStatus(order.id, sellerId, "Shipped", {
+                                shippedDate: today(),
+                                expectedDelivery: expectedDelivery(),
+                              })
                             }
                           />
                           <ActionButton
                             label="Cancel"
                             color="red"
                             onClick={() =>
-                              cancelOrderBySeller(
-                                order.id,
-                                sellerId
-                              )
+                              cancelOrderBySeller(order.id, sellerId)
                             }
                           />
                         </>
@@ -263,14 +211,9 @@ export default function SellerOrders() {
                           label="Mark Delivered"
                           color="green"
                           onClick={() =>
-                            updateSellerOrderStatus(
-                              order.id,
-                              sellerId,
-                              "Delivered",
-                              {
-                                deliveredDate: today(),
-                              }
-                            )
+                            updateSellerOrderStatus(order.id, sellerId, "Delivered", {
+                              deliveredDate: today(),
+                            })
                           }
                         />
                       )}
@@ -297,9 +240,7 @@ function StatusBadge({ status }) {
   };
 
   return (
-    <span
-      className={`rounded-full px-3 py-1 text-sm font-medium ${styles[status]}`}
-    >
+    <span className={`rounded-full px-3 py-1 text-sm font-medium ${styles[status]}`}>
       {status}
     </span>
   );

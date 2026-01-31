@@ -1,12 +1,12 @@
+import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../context/ProductContext";
 import { useOrders } from "../../context/OrderContext";
-import { useState } from "react";
 
 export default function Orders() {
   const { user } = useAuth();
   const { products } = useProducts();
-  const { getBuyerOrders } = useOrders();
+  const { getBuyerOrders, updateOrderStatus } = useOrders();
 
   const orders = user ? getBuyerOrders(user.id) : [];
 
@@ -14,36 +14,50 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [openOrderId, setOpenOrderId] = useState(null);
 
-  // REVIEW STATES
+  // REVIEW STATE
   const [reviewProduct, setReviewProduct] = useState(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
-  const deliveredCount = orders.filter(o => o.status === "Delivered").length;
-  const cancelledCount = orders.filter(o => o.status === "Cancelled").length;
+  /* ================= COUNTS ================= */
+  const deliveredCount = orders.filter(
+    o => o.status?.toLowerCase() === "delivered"
+  ).length;
 
+  const cancelledCount = orders.filter(
+    o => o.status?.toLowerCase() === "cancelled"
+  ).length;
+
+  /* ================= FILTER ================= */
   const filteredOrders = orders.filter(order => {
-    const matchSearch = order.items.some(i =>
-      i.title.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = order.items.some(item =>
+      item.title.toLowerCase().includes(search.toLowerCase())
     );
+
     const matchStatus =
-      statusFilter === "ALL" || order.status === statusFilter;
+      statusFilter === "ALL" ||
+      order.status?.toLowerCase() === statusFilter.toLowerCase();
+
     return matchSearch && matchStatus;
   });
 
+  /* ================= IMAGE ================= */
   const getProductImage = (item) =>
     item.image ||
     products.find(p => p.id === item.productId)?.image ||
     "/placeholder.png";
 
-  // ===== REVIEW HELPERS =====
+  /* ================= REVIEWS ================= */
   const getReviews = () =>
     JSON.parse(localStorage.getItem("reviews") || "[]");
 
-  const hasReviewed = (productId) => {
+  const hasReviewed = (productId, orderId) => {
     const reviews = getReviews();
     return reviews.some(
-      r => r.productId === productId && r.userEmail === user.email
+      r =>
+        r.productId === productId &&
+        r.orderId === orderId &&
+        r.userEmail === user.email
     );
   };
 
@@ -52,6 +66,7 @@ export default function Orders() {
 
     reviews.push({
       id: Date.now(),
+      orderId: openOrderId, // ✅ IMPORTANT FIX
       productId: reviewProduct.productId,
       userEmail: user.email,
       rating,
@@ -66,6 +81,17 @@ export default function Orders() {
     setComment("");
   };
 
+  /* ================= CANCEL ================= */
+  const canCancel = (status) =>
+    !["shipped", "delivered", "cancelled"].includes(
+      status?.toLowerCase()
+    );
+
+  const cancelOrder = (orderId) => {
+    if (!window.confirm("Cancel this order?")) return;
+    updateOrderStatus(orderId, "Cancelled");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="mx-auto max-w-5xl">
@@ -77,12 +103,14 @@ export default function Orders() {
             <p className="text-xl font-bold">{orders.length}</p>
             <p className="text-sm text-gray-500">Total Orders</p>
           </div>
+
           <div className="rounded-lg bg-white p-4 shadow-sm">
             <p className="text-xl font-bold text-green-600">
               {deliveredCount}
             </p>
             <p className="text-sm text-gray-500">Delivered</p>
           </div>
+
           <div className="rounded-lg bg-white p-4 shadow-sm">
             <p className="text-xl font-bold text-red-600">
               {cancelledCount}
@@ -97,13 +125,13 @@ export default function Orders() {
             placeholder="Search your orders"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="flex-1 rounded-lg border px-4 py-2 text-sm"
           />
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm focus:outline-none"
+            className="rounded-lg border px-3 py-2 text-sm"
           >
             <option value="ALL">All</option>
             <option value="Delivered">Delivered</option>
@@ -113,9 +141,15 @@ export default function Orders() {
         </div>
 
         {/* ORDERS */}
+        {filteredOrders.length === 0 && (
+          <p className="text-center text-gray-500">
+            No orders found
+          </p>
+        )}
+
         {filteredOrders.map(order => {
           const total = order.items.reduce(
-            (sum, i) => sum + i.price * (i.quantity || 1),
+            (sum, item) => sum + item.price * (item.quantity || 1),
             0
           );
 
@@ -144,14 +178,14 @@ export default function Orders() {
 
                     <span
                       className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        order.status === "Delivered"
+                        order.status?.toLowerCase() === "delivered"
                           ? "bg-green-100 text-green-700"
-                          : order.status === "Cancelled"
+                          : order.status?.toLowerCase() === "cancelled"
                           ? "bg-red-100 text-red-700"
                           : "bg-blue-100 text-blue-700"
                       }`}
                     >
-                      {order.status}
+                      {order.status || "Processing"}
                     </span>
                   </div>
                 </div>
@@ -164,7 +198,6 @@ export default function Orders() {
                         openOrderId === order.id ? null : order.id
                       )
                     }
-                    className="text-gray-500"
                   >
                     {openOrderId === order.id ? "▲" : "▼"}
                   </button>
@@ -183,7 +216,7 @@ export default function Orders() {
 
                   {order.items.map(item => (
                     <div
-                      key={item.productId}
+                      key={`${order.id}-${item.productId}`} // ✅ KEY FIX
                       className="mb-3 flex justify-between border-b pb-3 last:border-b-0"
                     >
                       <div>
@@ -196,14 +229,14 @@ export default function Orders() {
                         </p>
 
                         {order.status === "Delivered" && (
-                          hasReviewed(item.productId) ? (
-                            <span className="mt-1 inline-block text-sm text-green-600">
+                          hasReviewed(item.productId, order.id) ? (
+                            <span className="text-sm text-green-600">
                               Reviewed ✓
                             </span>
                           ) : (
                             <button
                               onClick={() => setReviewProduct(item)}
-                              className="mt-1 text-sm text-red-600 hover:underline"
+                              className="text-sm text-red-600 hover:underline"
                             >
                               Write Review
                             </button>
@@ -216,6 +249,17 @@ export default function Orders() {
                       </p>
                     </div>
                   ))}
+
+                  {canCancel(order.status) && (
+                    <div className="text-right">
+                      <button
+                        onClick={() => cancelOrder(order.id)}
+                        className="rounded bg-red-600 px-4 py-2 text-sm text-white"
+                      >
+                        Cancel Order
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -246,23 +290,24 @@ export default function Orders() {
             </div>
 
             <textarea
-              placeholder="Write your experience..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="mb-4 w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Write your experience..."
+              className="mb-4 w-full rounded border px-3 py-2"
             />
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setReviewProduct(null)}
-                className="rounded border px-4 py-2 text-sm"
+                className="rounded border px-4 py-2"
               >
                 Cancel
               </button>
+
               <button
-                disabled={rating === 0 || comment.trim() === ""}
+                disabled={!rating || !comment.trim()}
                 onClick={submitReview}
-                className="rounded bg-red-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+                className="rounded bg-red-600 px-4 py-2 text-white"
               >
                 Submit Review
               </button>

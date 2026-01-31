@@ -5,10 +5,11 @@ const LOW_STOCK_LIMIT = 5;
 export default function CartItem({ item }) {
   const { addQty, reduceQty, removeItem } = useCart();
 
-  const qty = Number(item.qty) || 1;
+  // ✅ SINGLE SOURCE OF TRUTH
+  const quantity = Number(item.quantity) || 1;
   const price = Number(item.price) || 0;
 
-  /* 🔑 IMAGE RESOLUTION (FINAL FIX) */
+  /* IMAGE RESOLUTION */
   const imageSrc =
     item.image ||
     item.images?.[0] ||
@@ -67,19 +68,19 @@ export default function CartItem({ item }) {
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={() => reduceQty(item.id)}
-              disabled={qty <= 1}
+              disabled={quantity <= 1}
               className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
             >
               −
             </button>
 
             <span className="min-w-[24px] text-center font-medium">
-              {qty}
+              {quantity}
             </span>
 
             <button
               onClick={() => addQty(item.id)}
-              disabled={stock !== null && qty >= stock}
+              disabled={stock !== null && quantity >= stock}
               className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
             >
               +
@@ -92,7 +93,7 @@ export default function CartItem({ item }) {
       <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
         {!isOutOfStock && (
           <p className="text-lg font-bold text-gray-900">
-            ₹{price * qty}
+            ₹{price * quantity}
           </p>
         )}
 

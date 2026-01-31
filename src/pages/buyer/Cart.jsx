@@ -30,8 +30,9 @@ export default function Cart() {
   /* ================= BUY NOW ================= */
   const buyNowItem = location.state?.buyNowItem;
   const itemsToShow = buyNowItem
-    ? [{ ...buyNowItem, qty: buyNowItem.qty || 1 }]
-    : cartItems;
+  ? [{ ...buyNowItem, quantity: buyNowItem.quantity || 1 }]
+  : cartItems;
+
 
   const [couponInput, setCouponInput] = useState("");
   const [error, setError] = useState("");
@@ -55,9 +56,10 @@ export default function Cart() {
 
   /* ================= PRICE CALC (ONLY IN STOCK) ================= */
   const subtotal = inStockItems.reduce(
-    (sum, i) => sum + Number(i.price) * Number(i.qty),
-    0
-  );
+  (sum, i) => sum + Number(i.price) * Number(i.quantity),
+  0
+);
+
 
   const shipping = subtotal > 0 ? 99 : 0;
   const gst = Math.round(subtotal * 0.18);

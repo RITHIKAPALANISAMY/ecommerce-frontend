@@ -172,12 +172,14 @@ export default function OrderSuccess() {
                   {item.title}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Qty: {item.quantity}
-                </p>
+  Qty: {item.quantity || 1}
+</p>
+
               </div>
               <p className="font-semibold text-gray-800">
-                ₹{item.price}
-              </p>
+  ₹{(item.price || 0) * (item.quantity || 1)}
+</p>
+
             </div>
           ))}
         </div>

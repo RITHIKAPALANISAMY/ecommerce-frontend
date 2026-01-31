@@ -5,12 +5,16 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useAuth } from "../../context/AuthContext";
 import RatingStars from "../../components/common/RatingStars"; // ⭐ ADDED
+import Reviews from "../../components/buyer/Reviews";
+
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const { products } = useProducts();
+  const [reviewRefresh, setReviewRefresh] = useState(0);
+
   const { addToCart, setCartItems } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } =
     useWishlist();
@@ -40,7 +44,7 @@ export default function ProductDetails() {
   const orderReviews = useMemo(() => {
     const stored = JSON.parse(localStorage.getItem("reviews") || "[]");
     return stored
-      .filter((r) => r.productId === product.id)
+      .filter((r) => Number(r.productId) === Number(product.id))
       .map((r) => ({
         rating: r.rating,
         comment: r.comment,
@@ -48,7 +52,7 @@ export default function ProductDetails() {
         date: new Date(r.createdAt).toLocaleDateString(),
         verified: true,
       }));
-  }, [product.id]);
+  }, [product.id,reviewRefresh]);
 
   const mergedReviews = useMemo(
     () => [...allReviews, ...orderReviews],
@@ -69,17 +73,10 @@ export default function ProductDetails() {
   const handleBuyNow = () => {
   const buyNowItem = {
     ...product,
-    qty,
+    quantity: qty, // IMPORTANT
   };
 
-  // 1️⃣ Store directly for checkout
-  localStorage.setItem("cart", JSON.stringify([buyNowItem]));
-
-  // 2️⃣ Clear any old checkout data (important)
-  localStorage.removeItem("checkoutAmount");
-  localStorage.removeItem("checkoutAddress");
-
-  // 3️⃣ Go directly to checkout
+  addToCart(buyNowItem); // use CartContext
   navigate("/checkout/address");
 };
 
@@ -336,6 +333,7 @@ export default function ProductDetails() {
             </div>
           ))}
         </div>
+        
       </div>
     </div>
   );
