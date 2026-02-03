@@ -10,14 +10,14 @@ import { SellerProductProvider } from "./context/SellerProductContext";
 import { ProductProvider } from "./context/ProductContext";
 import { OrderProvider } from "./context/OrderContext";
 import { WishlistProvider } from "./context/WishlistContext";
+import { UserProvider } from "./context/UserContext";
 
-/* ===== GLOBAL STYLES ===== */
+
+
 import "./index.css";
-import "./styles/global.css";
 
-/* ================= APP VERSION CONTROL ================= */
-/* 🔥 VERSION BUMP TO CLEAR OLD / HARDCODED DATA */
-const APP_VERSION = "1.0.1"; // updated from 1.0.0
+
+const APP_VERSION = "1.0.1"; 
 
 const storedVersion = localStorage.getItem("app_version");
 
@@ -27,7 +27,7 @@ if (storedVersion !== APP_VERSION) {
   sessionStorage.clear();
   localStorage.setItem("app_version", APP_VERSION);
 }
-/* ======================================================= */
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -38,7 +38,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <ProductProvider>
               <OrderProvider>
                 <WishlistProvider>
-                  <App />
+                  <UserProvider>
+                    <App />
+                  </UserProvider>
                 </WishlistProvider>
               </OrderProvider>
             </ProductProvider>

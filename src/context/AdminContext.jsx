@@ -15,14 +15,14 @@ export const AdminProvider = ({ children }) => {
     JSON.parse(localStorage.getItem("categories")) || []
   );
 
-  /* STORE DATA */
+  
   useEffect(() => {
     localStorage.setItem("users", JSON.stringify(users));
     localStorage.setItem("products", JSON.stringify(products));
     localStorage.setItem("categories", JSON.stringify(categories));
   }, [users, products, categories]);
 
-  /* USER ACTIONS */
+  
   const approveUser = (id) => {
     setUsers(users.map(u =>
       u.id === id ? { ...u, approved: true } : u
@@ -35,14 +35,14 @@ export const AdminProvider = ({ children }) => {
     ));
   };
 
-  /* PRODUCT ACTIONS */
+  
   const flagProduct = (id) => {
     setProducts(products.map(p =>
       p.id === id ? { ...p, flagged: true } : p
     ));
   };
 
-  /* CATEGORY */
+  
   const addCategory = (name) => {
     setCategories([...categories, { id: Date.now(), name }]);
   };

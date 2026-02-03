@@ -5,11 +5,11 @@ const LOW_STOCK_LIMIT = 5;
 export default function CartItem({ item }) {
   const { addQty, reduceQty, removeItem } = useCart();
 
-  // ✅ SINGLE SOURCE OF TRUTH
+ 
   const quantity = Number(item.quantity) || 1;
   const price = Number(item.price) || 0;
 
-  /* IMAGE RESOLUTION */
+ 
   const imageSrc =
     item.image ||
     item.images?.[0] ||
@@ -27,7 +27,6 @@ export default function CartItem({ item }) {
       className={`flex flex-col sm:flex-row gap-4 rounded-2xl bg-white p-4 shadow-sm border
         ${isOutOfStock ? "opacity-70" : ""}`}
     >
-      {/* IMAGE */}
       <div className="h-24 w-24 flex-shrink-0 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
         {imageSrc ? (
           <img
@@ -42,7 +41,6 @@ export default function CartItem({ item }) {
         )}
       </div>
 
-      {/* INFO */}
       <div className="flex flex-1 flex-col">
         <h4 className="font-semibold text-gray-800">
           {item.title}
@@ -88,8 +86,7 @@ export default function CartItem({ item }) {
           </div>
         )}
       </div>
-
-      {/* PRICE + REMOVE */}
+      
       <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
         {!isOutOfStock && (
           <p className="text-lg font-bold text-gray-900">

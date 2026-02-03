@@ -14,9 +14,10 @@ function HeroSlider() {
 
   const slides = [
     {
-      ttitle: "Big Fashion Sale",
+      title: "Big Fashion Sale",
       subtitle: "Up to 50% Off on Top Brands",
-      image: "https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=1600&q=80",
+      image:
+        "https://images.unsplash.com/photo-1521334884684-d80222895322?auto=format&fit=crop&w=1600&q=80",
       btn: "Shop Now",
     },
     {
@@ -36,32 +37,35 @@ function HeroSlider() {
   ];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl">
+    <div className="relative w-full overflow-hidden rounded-2xl shadow-lg">
       <div
-        className="flex transition-transform duration-700"
+        className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {slides.map((s, i) => (
           <div
             key={i}
-            className="relative min-w-full h-[260px] sm:h-[320px]"
+            className="relative min-w-full h-[260px] sm:h-[360px]"
           >
             <img
               src={s.image}
               alt={s.title}
               className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/40" />
 
-            <div className="relative z-10 flex h-full items-center px-6 sm:px-10">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white">
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
+
+            {/* Content */}
+            <div className="relative z-10 flex h-full items-center px-6 sm:px-12">
+              <div className="max-w-lg">
+                <h2 className="text-2xl sm:text-4xl font-bold text-white">
                   {s.title}
                 </h2>
-                <p className="mt-2 text-sm sm:text-base text-white/90">
+                <p className="mt-3 text-sm sm:text-base text-white/90">
                   {s.subtitle}
                 </p>
-                <button className="mt-4 rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                <button className="mt-6 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 hover:scale-105">
                   {s.btn}
                 </button>
               </div>
@@ -70,16 +74,16 @@ function HeroSlider() {
         ))}
       </div>
 
-      {/* NAV BUTTONS */}
+      {/* Controls */}
       <button
         onClick={prev}
-        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white"
+        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
       >
         ❮
       </button>
       <button
         onClick={next}
-        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white"
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
       >
         ❯
       </button>
@@ -98,45 +102,60 @@ const categories = [
   { name: "Grocery", icon: "🛒" },
 ];
 
-/* ---------------- HOME ---------------- */
+/* ---------------- HOME PAGE ---------------- */
 
 export default function Home() {
   const navigate = useNavigate();
   const { products } = useProducts();
 
   return (
-    <div className="bg-gray-50 pb-10">
-
-      {/* HERO (FULL WIDTH with SMALL SIDE GAP) */}
+    <div className="bg-gray-50 pb-12">
+      {/* HERO */}
       <div className="px-3 sm:px-4 pt-4">
         <HeroSlider />
       </div>
 
       {/* CATEGORIES */}
-      <div className="mt-8 grid grid-cols-3 gap-4 px-3 sm:grid-cols-6 sm:px-4">
-        {categories.map((c) => (
-          <div
-            key={c.name}
-            onClick={() => navigate(`/category/${c.name}`)}
-            className="cursor-pointer rounded-xl bg-white p-4 text-center shadow hover:shadow-md transition"
-          >
-            <div className="text-2xl">{c.icon}</div>
-            <p className="mt-2 text-sm font-medium">{c.name}</p>
-          </div>
-        ))}
+      <div className="mt-10 px-3 sm:px-4">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">
+          Shop by Category
+        </h3>
+
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
+          {categories.map((c) => (
+            <div
+              key={c.name}
+              onClick={() => navigate(`/category/${c.name}`)}
+              className="group cursor-pointer rounded-2xl bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="text-3xl transition group-hover:scale-110">
+                {c.icon}
+              </div>
+              <p className="mt-2 text-sm font-medium text-gray-700">
+                {c.name}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* PRODUCTS */}
-      <section className="mt-10 px-3 sm:px-4">
-        <h3 className="mb-5 text-lg font-semibold">Top Deals</h3>
+      <section className="mt-12 px-3 sm:px-4">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Top Deals
+          </h3>
+          <button className="text-sm font-medium text-red-600 hover:underline">
+            View All
+          </button>
+        </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
       </section>
-
     </div>
   );
 }

@@ -5,7 +5,16 @@ import CheckoutSteps from "./CheckoutSteps";
 
 export default function CheckoutAddress() {
   const navigate = useNavigate();
-  const { cartItems } = useCart();
+
+  const checkoutItems = JSON.parse(
+    localStorage.getItem("checkoutItems")
+  ) || [];
+
+  useEffect(() => {
+    if (!checkoutItems || checkoutItems.length === 0) {
+      navigate("/cart", { replace: true });
+    }
+  }, [navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [addresses, setAddresses] = useState([]);
@@ -20,17 +29,20 @@ export default function CheckoutAddress() {
     pincode: "",
   });
 
-  /* 🔹 LOAD ADDRESSES FROM LOCAL STORAGE */
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("addresses")) || [];
+    const stored =
+      JSON.parse(localStorage.getItem("addresses")) || [];
     setAddresses(stored);
 
-    const defaultAddr = stored.find(a => a.isDefault);
+    const defaultAddr = stored.find(
+      (a) => a.isDefault
+    );
     if (defaultAddr) setSelectedId(defaultAddr.id);
   }, []);
 
-  const subtotal = cartItems.reduce(
-    (sum, i) => sum + i.price * i.qty,
+  const subtotal = checkoutItems.reduce(
+    (sum, i) =>
+      sum + Number(i.price) * Number(i.quantity),
     0
   );
 
@@ -39,9 +51,9 @@ export default function CheckoutAddress() {
   const discount = 70;
   const total = subtotal + delivery + gst - discount;
 
-  /* 🔹 SAVE ADDRESS */
   const handleSaveAddress = () => {
-    if (!form.name || !form.phone || !form.address) return;
+    if (!form.name || !form.phone || !form.address)
+      return;
 
     const newAddress = {
       id: Date.now(),
@@ -53,7 +65,10 @@ export default function CheckoutAddress() {
     setAddresses(updated);
     setSelectedId(newAddress.id);
 
-    localStorage.setItem("addresses", JSON.stringify(updated));
+    localStorage.setItem(
+      "addresses",
+      JSON.stringify(updated)
+    );
 
     setForm({
       name: "",
@@ -66,14 +81,16 @@ export default function CheckoutAddress() {
 
     setShowForm(false);
   };
-
-  /* 🔹 CONTINUE */
   const handleContinue = () => {
-    const selectedAddress = addresses.find(a => a.id === selectedId);
+    const selectedAddress = addresses.find(
+      (a) => a.id === selectedId
+    );
+
     localStorage.setItem(
       "checkoutAddress",
       JSON.stringify(selectedAddress)
     );
+
     navigate("/checkout/summary");
   };
 
@@ -82,8 +99,7 @@ export default function CheckoutAddress() {
       <CheckoutSteps currentStep={1} />
 
       <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
-
-        {/* LEFT */}
+  
         <div className="md:col-span-2 rounded-xl bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">
@@ -97,16 +113,25 @@ export default function CheckoutAddress() {
             </button>
           </div>
 
-          {/* ADD FORM */}
           {showForm && (
             <div className="mb-6 grid grid-cols-1 gap-3 rounded-lg border p-4">
-              {["name","phone","address","city","state","pincode"].map((f) => (
+              {[
+                "name",
+                "phone",
+                "address",
+                "city",
+                "state",
+                "pincode",
+              ].map((f) => (
                 <input
                   key={f}
                   placeholder={f.toUpperCase()}
                   value={form[f]}
                   onChange={(e) =>
-                    setForm({ ...form, [f]: e.target.value })
+                    setForm({
+                      ...form,
+                      [f]: e.target.value,
+                    })
                   }
                   className="rounded border px-3 py-2 text-sm"
                 />
@@ -129,8 +154,8 @@ export default function CheckoutAddress() {
             </div>
           )}
 
-          {/* ADDRESS LIST */}
-          {addresses.map(addr => (
+      
+          {addresses.map((addr) => (
             <div
               key={addr.id}
               onClick={() => setSelectedId(addr.id)}
@@ -151,7 +176,8 @@ export default function CheckoutAddress() {
               <p className="text-sm">{addr.phone}</p>
               <p className="text-sm">{addr.address}</p>
               <p className="text-sm">
-                {addr.city}, {addr.state} - {addr.pincode}
+                {addr.city}, {addr.state} -{" "}
+                {addr.pincode}
               </p>
             </div>
           ))}
@@ -164,8 +190,6 @@ export default function CheckoutAddress() {
             Continue to Order Summary →
           </button>
         </div>
-
-        {/* RIGHT */}
         <div className="rounded-xl bg-white p-6 shadow">
           <h3 className="mb-4 text-lg font-semibold">
             Price Details
@@ -177,7 +201,10 @@ export default function CheckoutAddress() {
             ["GST (18%)", gst],
             ["Discount", -discount],
           ].map(([l, v]) => (
-            <div key={l} className="mb-2 flex justify-between text-sm">
+            <div
+              key={l}
+              className="mb-2 flex justify-between text-sm"
+            >
               <span>{l}</span>
               <span>₹{v}</span>
             </div>

@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
-  const [darkMsg, setDarkMsg] = useState("");
-
   const [notifications, setNotifications] = useState(
     localStorage.getItem("notifications") !== "false"
   );
@@ -31,20 +26,8 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode]);
-
-  useEffect(() => {
     localStorage.setItem("notifications", notifications);
   }, [notifications]);
-
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    setDarkMsg(next ? "Dark mode enabled" : "Dark mode disabled");
-    setTimeout(() => setDarkMsg(""), 2000);
-  };
 
   const toggleNotifications = () => {
     const next = !notifications;
@@ -80,33 +63,7 @@ export default function Settings() {
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-xl font-semibold mb-6">⚙️ Admin Settings</h2>
 
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h3 className="font-semibold mb-4">Appearance</h3>
-
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="font-medium">Dark Mode</p>
-            <p className="text-sm text-gray-500">Enable dark theme</p>
-            {darkMsg && (
-              <p className="text-sm text-green-600 mt-1">{darkMsg}</p>
-            )}
-          </div>
-
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={darkMode}
-              onChange={toggleDarkMode}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#931012]
-              after:content-[''] after:absolute after:top-0.5 after:left-[2px]
-              after:bg-white after:h-5 after:w-5 after:rounded-full
-              after:transition-all peer-checked:after:translate-x-full" />
-          </label>
-        </div>
-      </div>
-
+      {/* NOTIFICATIONS */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <h3 className="font-semibold mb-4">Notifications</h3>
 
@@ -137,6 +94,7 @@ export default function Settings() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* PROFILE */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="font-semibold mb-4">👤 Admin Profile</h3>
 
@@ -161,6 +119,7 @@ export default function Settings() {
           </button>
         </div>
 
+        {/* CHANGE PASSWORD */}
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="font-semibold mb-4">🔐 Change Password</h3>
 

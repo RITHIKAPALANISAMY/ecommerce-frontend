@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : null;
   });
 
-  /* ================= LOGIN ================= */
+  
   const login = (email, password) => {
     if (email === "admin@shopverse.com" && password === "admin123") {
       const adminUser = {
@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
     return loggedUser;
   };
 
-  /* ================= SIGNUP ================= */
+  
   const signup = (form) => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
 
@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
     return true;
   };
 
-  /* ================= UPDATE USER ROLE (BECOME SELLER) ================= */
+  
   const updateUserRole = (sellerData) => {
     if (!user) return;
 
@@ -100,7 +100,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
-  /* ================= UPDATE USER PROFILE ================= */
+  
   const updateUser = (data) => {
     if (!user) return;
 
@@ -130,13 +130,13 @@ export function AuthProvider({ children }) {
     localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
-  /* ================= VERIFY EMAIL ================= */
+  
   const verifyEmail = (email) => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
     return users.some((u) => u.email === email);
   };
 
-  /* ================= RESET PASSWORD ================= */
+  
   const resetPassword = (email, newPassword) => {
     let users = JSON.parse(localStorage.getItem("users")) || [];
 
@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("users", JSON.stringify(users));
   };
 
-  /* ================= DELETE ACCOUNT ================= */
+  
   const deleteAccount = () => {
     if (!user) return;
 
@@ -168,7 +168,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  /* ================= LOGOUT ================= */
+  
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");

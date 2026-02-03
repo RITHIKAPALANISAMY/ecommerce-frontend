@@ -103,7 +103,7 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* ================= DANGER ZONE ================= */}
+      
       <div className="rounded-xl border border-red-200 bg-red-50 p-6">
         <h4 className="mb-2 text-lg font-semibold text-red-700">
           Danger Zone
@@ -146,7 +146,7 @@ export default function SettingsPage() {
   );
 }
 
-/* ================= TOGGLE COMPONENT ================= */
+
 function ToggleRow({ label, enabled, onToggle }) {
   return (
     <div className="flex items-center justify-between">

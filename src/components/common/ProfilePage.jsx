@@ -21,7 +21,7 @@ export default function ProfilePage() {
     );
   }
 
-  /* ===== REAL-TIME USER STATS ===== */
+  
   const userOrders = orders.filter(
     (o) => o.buyerEmail === user.email
   );
@@ -47,12 +47,12 @@ export default function ProfilePage() {
     <div className="min-h-[calc(100vh-120px)] bg-gray-50 py-10">
       <div className="mx-auto max-w-6xl px-4">
 
-        {/* PAGE TITLE */}
+       
         <h2 className="mb-6 text-2xl font-semibold">
           My Profile
         </h2>
 
-        {/* ===== PROFILE HEADER ===== */}
+        
         <div className="mb-6 flex flex-col gap-6 rounded-xl bg-white p-6 shadow sm:flex-row sm:items-center sm:justify-between transition hover:shadow-md">
           <div className="flex items-center gap-5">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-2xl font-bold text-white">
@@ -89,7 +89,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* ===== STATS ===== */}
+        
         <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: "Orders", value: stats.orders },
@@ -111,10 +111,10 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        {/* ===== DETAILS GRID ===== */}
+        
         <div className="grid gap-6 md:grid-cols-2">
 
-          {/* ACCOUNT DETAILS */}
+          
           <div className="rounded-xl bg-white p-6 shadow transition hover:shadow-md">
             <h4 className="mb-4 text-lg font-semibold">
               Account Details
@@ -140,7 +140,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* CONTACT DETAILS */}
+          
           <div className="rounded-xl bg-white p-6 shadow transition hover:shadow-md">
             <h4 className="mb-4 text-lg font-semibold">
               Contact
@@ -162,7 +162,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* EDIT MODAL */}
+        
         {openEdit && (
           <EditProfileModal
             user={user}

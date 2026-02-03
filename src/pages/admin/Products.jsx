@@ -12,7 +12,7 @@ export default function AdminProducts() {
     unflagProduct,
   } = useProducts();
 
-  /* ================= SEARCH, FILTER, PAGINATION ================= */
+  
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
@@ -43,7 +43,7 @@ export default function AdminProducts() {
     const start = (page - 1) * PAGE_SIZE;
     return filteredProducts.slice(start, start + PAGE_SIZE);
   }, [filteredProducts, page]);
-  /* =============================================================== */
+  
 
   const statusBadge = (status) => {
     if (status === "APPROVED")
@@ -59,7 +59,6 @@ export default function AdminProducts() {
         Products Management
       </h2>
 
-      {/* ===== SEARCH & FILTER ===== */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <input
           type="text"
@@ -88,7 +87,7 @@ export default function AdminProducts() {
         </select>
       </div>
 
-      {/* ===== DESKTOP TABLE ===== */}
+    
       <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -195,7 +194,6 @@ export default function AdminProducts() {
         )}
       </div>
 
-      {/* ===== PAGINATION ===== */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6">
           <button

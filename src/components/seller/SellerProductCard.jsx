@@ -20,7 +20,7 @@ export default function SellerProductCard({
     <>
       <div className="relative rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md">
 
-        {/* 🔴 ALERT BADGES */}
+        
         {outOfStock && (
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
             <XCircle size={14} />
@@ -35,14 +35,14 @@ export default function SellerProductCard({
           </span>
         )}
 
-        {/* IMAGE */}
+        
         <img
           src={image}
           alt={product.title}
           className="mb-3 h-44 w-full rounded-lg object-cover"
         />
 
-        {/* INFO */}
+        
         <h4 className="font-semibold text-gray-800">
           {product.title}
         </h4>
@@ -59,7 +59,7 @@ export default function SellerProductCard({
           <p>Revenue: ₹{product.revenue}</p>
         </div>
 
-        {/* ACTIONS */}
+        
         <div className="mt-4 flex gap-4 text-sm">
           <button
             onClick={() => setEditOpen(true)}
@@ -77,7 +77,7 @@ export default function SellerProductCard({
         </div>
       </div>
 
-      {/* EDIT MODAL */}
+      
       {editOpen && (
         <SellerEditProduct
           product={product}

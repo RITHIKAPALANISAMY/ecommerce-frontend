@@ -17,24 +17,22 @@ export default function SellerProducts() {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
 
-  const sellerId = user?.email;
   const LOW_STOCK_LIMIT = 5;
 
-  /* ================= PRODUCT STATS ================= */
+  
   const productStats = useMemo(() => {
     return sellerProducts.map((product) => {
-      const sold = orders
-        .flatMap((o) => o.items || []) // ✅ SAFE
-        .filter(
-          (i) =>
-            i.productId === product.id &&
-            i.sellerId === sellerId &&
-            i.status !== "Cancelled"
-        )
-        .reduce((sum, i) => {
-          const qty = Number(i.quantity || 1);
-          return sum + qty;
-        }, 0);
+      let sold = 0;
+
+      orders.forEach((order) => {
+        if (order.status === "Cancelled") return;
+
+        order.items?.forEach((item) => {
+          if (item.id === product.id) {
+            sold += Number(item.quantity || 1);
+          }
+        });
+      });
 
       return {
         ...product,
@@ -42,12 +40,12 @@ export default function SellerProducts() {
         revenue: sold * Number(product.price || 0),
       };
     });
-  }, [sellerProducts, orders, sellerId]);
+  }, [sellerProducts, orders]);
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-md">
 
-      {/* ================= HEADER ================= */}
+      
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800">
@@ -68,7 +66,7 @@ export default function SellerProducts() {
         </button>
       </div>
 
-      {/* ================= GRID ================= */}
+      
       {productStats.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center text-gray-500">
           No products added yet
@@ -91,14 +89,14 @@ export default function SellerProducts() {
         </div>
       )}
 
-      {/* ================= ADD MODAL ================= */}
+      
       {showAddProduct && (
         <SellerAddProduct
           onClose={() => setShowAddProduct(false)}
         />
       )}
 
-      {/* ================= EDIT MODAL ================= */}
+      
       {editProduct && (
         <SellerEditProduct
           product={editProduct}

@@ -13,8 +13,6 @@ export default function Orders() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [openOrderId, setOpenOrderId] = useState(null);
-
-  // REVIEW STATES
   const [reviewProduct, setReviewProduct] = useState(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -36,7 +34,6 @@ export default function Orders() {
     products.find(p => p.id === item.productId)?.image ||
     "/placeholder.png";
 
-  // ===== REVIEW HELPERS =====
   const getReviews = () =>
     JSON.parse(localStorage.getItem("reviews") || "[]");
 
@@ -71,7 +68,7 @@ export default function Orders() {
       <div className="mx-auto max-w-5xl">
         <h2 className="mb-6 text-2xl font-semibold">My Orders</h2>
 
-        {/* SUMMARY */}
+    
         <div className="mb-6 grid grid-cols-3 gap-4 text-center">
           <div className="rounded-lg bg-white p-4 shadow-sm">
             <p className="text-xl font-bold">{orders.length}</p>
@@ -91,7 +88,7 @@ export default function Orders() {
           </div>
         </div>
 
-        {/* FILTER */}
+    
         <div className="mb-6 flex flex-col gap-3 sm:flex-row">
           <input
             placeholder="Search your orders"
@@ -123,7 +120,7 @@ export default function Orders() {
 
           return (
             <div key={order.id} className="mb-4 rounded-lg bg-white shadow-sm">
-              {/* COLLAPSED */}
+    
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                   <img
@@ -171,7 +168,6 @@ export default function Orders() {
                 </div>
               </div>
 
-              {/* EXPANDED */}
               {openOrderId === order.id && (
                 <div className="border-t px-4 py-3">
                   <p className="mb-3 text-sm text-gray-600">
@@ -222,8 +218,6 @@ export default function Orders() {
           );
         })}
       </div>
-
-      {/* REVIEW MODAL */}
       {reviewProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6">

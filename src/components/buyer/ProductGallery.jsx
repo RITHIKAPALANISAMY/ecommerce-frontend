@@ -8,7 +8,6 @@ export default function ProductGallery({ images = [] }) {
   return (
     <div className="flex flex-col-reverse gap-4 md:flex-row">
       
-      {/* THUMBNAILS */}
       <div className="flex gap-3 md:flex-col md:w-20">
         {images.map((img, i) => (
           <button
@@ -29,7 +28,7 @@ export default function ProductGallery({ images = [] }) {
         ))}
       </div>
 
-      {/* MAIN IMAGE */}
+      
       <div className="flex flex-1 items-center justify-center rounded-xl bg-white border p-4">
         <img
           src={active}

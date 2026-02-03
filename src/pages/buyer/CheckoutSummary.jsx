@@ -11,7 +11,7 @@ export default function CheckoutSummary() {
   const [address, setAddress] = useState(null);
   const [amount, setAmount] = useState(null);
 
-  /* ================= LOAD SINGLE SOURCE ================= */
+  
   useEffect(() => {
     const savedAmount = JSON.parse(
       localStorage.getItem("checkoutAmount")
@@ -19,9 +19,11 @@ export default function CheckoutSummary() {
     const savedAddress = JSON.parse(
       localStorage.getItem("checkoutAddress")
     );
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const checkoutItems = JSON.parse(
+      localStorage.getItem("checkoutItems")
+    ) || [];
 
-    const inStockItems = cart.filter(
+    const inStockItems = checkoutItems.filter(
       (i) => i.stock === undefined || i.stock > 0
     );
 
@@ -47,7 +49,6 @@ export default function CheckoutSummary() {
       <CheckoutSteps currentStep={2} />
 
       <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
-        {/* LEFT */}
         <div className="md:col-span-2 rounded-xl bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold">
             Order Summary
@@ -69,12 +70,12 @@ export default function CheckoutSummary() {
                   {item.title}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Qty: {item.qty}
+                  Qty: {item.quantity}
                 </p>
               </div>
 
               <p className="font-semibold">
-                ₹{item.price * item.qty}
+                ₹{item.price * item.quantity}
               </p>
             </div>
           ))}
@@ -109,7 +110,6 @@ export default function CheckoutSummary() {
           </div>
         </div>
 
-        {/* RIGHT */}
         <div className="h-fit rounded-xl bg-white p-6 shadow">
           <h3 className="mb-4 font-semibold">
             Price Details

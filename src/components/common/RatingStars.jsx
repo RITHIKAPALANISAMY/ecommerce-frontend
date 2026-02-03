@@ -17,17 +17,17 @@ export default function RatingStars({ rating = 0, size = "sm" }) {
       }`}
       aria-label={`Rating ${rating} out of 5`}
     >
-      {/* FULL STARS */}
+      
       {Array(fullStars)
         .fill(0)
         .map((_, i) => (
           <span key={`full-${i}`}>★</span>
         ))}
 
-      {/* HALF STAR */}
+      
       {hasHalfStar && <span>☆</span>}
 
-      {/* EMPTY STARS */}
+      
       {Array(emptyStars)
         .fill(0)
         .map((_, i) => (

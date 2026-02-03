@@ -7,37 +7,23 @@ export default function OrderSuccess() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // ✅ ONLY TRUST orderPlaced FLAG
-    const placed = localStorage.getItem("orderPlaced");
     
-    if (!placed) {
-      navigate("/cart", { replace: true });
-      return;
-    }
-
-    // ✅ GET LATEST ORDER SAFELY
     const orders =
       JSON.parse(localStorage.getItem("orders")) || [];
 
+    
     if (orders.length === 0) {
-      navigate("/", { replace: true });
+      navigate("/cart", { replace: true });
       return;
     }
 
     const latestOrder = orders[orders.length - 1];
     setOrder(latestOrder);
-    
-
-    // ✅ CLEAR FLAG AFTER LOAD
-    setTimeout(() => {
-  localStorage.removeItem("orderPlaced");
-}, 500);
-
   }, [navigate]);
 
   if (!order) return null;
 
-  /* ================= PDF INVOICE ================= */
+  
   const downloadInvoice = () => {
     const doc = new jsPDF();
     let y = 20;
@@ -74,8 +60,11 @@ export default function OrderSuccess() {
     y += 6;
     doc.setFontSize(11);
     order.items.forEach((item) => {
+      const qty = item.quantity || 1;
+      const price = item.price || 0;
+
       doc.text(
-        `${item.title} | Qty: ${item.quantity} | ₹${item.price * item.quantity}`,
+        `${item.title} | Qty: ${qty} | ₹${price * qty}`,
         14,
         y
       );
@@ -91,7 +80,7 @@ export default function OrderSuccess() {
 
     y += 6;
     doc.text(
-      `Payment Method: ${order.paymentMethod || "Cash on Delivery"}`,
+      `Payment Method: ${order.paymentMethod}`,
       14,
       y
     );
@@ -100,125 +89,125 @@ export default function OrderSuccess() {
   };
 
   return (
-  <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-    <div className="w-full max-w-3xl">
-      
-      {/* Success Header */}
-      <div className="flex flex-col items-center text-center mb-8">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-600">
-          ✔
-        </div>
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Order Placed Successfully!
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Thank you for shopping with ShopVerse
-        </p>
-      </div>
-
-      {/* Invoice Button */}
-      <div className="mb-6 flex justify-center">
-        <button
-          onClick={downloadInvoice}
-          className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
-        >
-          ⬇ Download Invoice (PDF)
-        </button>
-      </div>
-
-      {/* Order Card */}
-      <div className="rounded-2xl bg-white p-6 shadow-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-3xl">
         
-        {/* Order Info */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-gray-500">Order ID</p>
-            <p className="font-semibold">{order.id}</p>
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-600">
+            ✔
           </div>
-          <div>
-            <p className="text-gray-500">Order Date</p>
-            <p className="font-semibold">{order.placedDate}</p>
-          </div>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Order Placed Successfully!
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Thank you for shopping with ShopVerse
+          </p>
         </div>
 
-        <hr className="my-6" />
+        
+        <div className="mb-6 flex justify-center">
+          <button
+            onClick={downloadInvoice}
+            className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
+          >
+            ⬇ Download Invoice (PDF)
+          </button>
+        </div>
 
-        {/* Address */}
-        <h4 className="mb-2 font-semibold text-gray-800">
-          Delivery Address
-        </h4>
-        <p className="text-sm text-gray-600">{order.address?.name}</p>
-        <p className="text-sm text-gray-600">{order.address?.phone}</p>
-        <p className="text-sm text-gray-600">
-          {order.address?.address}, {order.address?.city},{" "}
-          {order.address?.state} - {order.address?.pincode}
-        </p>
-
-        <hr className="my-6" />
-
-        {/* Items */}
-        <h4 className="mb-3 font-semibold text-gray-800">
-          Order Items
-        </h4>
-
-        <div className="space-y-4">
-          {order.items.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between rounded-lg border p-3"
-            >
-              <div>
-                <p className="font-medium text-gray-800">
-                  {item.title}
-                </p>
-                <p className="text-sm text-gray-500">
-  Qty: {item.quantity || 1}
-</p>
-
-              </div>
-              <p className="font-semibold text-gray-800">
-  ₹{(item.price || 0) * (item.quantity || 1)}
-</p>
-
+        
+        <div className="rounded-2xl bg-white p-6 shadow-md">
+          
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Order ID</p>
+              <p className="font-semibold">{order.id}</p>
             </div>
-          ))}
+
+            
+            <div className="text-right">
+              <p className="text-gray-500">Order Date</p>
+              <p className="font-semibold">{order.placedDate}</p>
+            </div>
+          </div>
+
+          <hr className="my-6" />
+
+          
+          <h4 className="mb-2 font-semibold text-gray-800">
+            Delivery Address
+          </h4>
+          <p className="text-sm text-gray-600">
+            {order.address?.name}
+          </p>
+          <p className="text-sm text-gray-600">
+            {order.address?.phone}
+          </p>
+          <p className="text-sm text-gray-600">
+            {order.address?.address}, {order.address?.city},{" "}
+            {order.address?.state} - {order.address?.pincode}
+          </p>
+
+          <hr className="my-6" />
+
+          
+          <h4 className="mb-3 font-semibold text-gray-800">
+            Order Items
+          </h4>
+
+          <div className="space-y-4">
+            {order.items.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between rounded-lg border p-3"
+              >
+                <div>
+                  <p className="font-medium text-gray-800">
+                    {item.title}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Qty: {item.quantity || 1}
+                  </p>
+                </div>
+                <p className="font-semibold text-gray-800">
+                  ₹{(item.price || 0) * (item.quantity || 1)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <hr className="my-6" />
+
+          
+          <div className="flex items-center justify-between text-lg font-semibold">
+            <span>Total Paid</span>
+            <span className="text-green-600">
+              ₹{order.amount?.total}
+            </span>
+          </div>
+
+          <p className="mt-2 text-sm text-gray-600">
+            Payment Method:{" "}
+            <strong className="text-gray-800">
+              {order.paymentMethod}
+            </strong>
+          </p>
         </div>
 
-        <hr className="my-6" />
-
-        {/* Total */}
-        <div className="flex items-center justify-between text-lg font-semibold">
-          <span>Total Paid</span>
-          <span className="text-green-600">
-            ₹{order.amount?.total}
-          </span>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            onClick={() => navigate("/orders")}
+            className="rounded-lg border px-6 py-2 text-sm font-medium hover:bg-gray-100 transition"
+          >
+            View Orders
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
+          >
+            Continue Shopping
+          </button>
         </div>
-
-        <p className="mt-2 text-sm text-gray-600">
-          Payment Method:{" "}
-          <strong className="text-gray-800">
-            {order.paymentMethod}
-          </strong>
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <button
-          onClick={() => navigate("/orders")}
-          className="rounded-lg border px-6 py-2 text-sm font-medium hover:bg-gray-100 transition"
-        >
-          View Orders
-        </button>
-        <button
-          onClick={() => navigate("/")}
-          className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
-        >
-          Continue Shopping
-        </button>
       </div>
     </div>
-  </div>
-);
-
+  );
 }

@@ -16,21 +16,21 @@ export default function CategoryPage() {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
 
-  /* ================= CATEGORY MATCH ================= */
+  
   const categoryProducts = products.filter(
     (p) =>
       p.category &&
       p.category.toLowerCase() === category.toLowerCase()
   );
 
-  /* ================= BRAND LIST ================= */
+  
   const allBrands = [
     ...new Set(
       categoryProducts.map((p) => p.brand).filter(Boolean)
     ),
   ];
 
-  /* ================= ⭐ RATING HELPER (MATCHES PRODUCT DETAILS) ================= */
+  
   const getProductRating = (product) => {
     const baseReviews = product.reviews || [];
 
@@ -52,7 +52,6 @@ export default function CategoryPage() {
     );
   };
 
-  /* ================= FILTER + SORT ================= */
   const filteredProducts = categoryProducts
     .filter((p) =>
       p.title.toLowerCase().includes(query.toLowerCase())
@@ -81,7 +80,6 @@ export default function CategoryPage() {
       }
     });
 
-  /* ================= HANDLERS ================= */
   const toggleBrand = (brand) => {
     setBrands((prev) =>
       prev.includes(brand)
@@ -101,7 +99,7 @@ export default function CategoryPage() {
     <div className="bg-gray-50 px-3 sm:px-4 py-6 min-h-screen">
       <div className="flex gap-6">
 
-        {/* ================= FILTERS ================= */}
+        
         <aside className="hidden w-64 shrink-0 rounded-xl bg-white p-4 shadow md:block">
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-semibold text-gray-900">
@@ -115,7 +113,7 @@ export default function CategoryPage() {
             </button>
           </div>
 
-          {/* PRICE */}
+          
           <div className="mb-6">
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Price Range
@@ -135,7 +133,7 @@ export default function CategoryPage() {
             </p>
           </div>
 
-          {/* RATING */}
+          
           <div className="mb-6">
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Customer Rating
@@ -156,7 +154,7 @@ export default function CategoryPage() {
             ))}
           </div>
 
-          {/* BRAND */}
+          
           <div>
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Brand
@@ -179,10 +177,10 @@ export default function CategoryPage() {
           </div>
         </aside>
 
-        {/* ================= PRODUCTS ================= */}
+        
         <main className="flex-1">
 
-          {/* HEADER */}
+         
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xl font-semibold capitalize">
               {category}
@@ -205,7 +203,7 @@ export default function CategoryPage() {
             </select>
           </div>
 
-          {/* GRID */}
+          
           {filteredProducts.length === 0 && (
             <p className="text-gray-500">
               No products found

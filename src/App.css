@@ -1,10 +1,10 @@
-/* RESET ROOT — VERY IMPORTANT */
+
 #root {
   width: 100%;
   min-height: 100vh;
 }
 
-/* Optional global reset */
+
 body {
   margin: 0;
   background: #f5f6f8;

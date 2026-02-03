@@ -1,179 +1,114 @@
-import { useState, useMemo } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { useOrders } from "../../context/OrderContext";
-
-/* ================= SAVE REVIEW (LOCAL STORAGE) ================= */
-const saveReview = ({ orderId, productId, rating, comment, userEmail }) => {
-  const existing = JSON.parse(localStorage.getItem("reviews")) || [];
-
-  const newReview = {
-    id: Date.now(),
-    orderId,
-    productId,
-    rating,
-    comment,
-    userEmail,
-    createdAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem(
-    "reviews",
-    JSON.stringify([newReview, ...existing])
-  );
-};
+import { useEffect, useState } from "react";
 
 export default function Reviews({ productId }) {
-  const { user } = useAuth();
-  const { orders } = useOrders();
+  const [reviews, setReviews] = useState([]);
 
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+    const allReviews =
+      JSON.parse(localStorage.getItem("reviews")) || [];
 
-  /* ================= LOAD ALL REVIEWS ================= */
-  const allReviews = useMemo(() => {
-    return JSON.parse(localStorage.getItem("reviews") || "[]");
-  }, []);
-
-  /* ================= PRODUCT REVIEWS ================= */
-  const productReviews = useMemo(() => {
-    return allReviews.filter(r => r.productId === productId);
-  }, [allReviews, productId]);
-
-  /* ================= FIND ELIGIBLE ORDER ================= */
-  const eligibleOrder = useMemo(() => {
-    if (!user) return null;
-
-    return orders.find(order => {
-      // ✅ status check (case-safe)
-      if (order.status?.toLowerCase() !== "delivered") return false;
-
-      // ✅ correct buyer check
-      if (order.buyerId !== user.id) return false;
-
-      // ✅ product exists in order
-      const hasProduct = order.items.some(
-        item => item.productId === productId
-      );
-
-      // ✅ prevent duplicate review per order
-      const alreadyReviewed = allReviews.some(
-        r =>
-          r.orderId === order.id &&
-          r.productId === productId &&
-          r.userEmail === user.email
-      );
-
-      return hasProduct && !alreadyReviewed;
-    });
-  }, [orders, user, productId, allReviews]);
-
-  /* ================= LOGIN CHECK ================= */
-  if (!user) {
-    return (
-      <p className="mt-6 text-sm text-gray-500">
-        Login to write a review.
-      </p>
+    const productReviews = allReviews.filter(
+      (r) => r.productId === productId
     );
-  }
 
-  /* ================= SUBMIT ================= */
-  const handleSubmit = () => {
-    if (!rating || !comment.trim()) {
-      alert("Please give rating and comment");
-      return;
-    }
+    setReviews(productReviews);
+  }, [productId]);
 
-    saveReview({
-      orderId: eligibleOrder.id,
-      productId,
-      rating,
-      comment,
-      userEmail: user.email,
-    });
-
-    setSubmitted(true);
-    setRating(0);
-    setComment("");
-  };
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((sum, r) => sum + r.rating, 0) /
+          reviews.length
+        ).toFixed(1)
+      : "No ratings yet";
 
   return (
-    <div className="mt-8 rounded-xl bg-white p-6 shadow">
-      {/* ================= EXISTING REVIEWS ================= */}
-      <h3 className="mb-4 text-lg font-semibold">
-        Customer Reviews
-      </h3>
+    <div
+      id="reviews"
+      className="mx-auto mt-10 max-w-7xl rounded-2xl bg-white p-6 shadow-sm"
+    >
+      {/* HEADER */}
+      <div className="mb-6 flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-800">
+          Customer Reviews
+        </h3>
 
-      {productReviews.length === 0 ? (
-        <p className="mb-6 text-sm text-gray-500">
-          No verified reviews yet.
-        </p>
-      ) : (
-        <div className="mb-6 space-y-4">
-          {productReviews.map(r => (
-            <div key={r.id} className="border-b pb-3">
-              <p className="text-sm font-medium">{r.userEmail}</p>
-              <p className="text-yellow-500">
-                {"★".repeat(r.rating)}
-                {"☆".repeat(5 - r.rating)}
-              </p>
-              <p className="text-sm text-gray-700">{r.comment}</p>
-            </div>
-          ))}
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="text-yellow-500">★</span>
+          <span className="font-medium">
+            {averageRating}
+          </span>
+          <span>({reviews.length} reviews)</span>
         </div>
-      )}
+      </div>
 
-      {/* ================= REVIEW FORM ================= */}
-      {!eligibleOrder ? (
-        <p className="text-sm text-gray-500">
-          You can review this product only after it is delivered
-          and only once per order.
+      {/* EMPTY */}
+      {reviews.length === 0 && (
+        <p className="text-sm text-gray-400">
+          No reviews yet
         </p>
-      ) : (
-        <>
-          <h3 className="mb-4 text-lg font-semibold">
-            Write a Review
-          </h3>
-
-          {submitted && (
-            <p className="mb-3 text-sm text-green-600">
-              ✅ Review submitted successfully
-            </p>
-          )}
-
-          {/* ⭐ RATING */}
-          <div className="mb-4 flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map(n => (
-              <button
-                key={n}
-                onClick={() => setRating(n)}
-                className={`text-2xl ${
-                  n <= rating ? "text-yellow-400" : "text-gray-300"
-                }`}
-              >
-                ★
-              </button>
-            ))}
-          </div>
-
-          {/* COMMENT */}
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            placeholder="Write your review here..."
-            className="w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
-          />
-
-          {/* ACTION */}
-          <button
-            onClick={handleSubmit}
-            className="mt-4 rounded-lg bg-red-600 px-6 py-2 text-sm text-white hover:bg-red-700"
-          >
-            Submit Review
-          </button>
-        </>
       )}
+
+      {/* REVIEWS LIST */}
+      <div className="space-y-5">
+        {reviews.map((review, index) => {
+          const displayName =
+            review.buyerName ||
+            review.username ||
+            review.email ||
+            "Verified Buyer";
+
+          const initial =
+            displayName.charAt(0).toUpperCase();
+
+          return (
+            <div
+              key={index}
+              className="rounded-2xl border border-gray-200 bg-gray-50/40 p-5 transition hover:shadow-md"
+            >
+              {/* USER */}
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-100 font-semibold text-red-600 shadow-sm">
+                  {initial}
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-800">
+                      {displayName}
+                    </p>
+
+                    {review.verified && (
+                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        ✔ Verified Buyer
+                      </span>
+                    )}
+                  </div>
+
+                  {review.date && (
+                    <p className="text-xs text-gray-400">
+                      Reviewed on {review.date}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* RATING */}
+              <div className="mb-2 flex items-center gap-1 text-yellow-500">
+                {"★".repeat(review.rating)}
+                <span className="ml-1 text-sm text-gray-500">
+                  ({review.rating}.0)
+                </span>
+              </div>
+
+              {/* COMMENT */}
+              <p className="text-gray-700 leading-relaxed">
+                {review.comment}
+              </p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -12,12 +12,10 @@ export default function RelatedProducts({ currentId }) {
 
   return (
     <section className="mt-10">
-      {/* TITLE */}
       <h3 className="mb-4 text-lg font-semibold text-gray-800">
         Related Products
       </h3>
 
-      {/* GRID */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         {related.map((product) => (
           <ProductCard

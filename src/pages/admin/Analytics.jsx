@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { useOrders } from "../../context/OrderContext";
 import { exportToCSV } from "../../utils/exportReports";
@@ -25,7 +25,6 @@ ChartJS.register(
   Legend
 );
 
-/* 🎨 Admin color palette */
 const COLORS = {
   primary: "#931012",
   success: "#16A34A",
@@ -34,7 +33,6 @@ const COLORS = {
   info: "#2563EB",
 };
 
-/* 🔧 Chart options */
 const baseOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -51,25 +49,48 @@ const doughnutOptions = {
   cutout: "65%",
 };
 
+const normalizeStatus = (status) =>
+  String(status || "").toUpperCase();
+
 export default function Analytics() {
-  const { orders } = useOrders();
+  const { orders = [] } = useOrders();
+  const [, forceUpdate] = useState(0);
+
+  /* REALTIME SYNC */
+  useEffect(() => {
+    const sync = () => forceUpdate((v) => v + 1);
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
+  const getAmountValue = (amount) => {
+    if (typeof amount === "number") return amount;
+    if (typeof amount === "object" && amount !== null)
+      return amount.total || 0;
+    return 0;
+  };
 
   /* ================= SALES TREND ================= */
   const salesByDate = useMemo(() => {
     const map = {};
     orders.forEach((o) => {
-      const date = new Date(o.createdAt).toLocaleDateString();
-      map[date] = (map[date] || 0) + (o.amount || 0);
+      if (!o.placedDate) return;
+      map[o.placedDate] =
+        (map[o.placedDate] || 0) +
+        getAmountValue(o.amount);
     });
-    return map;
+    return {
+      labels: Object.keys(map),
+      values: Object.values(map),
+    };
   }, [orders]);
 
   const salesData = {
-    labels: Object.keys(salesByDate),
+    labels: salesByDate.labels,
     datasets: [
       {
         label: "Sales (₹)",
-        data: Object.values(salesByDate),
+        data: salesByDate.values,
         borderColor: COLORS.primary,
         backgroundColor: "rgba(147,16,18,0.15)",
         fill: true,
@@ -78,12 +99,13 @@ export default function Analytics() {
     ],
   };
 
-  /* ================= ORDERS VS REVENUE ================= */
+  /* ================= TOTALS ================= */
   const totalRevenue = orders.reduce(
-    (sum, o) => sum + (o.amount || 0),
+    (sum, o) => sum + getAmountValue(o.amount),
     0
   );
 
+  /* ================= ORDERS vs REVENUE (FIXED) ================= */
   const ordersVsRevenue = {
     labels: ["Performance"],
     datasets: [
@@ -91,42 +113,75 @@ export default function Analytics() {
         label: "Orders",
         data: [orders.length],
         backgroundColor: COLORS.warning,
+        yAxisID: "yOrders",
       },
       {
         label: "Revenue (₹)",
         data: [totalRevenue],
         backgroundColor: COLORS.info,
+        yAxisID: "yRevenue",
       },
     ],
   };
 
-  /* ================= ORDER STATUS ================= */
+  const ordersVsRevenueOptions = {
+    ...baseOptions,
+    scales: {
+      yOrders: {
+        type: "linear",
+        position: "left",
+        title: {
+          display: true,
+          text: "Orders",
+        },
+        ticks: {
+          stepSize: 5,
+        },
+      },
+      yRevenue: {
+        type: "linear",
+        position: "right",
+        title: {
+          display: true,
+          text: "Revenue (₹)",
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+      },
+    },
+  };
+
+  /* ================= STATUS COUNT ================= */
   const statusCounts = useMemo(() => {
     const counts = {
       PLACED: 0,
-      APPROVED: 0,
+      SHIPPED: 0,
       DELIVERED: 0,
       CANCELLED: 0,
     };
+
     orders.forEach((o) => {
-      counts[o.status] = (counts[o.status] || 0) + 1;
+      const s = normalizeStatus(o.status);
+      if (counts[s] !== undefined) counts[s]++;
     });
+
     return counts;
   }, [orders]);
 
   const orderStatusData = {
-    labels: ["Placed", "Approved", "Delivered", "Cancelled"],
+    labels: ["Placed", "Shipped", "Delivered", "Cancelled"],
     datasets: [
       {
         data: [
           statusCounts.PLACED,
-          statusCounts.APPROVED,
+          statusCounts.SHIPPED,
           statusCounts.DELIVERED,
           statusCounts.CANCELLED,
         ],
         backgroundColor: [
           COLORS.warning,
-          COLORS.primary,
+          COLORS.info,
           COLORS.success,
           COLORS.danger,
         ],
@@ -158,25 +213,22 @@ export default function Analytics() {
     ],
   };
 
-  /* ================= EXPORT ANALYTICS ================= */
+  /* ================= EXPORT ================= */
   const exportAnalytics = () => {
-    const report = [
+    exportToCSV("analytics_summary", [
       {
         TotalOrders: orders.length,
         TotalRevenue: totalRevenue,
         Placed: statusCounts.PLACED,
-        Approved: statusCounts.APPROVED,
+        Shipped: statusCounts.SHIPPED,
         Delivered: statusCounts.DELIVERED,
         Cancelled: statusCounts.CANCELLED,
       },
-    ];
-
-    exportToCSV("analytics_summary", report);
+    ]);
   };
 
   return (
     <div className="p-6">
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">
           Analytics Dashboard
@@ -190,7 +242,6 @@ export default function Analytics() {
         </button>
       </div>
 
-      {/* TOP ROW */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="font-semibold mb-4">📈 Sales Trend</h3>
@@ -204,12 +255,14 @@ export default function Analytics() {
             📦 Orders vs Revenue
           </h3>
           <div className="h-[260px]">
-            <Bar data={ordersVsRevenue} options={baseOptions} />
+            <Bar
+              data={ordersVsRevenue}
+              options={ordersVsRevenueOptions}
+            />
           </div>
         </div>
       </div>
 
-      {/* BOTTOM ROW */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow p-6">
           <h3 className="font-semibold mb-4">

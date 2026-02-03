@@ -4,7 +4,7 @@ import { useSellerProducts } from "../../context/SellerProductContext";
 export default function SellerAddProduct({ onClose }) {
   const { addSellerProduct } = useSellerProducts();
 
-  /* LOCK BACKGROUND SCROLL */
+  
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -54,7 +54,7 @@ export default function SellerAddProduct({ onClose }) {
     }
 
     addSellerProduct({
-      title: form.title,
+      title: form.title.trim(),
       category: form.category,
       mrp: Number(form.mrp),
       discount: Number(form.discount) || 0,
@@ -73,6 +73,8 @@ export default function SellerAddProduct({ onClose }) {
         expiryDate: form.expiryDate || "",
       },
       reviews: [],
+      sold: 0,
+      revenue: 0,
     });
 
     onClose();
@@ -86,7 +88,7 @@ export default function SellerAddProduct({ onClose }) {
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* BASIC INFO */}
+      
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Basic Information
@@ -114,7 +116,7 @@ export default function SellerAddProduct({ onClose }) {
             </select>
           </div>
 
-          {/* PRICING */}
+        
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Pricing
@@ -122,12 +124,14 @@ export default function SellerAddProduct({ onClose }) {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input
+                type="number"
                 name="mrp"
                 placeholder="MRP *"
                 onChange={handleChange}
                 className="rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
               />
               <input
+                type="number"
                 name="discount"
                 placeholder="Discount (%)"
                 onChange={handleChange}
@@ -140,6 +144,7 @@ export default function SellerAddProduct({ onClose }) {
             </p>
 
             <input
+              type="number"
               name="stock"
               placeholder="Stock *"
               onChange={handleChange}
@@ -147,7 +152,7 @@ export default function SellerAddProduct({ onClose }) {
             />
           </div>
 
-          {/* DESCRIPTION */}
+        
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Description
@@ -170,7 +175,6 @@ export default function SellerAddProduct({ onClose }) {
             />
           </div>
 
-          {/* IMAGES */}
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Product Images
@@ -197,7 +201,7 @@ export default function SellerAddProduct({ onClose }) {
             </button>
           </div>
 
-          {/* ACTIONS */}
+    
           <div className="flex justify-end gap-3">
             <button
               type="button"

@@ -10,12 +10,12 @@ export function CartProvider({ children }) {
 
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  /* ================= PERSIST CART ================= */
+  
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  /* ================= ADD TO CART ================= */
+  
   const addToCart = (product) => {
     setCartItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
@@ -56,7 +56,7 @@ export function CartProvider({ children }) {
     });
   };
 
-  /* ================= INCREASE QTY ================= */
+ 
   const addQty = (id) =>
     setCartItems((items) =>
       items.map((i) =>
@@ -66,7 +66,7 @@ export function CartProvider({ children }) {
       )
     );
 
-  /* ================= DECREASE QTY ================= */
+  
   const reduceQty = (id) =>
     setCartItems((items) =>
       items.map((i) =>
@@ -76,20 +76,19 @@ export function CartProvider({ children }) {
       )
     );
 
-  /* ================= REMOVE ITEM ================= */
   const removeItem = (id) =>
     setCartItems((items) =>
       items.filter((i) => i.id !== id)
     );
 
-  /* ================= CLEAR CART ================= */
+ 
   const clearCart = () => {
     setCartItems([]);
     localStorage.removeItem("cart");
     setAppliedCoupon(null);
   };
 
-  /* ================= COUPONS ================= */
+  
   const applyCoupon = (code, subtotal) => {
     if (code === "WELCOME10") {
       if (subtotal < 500) return "Minimum ₹500 required";

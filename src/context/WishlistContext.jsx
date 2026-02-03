@@ -8,7 +8,7 @@ export const WishlistProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // persist always
+  
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
   }, [wishlist]);

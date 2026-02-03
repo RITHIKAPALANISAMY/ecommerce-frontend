@@ -6,7 +6,7 @@ export default function Returns() {
   const { orders, updateOrderStatus } = useOrders();
   const [processingId, setProcessingId] = useState(null);
 
-  /* ===== DERIVE RETURNS (REAL-TIME) ===== */
+  
   const returns = orders.filter((o) =>
     [
       "RETURN_REQUESTED",
@@ -34,7 +34,7 @@ export default function Returns() {
     }
   };
 
-  /* ===== EXPORT RETURNS REPORT ===== */
+  
   const exportReturns = () => {
     const report = returns.map((o) => ({
       OrderID: o.id,
@@ -50,7 +50,7 @@ export default function Returns() {
 
   return (
     <div className="p-6">
-      {/* HEADER */}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">
           Returns Management

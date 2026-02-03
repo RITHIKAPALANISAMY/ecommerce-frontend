@@ -17,7 +17,7 @@ export default function SellerRevenueReport() {
 
   const sellerId = user?.email;
 
-  /* ================= CUMULATIVE REVENUE ================= */
+ 
   const chartData = useMemo(() => {
     if (!sellerId) return [];
 
@@ -67,7 +67,7 @@ export default function SellerRevenueReport() {
         Revenue Overview
       </h3>
 
-      {/* METRICS */}
+  
       <div className="mb-6 flex gap-12 text-sm">
         <div>
           <p className="text-gray-500">Total Revenue</p>
@@ -84,7 +84,7 @@ export default function SellerRevenueReport() {
         </div>
       </div>
 
-      {/* LINE GRAPH */}
+  
       {chartData.length === 0 ? (
         <p className="text-center text-sm text-gray-400">
           No revenue yet

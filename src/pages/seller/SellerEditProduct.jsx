@@ -4,7 +4,7 @@ import { useSellerProducts } from "../../context/SellerProductContext";
 export default function SellerEditProduct({ product, onClose }) {
   const { updateSellerProduct } = useSellerProducts();
 
-  /* LOCK BACKGROUND SCROLL */
+  
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -79,18 +79,18 @@ export default function SellerEditProduct({ product, onClose }) {
   };
 
   return (
-    /* OVERLAY */
+    
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       
-      {/* MODAL */}
+
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="mb-4 text-xl font-semibold text-gray-800">
           Edit Product
         </h3>
 
-        {/* FORM */}
+      
         <div className="space-y-6">
-          {/* BASIC INFO */}
+        
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Basic Information
@@ -113,7 +113,7 @@ export default function SellerEditProduct({ product, onClose }) {
             />
           </div>
 
-          {/* PRICING */}
+    
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Pricing
@@ -151,7 +151,7 @@ export default function SellerEditProduct({ product, onClose }) {
             />
           </div>
 
-          {/* DESCRIPTION */}
+      
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Description
@@ -176,7 +176,7 @@ export default function SellerEditProduct({ product, onClose }) {
             />
           </div>
 
-          {/* EXTRA DETAILS */}
+          
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
               name="material"
@@ -219,7 +219,7 @@ export default function SellerEditProduct({ product, onClose }) {
             />
           </div>
 
-          {/* IMAGES */}
+          
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Product Images
@@ -246,7 +246,7 @@ export default function SellerEditProduct({ product, onClose }) {
           </div>
         </div>
 
-        {/* FOOTER */}
+
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}

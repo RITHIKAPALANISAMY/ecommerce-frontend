@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "admin_coupons";
+const BUYER_KEY = "coupons"; // 🔑 shared with buyer
 
 export default function Coupons() {
-  /* ===== STATE ===== */
   const [coupons, setCoupons] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -18,17 +18,35 @@ export default function Coupons() {
     status: "Active",
   });
 
-  /* ===== PERSIST REAL-TIME ===== */
+  /* ✅ STORE ADMIN + BUYER COPIES */
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(coupons));
+
+    // only ACTIVE + not expired go to buyer
+    const buyerCoupons = coupons.filter(
+      (c) =>
+        c.status === "Active" &&
+        (!c.expiry || new Date(c.expiry) >= new Date())
+    );
+
+    localStorage.setItem(BUYER_KEY, JSON.stringify(buyerCoupons));
   }, [coupons]);
 
-  /* ===== GENERIC HANDLER ===== */
+  /* ✅ REALTIME SYNC (MULTI TAB) */
+  useEffect(() => {
+    const sync = (e) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        setCoupons(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* ===== ADD / UPDATE ===== */
   const handleSave = () => {
     if (!form.code || !form.discount || !form.type || !form.expiry) {
       alert("All fields are required");
@@ -58,13 +76,11 @@ export default function Coupons() {
     });
   };
 
-  /* ===== EDIT ===== */
   const handleEdit = (coupon) => {
     setForm(coupon);
     setEditingId(coupon.id);
   };
 
-  /* ===== DELETE ===== */
   const handleDelete = (id) => {
     if (!window.confirm("Delete this coupon?")) return;
     setCoupons((prev) => prev.filter((c) => c.id !== id));
@@ -76,7 +92,6 @@ export default function Coupons() {
         Coupons & Deals Management
       </h2>
 
-      {/* FORM */}
       <div className="bg-white rounded-xl shadow p-6 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <input
@@ -89,7 +104,7 @@ export default function Coupons() {
 
           <input
             name="discount"
-            placeholder="Discount (10% / ₹50)"
+            placeholder="Discount (10 / 50)"
             value={form.discount}
             onChange={handleChange}
             className="border rounded px-3 py-2"
@@ -113,14 +128,13 @@ export default function Coupons() {
 
           <button
             onClick={handleSave}
-            className="bg-primary text-white rounded px-4 py-2"
+            className="bg-red-600 hover:bg-red-700 text-white rounded px-4 py-2"
           >
             {editingId ? "Update" : "Add"}
           </button>
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -137,24 +151,17 @@ export default function Coupons() {
           <tbody>
             {coupons.length === 0 ? (
               <tr>
-                <td
-                  colSpan="6"
-                  className="p-6 text-center text-gray-400"
-                >
+                <td colSpan="6" className="p-6 text-center text-gray-400">
                   No coupons created yet
                 </td>
               </tr>
             ) : (
               coupons.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-t hover:bg-gray-50"
-                >
+                <tr key={c.id} className="border-t hover:bg-gray-50">
                   <td className="p-3 font-medium">{c.code}</td>
                   <td className="p-3">{c.discount}</td>
                   <td className="p-3">{c.type}</td>
                   <td className="p-3">{c.expiry}</td>
-
                   <td className="p-3">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
@@ -166,15 +173,13 @@ export default function Coupons() {
                       {c.status}
                     </span>
                   </td>
-
                   <td className="p-3 flex gap-3">
                     <button
                       onClick={() => handleEdit(c)}
-                      className="text-xs text-primary"
+                      className="text-xs text-red-600"
                     >
                       Edit
                     </button>
-
                     <button
                       onClick={() => handleDelete(c.id)}
                       className="text-xs text-red-600"

@@ -43,7 +43,6 @@ export default function Signup() {
       return;
     }
 
-    // ✅ Auto login after signup
     login(form.email, form.password);
     navigate("/", { replace: true });
   };
@@ -52,7 +51,6 @@ export default function Signup() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-lg grid grid-cols-1 md:grid-cols-2">
         
-        {/* LEFT SIDE */}
         <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
           <h1 className="text-3xl font-bold mb-3">
             Create your ShopVerse account
@@ -63,7 +61,7 @@ export default function Signup() {
           </p>
         </div>
 
-        {/* RIGHT SIDE */}
+      
         <div className="p-8 sm:p-10">
           <h2 className="text-2xl font-semibold text-gray-800">
             Sign Up

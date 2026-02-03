@@ -1,14 +1,13 @@
 import ProductCard from "../../components/common/ProductCard";
 
 export default function ProductList() {
-  // Mock products (later replace with API)
   const products = [
     {
       id: 1,
       title: "Wireless Headphones",
       price: 2999,
-      images: ["https://via.placeholder.com/400"], // ✅ ProductCard compatible
-      stock: 10, // ✅ In stock
+      images: ["https://via.placeholder.com/400"], 
+      stock: 10,
       rating: 4,
       brand: "SoundMax",
     },
@@ -17,7 +16,7 @@ export default function ProductList() {
       title: "Smart Watch",
       price: 4999,
       images: ["https://via.placeholder.com/400"],
-      stock: 3, // ⚠️ Low stock
+      stock: 3, 
       rating: 3,
       brand: "TimeTech",
     },
@@ -26,7 +25,7 @@ export default function ProductList() {
       title: "Bluetooth Speaker",
       price: 1999,
       images: ["https://via.placeholder.com/400"],
-      stock: 0, // ❌ Out of stock
+      stock: 0,
       rating: 4,
       brand: "BoomAudio",
     },

@@ -29,7 +29,7 @@ export default function SoftStatCard({ title, value, type = "default" }) {
       icon: XCircle,
     },
 
-    /* ✅ FALLBACK */
+    
     default: {
       bg: "bg-slate-50",
       text: "text-slate-700",

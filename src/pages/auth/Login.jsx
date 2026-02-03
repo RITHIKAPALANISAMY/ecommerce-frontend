@@ -6,8 +6,6 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // 🔁 where to go after login
   const from = location.state?.from || "/";
 
   const [email, setEmail] = useState("");
@@ -34,7 +32,6 @@ export default function Login() {
       return;
     }
 
-    // ✅ Redirect logic (already correct)
     if (loggedUser.role === "admin") {
       navigate("/admin/dashboard", { replace: true });
     } else {
@@ -46,7 +43,7 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-lg grid grid-cols-1 md:grid-cols-2">
         
-        {/* LEFT SIDE */}
+    
         <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
           <h1 className="text-3xl font-bold mb-3">
             Welcome to ShopVerse
@@ -56,8 +53,6 @@ export default function Login() {
             with ease.
           </p>
         </div>
-
-        {/* RIGHT SIDE */}
         <div className="p-8 sm:p-10">
           <h2 className="text-2xl font-semibold text-gray-800">
             Login

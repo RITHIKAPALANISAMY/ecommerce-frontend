@@ -27,7 +27,6 @@ export default function BecomeSeller() {
       return;
     }
 
-    // ✅ update role with seller data
     updateUserRole(form);
 
     navigate("/seller/dashboard", { replace: true });
@@ -45,7 +44,7 @@ export default function BecomeSeller() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {/* Store Name */}
+      
           <div>
             <label className="mb-1 block text-sm font-medium">
               Store Name <span className="text-red-600">*</span>
@@ -59,7 +58,7 @@ export default function BecomeSeller() {
             />
           </div>
 
-          {/* Owner Name */}
+        
           <div>
             <label className="mb-1 block text-sm font-medium">
               Owner Name
@@ -73,7 +72,7 @@ export default function BecomeSeller() {
             />
           </div>
 
-          {/* Email */}
+      
           <div>
             <label className="mb-1 block text-sm font-medium">
               Email
@@ -85,7 +84,7 @@ export default function BecomeSeller() {
             />
           </div>
 
-          {/* Phone */}
+    
           <div>
             <label className="mb-1 block text-sm font-medium">
               Phone Number <span className="text-red-600">*</span>
@@ -99,7 +98,7 @@ export default function BecomeSeller() {
             />
           </div>
 
-          {/* GST */}
+      
           <div>
             <label className="mb-1 block text-sm font-medium">
               GST Number (optional)
@@ -113,7 +112,7 @@ export default function BecomeSeller() {
             />
           </div>
 
-          {/* Address */}
+      
           <div>
             <label className="mb-1 block text-sm font-medium">
               Business Address <span className="text-red-600">*</span>

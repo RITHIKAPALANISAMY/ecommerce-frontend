@@ -25,7 +25,7 @@ export default function CheckoutSteps({ currentStep }) {
     <div className="w-full bg-white py-4 shadow-sm">
       <div className="mx-auto flex max-w-3xl items-center justify-center">
 
-        {/* STEP 1 */}
+  
         <div
           className="flex cursor-pointer flex-col items-center"
           onClick={() => goTo(1)}
@@ -42,14 +42,12 @@ export default function CheckoutSteps({ currentStep }) {
           </span>
         </div>
 
-        {/* LINE */}
         <div
           className={`${lineBase} ${
             currentStep >= 2 ? lineActive : lineInactive
           }`}
         />
 
-        {/* STEP 2 */}
         <div
           className="flex cursor-pointer flex-col items-center"
           onClick={() => goTo(2)}
@@ -66,14 +64,14 @@ export default function CheckoutSteps({ currentStep }) {
           </span>
         </div>
 
-        {/* LINE */}
+      
         <div
           className={`${lineBase} ${
             currentStep >= 3 ? lineActive : lineInactive
           }`}
         />
 
-        {/* STEP 3 */}
+    
         <div className="flex flex-col items-center">
           <div
             className={`${circleBase} ${

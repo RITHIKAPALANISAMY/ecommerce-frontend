@@ -13,7 +13,7 @@ export default function SellerOrders() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [search, setSearch] = useState("");
 
-  /* ================= SELLER ORDERS ================= */
+
   const sellerOrders = useMemo(() => {
     if (!sellerId) return [];
     return orders
@@ -24,7 +24,7 @@ export default function SellerOrders() {
       .filter(Boolean);
   }, [orders, sellerId]);
 
-  /* ================= STATUS ================= */
+ 
   const getOrderStatus = (order) => {
     if (order.items.every(i => i.status === "Cancelled")) return "Cancelled";
     if (order.items.every(i => i.status === "Delivered")) return "Delivered";
@@ -32,7 +32,7 @@ export default function SellerOrders() {
     return "Placed";
   };
 
-  /* ================= FILTER ================= */
+ 
   const searchedOrders = sellerOrders
     .filter(o => statusFilter === "ALL" || getOrderStatus(o) === statusFilter)
     .filter(o =>
@@ -40,7 +40,7 @@ export default function SellerOrders() {
       String(o.buyerEmail || "").toLowerCase().includes(search.toLowerCase())
     );
 
-  /* ================= METRICS ================= */
+
   const totalRevenue = searchedOrders.reduce(
     (sum, o) =>
       sum + o.items.reduce(
@@ -61,7 +61,7 @@ export default function SellerOrders() {
     <div className="max-w-6xl mx-auto p-4">
       <h2 className="text-2xl font-semibold mb-6">My Orders</h2>
 
-      {/* STATS */}
+      
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
   <SoftStatCard
     title="Total Orders"
@@ -92,8 +92,6 @@ export default function SellerOrders() {
   />
 </div>
 
-
-      {/* FILTER */}
       <div className="flex gap-4 mb-6">
         <select
           value={statusFilter}
@@ -115,7 +113,7 @@ export default function SellerOrders() {
         />
       </div>
 
-      {/* ORDERS */}
+      
       <div className="space-y-5">
         <AnimatePresence>
           {searchedOrders.map(order => {
@@ -138,7 +136,7 @@ export default function SellerOrders() {
                 layout
                 className="rounded-xl bg-white shadow p-5"
               >
-                {/* HEADER */}
+              
                 <div className="flex justify-between items-start gap-6">
                   <div>
                     <p className="font-semibold">Order ID: {order.id}</p>
@@ -164,8 +162,6 @@ export default function SellerOrders() {
                     </button>
                   </div>
                 </div>
-
-                {/* DETAILS */}
                 {expanded && (
                   <div className="mt-5 border-t pt-4 space-y-3 text-sm">
                     {order.items.map(item => (
@@ -229,7 +225,7 @@ export default function SellerOrders() {
   );
 }
 
-/* ================= HELPERS ================= */
+
 
 function StatusBadge({ status }) {
   const styles = {

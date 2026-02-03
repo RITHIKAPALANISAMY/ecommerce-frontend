@@ -18,12 +18,12 @@ export default function EditProfileModal({ user, onClose, onSave }) {
   };
 
   return (
-    /* ===== Overlay ===== */
+    
     <div
       onClick={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
     >
-      {/* ===== Modal Card ===== */}
+     
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
@@ -32,7 +32,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           Edit Profile
         </h3>
 
-        {/* ===== Name ===== */}
+       
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-gray-600">
             Name
@@ -45,7 +45,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           />
         </div>
 
-        {/* ===== Email ===== */}
+       
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-gray-600">
             Email
@@ -57,7 +57,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           />
         </div>
 
-        {/* ===== Phone ===== */}
+       
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-gray-600">
             Phone
@@ -71,7 +71,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           />
         </div>
 
-        {/* ===== Address ===== */}
+       
         <div className="mb-6">
           <label className="mb-1 block text-sm font-medium text-gray-600">
             Address
@@ -86,7 +86,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           />
         </div>
 
-        {/* ===== Actions ===== */}
+        
         <div className="flex justify-end gap-3">
           <button
             type="button"

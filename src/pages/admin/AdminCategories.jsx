@@ -10,7 +10,7 @@ const defaultCategories = [
 ];
 
 const AdminCategories = () => {
-  /* ===== STATE ===== */
+ 
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : defaultCategories;
@@ -20,12 +20,12 @@ const AdminCategories = () => {
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState("");
 
-  /* ===== PERSIST ===== */
+ 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
   }, [categories]);
 
-  /* ===== ADD CATEGORY ===== */
+
   const addCategory = () => {
     if (!newCategory.trim()) return;
 
@@ -46,13 +46,13 @@ const AdminCategories = () => {
     setNewCategory("");
   };
 
-  /* ===== DELETE CATEGORY ===== */
+  
   const deleteCategory = (id) => {
     if (!window.confirm("Delete this category?")) return;
     setCategories(categories.filter((c) => c.id !== id));
   };
 
-  /* ===== EDIT CATEGORY ===== */
+  
   const startEdit = (category) => {
     setEditId(category.id);
     setEditName(category.name);
@@ -75,7 +75,7 @@ const AdminCategories = () => {
     <div className="categories-page">
       <h2 className="page-title">Manage Categories</h2>
 
-      {/* ADD CATEGORY */}
+    
       <div className="add-category">
         <input
           type="text"
@@ -86,7 +86,7 @@ const AdminCategories = () => {
         <button onClick={addCategory}>Add</button>
       </div>
 
-      {/* CATEGORY LIST */}
+      
       <table className="categories-table">
         <thead>
           <tr>

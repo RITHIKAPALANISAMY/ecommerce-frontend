@@ -1,6 +1,6 @@
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -14,9 +14,7 @@ export default function Cart() {
 
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  /* ================= AUTH & ROLE GUARD ================= */
   useEffect(() => {
     if (!user) {
       navigate("/login", { replace: true });
@@ -27,17 +25,16 @@ export default function Cart() {
     }
   }, [user, navigate]);
 
-  /* ================= BUY NOW ================= */
-  const buyNowItem = location.state?.buyNowItem;
-  const itemsToShow = buyNowItem
-  ? [{ ...buyNowItem, quantity: buyNowItem.quantity || 1 }]
-  : cartItems;
+  const buyNowItems = cartItems.filter(
+    (item) => item.buyNow === true
+  );
 
+  const itemsToShow =
+    buyNowItems.length > 0 ? buyNowItems : cartItems;
 
   const [couponInput, setCouponInput] = useState("");
   const [error, setError] = useState("");
 
-  /* ================= STOCK SPLIT ================= */
   const inStockItems = useMemo(
     () =>
       itemsToShow.filter(
@@ -54,12 +51,10 @@ export default function Cart() {
     [itemsToShow]
   );
 
-  /* ================= PRICE CALC (ONLY IN STOCK) ================= */
   const subtotal = inStockItems.reduce(
-  (sum, i) => sum + Number(i.price) * Number(i.quantity),
-  0
-);
-
+    (sum, i) => sum + Number(i.price) * Number(i.quantity),
+    0
+  );
 
   const shipping = subtotal > 0 ? 99 : 0;
   const gst = Math.round(subtotal * 0.18);
@@ -74,17 +69,14 @@ export default function Cart() {
 
   const total = subtotal + gst + shipping - discount;
 
-  /* ================= APPLY COUPON ================= */
   const handleApply = () => {
     const msg = applyCoupon(couponInput.trim(), subtotal);
     setError(msg || "");
   };
 
-  /* ================= CHECKOUT ================= */
   const handleCheckout = () => {
     if (inStockItems.length === 0) return;
 
-    /* 🔑 SINGLE SOURCE OF TRUTH */
     localStorage.setItem(
       "checkoutAmount",
       JSON.stringify({
@@ -109,12 +101,12 @@ export default function Cart() {
 
   return (
     <div className="bg-gray-100 py-8 pb-16">
-      <h2 className="mx-auto mb-5 max-w-6xl text-xl font-semibold">
+      <h2 className="mx-auto mb-6 max-w-6xl text-xl font-semibold text-gray-800">
         Shopping Cart ({itemsToShow.length} items)
       </h2>
 
       {outOfStockItems.length > 0 && (
-        <div className="mx-auto mb-4 max-w-6xl rounded-lg border border-red-200 bg-red-50 p-3 text-red-800">
+        <div className="mx-auto mb-5 max-w-6xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           Some items are currently <strong>out of stock</strong>.
           <br />
           They won’t be included in checkout.
@@ -122,15 +114,15 @@ export default function Cart() {
       )}
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3">
+
         {/* LEFT */}
         <div className="lg:col-span-2 flex flex-col gap-5">
           {itemsToShow.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
 
-          {/* COUPONS */}
-          <div className="rounded-xl bg-white p-4">
-            <h4 className="mb-3 font-semibold">
+          <div className="rounded-xl bg-white p-5 shadow-sm">
+            <h4 className="mb-4 font-semibold text-gray-800">
               Available Coupons
             </h4>
 
@@ -146,17 +138,19 @@ export default function Cart() {
             ].map((c) => (
               <div
                 key={c.code}
-                className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-700 p-3"
+                className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-600 bg-red-50/30 p-3"
               >
                 <div>
-                  <strong>{c.code}</strong>
+                  <strong className="text-red-700">
+                    {c.code}
+                  </strong>
                   <p className="text-sm text-gray-600">
                     {c.desc}
                   </p>
                 </div>
                 <button
                   onClick={() => setCouponInput(c.code)}
-                  className="rounded-md bg-red-700 px-4 py-1.5 text-white"
+                  className="rounded-md bg-red-700 px-4 py-1.5 text-sm text-white transition hover:bg-red-800"
                 >
                   Apply
                 </button>
@@ -166,7 +160,7 @@ export default function Cart() {
             {appliedCoupon && (
               <button
                 onClick={removeCoupon}
-                className="text-sm text-red-600 underline"
+                className="mt-2 text-sm font-medium text-red-600 underline"
               >
                 Remove Coupon
               </button>
@@ -175,8 +169,8 @@ export default function Cart() {
         </div>
 
         {/* RIGHT */}
-        <div className="h-fit rounded-xl bg-white p-5 shadow">
-          <h4 className="mb-4 font-semibold">
+        <div className="h-fit rounded-xl bg-white p-6 shadow-md">
+          <h4 className="mb-4 font-semibold text-gray-800">
             Price Details
           </h4>
 
@@ -185,11 +179,11 @@ export default function Cart() {
               value={couponInput}
               onChange={(e) => setCouponInput(e.target.value)}
               placeholder="Enter coupon code"
-              className="flex-1 rounded-md border px-3 py-2"
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm transition focus:border-red-500 focus:outline-none"
             />
             <button
               onClick={handleApply}
-              className="rounded-md bg-red-700 px-4 py-2 text-white"
+              className="rounded-md bg-red-700 px-4 py-2 text-sm text-white transition hover:bg-red-800"
             >
               Apply
             </button>
@@ -201,31 +195,31 @@ export default function Cart() {
             </p>
           )}
 
-          <div className="flex justify-between my-2">
+          <div className="my-2 flex justify-between text-sm">
             <span>Subtotal</span>
             <span>₹{subtotal}</span>
           </div>
 
-          <div className="flex justify-between my-2">
+          <div className="my-2 flex justify-between text-sm">
             <span>Shipping</span>
             <span>₹{shipping}</span>
           </div>
 
-          <div className="flex justify-between my-2">
+          <div className="my-2 flex justify-between text-sm">
             <span>GST (18%)</span>
             <span>₹{gst}</span>
           </div>
 
           {discount > 0 && (
-            <div className="flex justify-between my-2 text-green-600">
+            <div className="my-2 flex justify-between text-sm font-medium text-green-600">
               <span>Discount</span>
               <span>-₹{discount}</span>
             </div>
           )}
 
-          <hr className="my-3" />
+          <hr className="my-4" />
 
-          <div className="flex justify-between text-lg font-bold">
+          <div className="flex justify-between text-lg font-bold text-gray-900">
             <span>Total</span>
             <span>₹{total}</span>
           </div>
@@ -234,10 +228,10 @@ export default function Cart() {
             <button
               disabled={inStockItems.length === 0}
               onClick={handleCheckout}
-              className={`mt-5 w-full rounded-lg py-3 text-sm text-white ${
+              className={`mt-6 w-full rounded-lg py-3 text-sm font-semibold text-white transition ${
                 inStockItems.length === 0
                   ? "cursor-not-allowed bg-gray-300"
-                  : "bg-red-800 hover:bg-red-900"
+                  : "bg-red-800 hover:bg-red-900 hover:shadow"
               }`}
             >
               Proceed to Checkout →

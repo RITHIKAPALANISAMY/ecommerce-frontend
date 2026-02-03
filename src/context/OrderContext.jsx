@@ -21,14 +21,15 @@ export const OrderProvider = ({ children }) => {
       buyerEmail: order.buyerEmail,
       buyerName: order.buyerName || "Customer",
 
-      /* 🔑 FINAL FIX: qty → quantity (SAFE) */
-      items: cartItems.map(item => ({
-  productId: item.id,
-  title: item.title,
-  price: item.price,
-  image: item.image,   // 🔥 ADD THIS
-  quantity: item.quantity
-})),
+      /* 🔑 qty → quantity (SAFE) */
+      items: cartItems.map((item) => ({
+        productId: item.id,
+        title: item.title,
+        price: item.price,
+        image: item.image,
+        quantity: item.quantity,
+        sellerId: item.sellerId,
+      })),
 
       address: order.address || {},
 
@@ -43,7 +44,7 @@ export const OrderProvider = ({ children }) => {
     setOrders((prev) => [newOrder, ...prev]);
   };
 
-  /* ================= UPDATE STATUS ================= */
+  /* ================= UPDATE STATUS (ADMIN) ================= */
   const updateOrderStatus = (orderId, status, extra = {}) => {
     setOrders((prev) =>
       prev.map((o) =>
@@ -64,6 +65,7 @@ export const OrderProvider = ({ children }) => {
         const sellerItems = order.items.filter(
           (item) => item.sellerId === sellerId
         );
+
         return sellerItems.length
           ? { ...order, items: sellerItems }
           : null;

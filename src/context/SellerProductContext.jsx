@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
 import { useAuth } from "./AuthContext";
 
 const SellerProductContext = createContext();
@@ -6,36 +12,51 @@ const SellerProductContext = createContext();
 export function SellerProductProvider({ children }) {
   const { user } = useAuth();
 
-  /* ================= LOAD FROM STORAGE ================= */
+ 
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem("products");
     return saved ? JSON.parse(saved) : [];
   });
 
-  /* ================= SAVE TO STORAGE ================= */
+  
+  const [orders, setOrders] = useState([]);
+
+
   useEffect(() => {
     localStorage.setItem("products", JSON.stringify(products));
   }, [products]);
 
-  /* ================= ADD PRODUCT ================= */
+  
+  useEffect(() => {
+    const syncOrders = () => {
+      const latest =
+        JSON.parse(localStorage.getItem("orders")) || [];
+      setOrders(latest);
+    };
+
+    syncOrders();
+    const interval = setInterval(syncOrders, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  
   const addSellerProduct = (product) => {
     if (!user) return;
 
     const newProduct = {
       ...product,
       id: Date.now(),
-      sellerId: user.email, // ✅ SINGLE SOURCE OF TRUTH
+      sellerId: user.email,
     };
 
     setProducts((prev) => [...prev, newProduct]);
   };
 
-  /* ================= DELETE PRODUCT ================= */
   const deleteSellerProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  /* ================= UPDATE PRODUCT ================= */
   const updateSellerProduct = (updatedProduct) => {
     setProducts((prev) =>
       prev.map((p) =>
@@ -44,54 +65,88 @@ export function SellerProductProvider({ children }) {
     );
   };
 
-  /* ================= SELLER VIEW ================= */
-  const sellerProducts = user
-    ? products.filter((p) => p.sellerId === user.email) // ✅ FIXED
-    : [];
 
-  /* ================= BUYER VIEW ================= */
+  const sellerProducts = useMemo(() => {
+    if (!user) return [];
+
+    return products
+      .filter((p) => p.sellerId === user.email)
+      .map((product) => {
+        let sold = 0;
+        let revenue = 0;
+
+        orders.forEach((order) => {
+          order.items?.forEach((item) => {
+            
+            const orderedProductId =
+              item.productId ?? item.id;
+
+            if (orderedProductId === product.id) {
+              const qty = item.quantity || 1;
+              sold += qty;
+              revenue += qty * item.price;
+            }
+          });
+        });
+
+        return {
+          ...product,
+          sold,
+          revenue,
+        };
+      });
+  }, [products, orders, user]);
+
+  
   const buyerProducts = products;
 
-  /* ================= STOCK CHECK ================= */
+  
   const hasSufficientStock = (items) => {
     return items.every((item) => {
       const product = products.find(
-        (p) => p.id === item.productId
+        (p) =>
+          p.id === (item.productId ?? item.id)
       );
       if (!product) return true;
       return product.stock >= item.quantity;
     });
   };
 
-  /* ================= REDUCE STOCK ================= */
+  
   const reduceStockAfterOrder = (items) => {
     setProducts((prev) =>
       prev.map((product) => {
         const orderedItem = items.find(
-          (i) => i.productId === product.id
+          (i) =>
+            (i.productId ?? i.id) === product.id
         );
         if (!orderedItem) return product;
 
         return {
           ...product,
-          stock: product.stock - orderedItem.quantity,
+          stock:
+            product.stock -
+            (orderedItem.quantity || 1),
         };
       })
     );
   };
 
-  /* ================= RESTORE STOCK ================= */
+  
   const restoreStockAfterCancel = (items) => {
     setProducts((prev) =>
       prev.map((product) => {
         const cancelledItem = items.find(
-          (i) => i.productId === product.id
+          (i) =>
+            (i.productId ?? i.id) === product.id
         );
         if (!cancelledItem) return product;
 
         return {
           ...product,
-          stock: product.stock + cancelledItem.quantity,
+          stock:
+            product.stock +
+            (cancelledItem.quantity || 1),
         };
       })
     );

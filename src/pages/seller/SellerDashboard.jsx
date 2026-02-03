@@ -3,9 +3,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useSellerProducts } from "../../context/SellerProductContext";
 import { useOrders } from "../../context/OrderContext";
 
+import SellerRevenueAnalytics from "../../components/seller/SellerRevenueAnalytics";
 import SellerProducts from "./SellerProducts";
 import SellerOrders from "./SellerOrders";
-import SellerRevenueReport from "../../components/seller/SellerRevenueReport";
 
 import {
   Package,
@@ -26,7 +26,7 @@ export default function SellerDashboard() {
   const sellerId = user?.email;
   const seller = user?.sellerInfo;
 
-  /* ================= SELLER ORDERS (REAL TIME) ================= */
+  /* ================= SELLER ORDERS ================= */
   const sellerOrders = useMemo(() => {
     if (!sellerId) return [];
 
@@ -35,33 +35,26 @@ export default function SellerDashboard() {
         const items = order.items.filter(
           (i) => i.sellerId === sellerId
         );
-
-        return items.length
-          ? { ...order, items }
-          : null;
+        return items.length ? { ...order, items } : null;
       })
       .filter(Boolean);
   }, [orders, sellerId]);
 
-  /* ================= REVENUE (EXCLUDE CANCELLED) ================= */
+  /* ================= TOTAL REVENUE ================= */
   const revenue = useMemo(() => {
     return sellerOrders.reduce((total, order) => {
       if (order.status === "Cancelled") return total;
 
       const orderRevenue = order.items.reduce((sum, item) => {
         if (item.status === "Cancelled") return sum;
-
-        const price = Number(item.price || 0);
-        const qty = Number(item.quantity || 1);
-
-        return sum + price * qty;
+        return sum + Number(item.price || 0) * Number(item.quantity || 1);
       }, 0);
 
       return total + orderRevenue;
     }, 0);
   }, [sellerOrders]);
 
-  /* ================= METRICS ================= */
+  /* ================= STATS ================= */
   const pendingOrders = sellerOrders.filter(
     (o) => o.status === "Placed" || o.status === "Shipped"
   ).length;
@@ -90,17 +83,14 @@ export default function SellerDashboard() {
 
         {/* SELLER INFO */}
         {seller && (
-          <div className="mb-8 rounded-2xl bg-white p-6 shadow-md border-l-4 border-red-500">
+          <div className="mb-8 rounded-2xl bg-white p-6 shadow-md border-l-4 border-red-600">
             <h3 className="text-lg font-semibold text-gray-800">
               {seller.storeName}
             </h3>
-
-            <div className="mt-2 grid gap-1 text-sm text-gray-600">
+            <div className="mt-2 text-sm text-gray-600 space-y-1">
               <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
               <p><strong>Phone:</strong> {seller.phone}</p>
-              {seller.gst && (
-                <p><strong>GST:</strong> {seller.gst}</p>
-              )}
+              {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
               <p>{seller.address}</p>
             </div>
           </div>
@@ -126,6 +116,7 @@ export default function SellerDashboard() {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <>
+            {/* STAT CARDS */}
             <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
               <h3 className="mb-6 text-lg font-semibold text-gray-800">
                 Store Performance
@@ -138,35 +129,30 @@ export default function SellerDashboard() {
                   icon={Package}
                   accent="bg-indigo-100 text-indigo-600"
                 />
-
                 <StatCard
                   title="Orders"
                   value={sellerOrders.length}
                   icon={ShoppingCart}
                   accent="bg-blue-100 text-blue-600"
                 />
-
                 <StatCard
                   title="Revenue"
                   value={`₹${revenue}`}
                   icon={IndianRupee}
                   accent="bg-green-100 text-green-600"
                 />
-
                 <StatCard
                   title="Pending Orders"
                   value={pendingOrders}
                   icon={Clock}
                   accent="bg-yellow-100 text-yellow-600"
                 />
-
                 <StatCard
                   title="Low Stock"
                   value={lowStock}
                   icon={AlertTriangle}
                   accent="bg-orange-100 text-orange-600"
                 />
-
                 <StatCard
                   title="Out of Stock"
                   value={outOfStock}
@@ -176,12 +162,8 @@ export default function SellerDashboard() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-md">
-              <h3 className="mb-4 text-lg font-semibold text-gray-800">
-                Revenue Overview
-              </h3>
-              <SellerRevenueReport />
-            </div>
+            {/* ADVANCED REVENUE ANALYTICS */}
+            <SellerRevenueAnalytics sellerOrders={sellerOrders} />
           </>
         )}
 
@@ -198,15 +180,14 @@ function StatCard({ title, value, icon: Icon, accent }) {
     <div className="group rounded-xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-500">{title}</p>
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}
+        >
           <Icon className="h-5 w-5" />
         </div>
       </div>
 
-      <p className="mt-4 text-3xl font-bold text-gray-800">
-        {value}
-      </p>
-
+      <p className="mt-4 text-3xl font-bold text-gray-800">{value}</p>
       <div className="mt-2 h-1 w-10 rounded-full bg-gray-200 group-hover:bg-red-500 transition" />
     </div>
   );

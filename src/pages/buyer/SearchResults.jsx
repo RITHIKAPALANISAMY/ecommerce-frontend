@@ -10,7 +10,6 @@ export default function SearchResults() {
   const query = params.get("q") || "";
   const category = params.get("category");
 
-  /* ================= FILTER LOGIC (UNCHANGED) ================= */
   const results = products.filter((p) => {
     const matchQuery = p.title
       ?.toLowerCase()
@@ -23,11 +22,10 @@ export default function SearchResults() {
     return matchQuery && matchCategory;
   });
 
-  /* ================= UI ================= */
   return (
     <div className="bg-gray-50 px-4 py-6 min-h-screen">
       <div className="mx-auto max-w-7xl">
-        {/* ===== HEADER ===== */}
+  
         <div className="mb-6">
           <h2 className="text-2xl font-semibold text-gray-800">
             Search results for{" "}
@@ -49,7 +47,6 @@ export default function SearchResults() {
           </p>
         </div>
 
-        {/* ===== EMPTY STATE ===== */}
         {results.length === 0 && (
           <div className="mt-10 rounded bg-white p-6 text-center shadow">
             <p className="text-gray-600 text-lg">
@@ -61,7 +58,6 @@ export default function SearchResults() {
           </div>
         )}
 
-        {/* ===== PRODUCTS GRID ===== */}
         {results.length > 0 && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {results.map((p) => (

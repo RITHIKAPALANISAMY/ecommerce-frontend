@@ -6,7 +6,6 @@ export default function Payments() {
   const { orders, updateOrderStatus } = useOrders();
   const [processingId, setProcessingId] = useState(null);
 
-  /* ===== DERIVE PAYMENTS (REAL-TIME) ===== */
   const payments = orders.filter(
     (o) =>
       o.paymentStatus === "PENDING" ||
@@ -36,7 +35,7 @@ export default function Payments() {
     }
   };
 
-  /* ===== EXPORT PAYMENTS REPORT ===== */
+  
   const exportPayments = () => {
     const report = payments.map((o) => ({
       OrderID: o.id,
@@ -53,7 +52,7 @@ export default function Payments() {
 
   return (
     <div className="p-6">
-      {/* HEADER */}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">
           Payments Management

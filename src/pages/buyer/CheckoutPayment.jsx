@@ -7,28 +7,32 @@ import { useState } from "react";
 
 export default function CheckoutPayment() {
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+  const { clearCart } = useCart(); 
   const { user } = useAuth();
   const { reduceStockAfterOrder } = useSellerProducts();
 
   const [method, setMethod] = useState("cod");
   const [error, setError] = useState("");
 
-  /* 🔑 SNAPSHOT CHECKOUT DATA */
-  const [checkoutAmount] = useState(() =>
-    JSON.parse(localStorage.getItem("checkoutAmount"))
+  const checkoutAmount = JSON.parse(
+    localStorage.getItem("checkoutAmount")
   );
 
-  const [checkoutAddress] = useState(() =>
-    JSON.parse(localStorage.getItem("checkoutAddress"))
+  const checkoutAddress = JSON.parse(
+    localStorage.getItem("checkoutAddress")
   );
 
-  const checkoutItems =
-    JSON.parse(localStorage.getItem("cart")) || [];
+  const checkoutItems = JSON.parse(
+    localStorage.getItem("checkoutItems")
+  ) || [];
+
+  const fullCart = JSON.parse(
+    localStorage.getItem("cart")
+  ) || [];
 
   const handlePlaceOrder = () => {
     if (!checkoutItems || checkoutItems.length === 0) {
-      setError("Cart is empty");
+      setError("No items to place order");
       return;
     }
 
@@ -42,6 +46,8 @@ export default function CheckoutPayment() {
       address: checkoutAddress,
       paymentMethod: method,
       placedDate: new Date().toLocaleString(),
+      userId: user?.id,
+      status: "Placed",
     };
 
     localStorage.setItem(
@@ -49,16 +55,29 @@ export default function CheckoutPayment() {
       JSON.stringify([...existingOrders, newOrder])
     );
 
-    // ✅ order-success flag
+    const orderedIds = checkoutItems.map(i => i.id);
+
+    const updatedCart = fullCart.filter(
+      item => !orderedIds.includes(item.id)
+    );
+
+    const cleanedCart = updatedCart.map(item => {
+      const { buyNow, ...rest } = item;
+      return rest;
+    });
+
+    localStorage.setItem(
+      "cart",
+      JSON.stringify(cleanedCart)
+    );
+
+    localStorage.removeItem("checkoutItems");
+    localStorage.removeItem("checkoutAmount");
+    localStorage.removeItem("checkoutAddress");
+
     localStorage.setItem("orderPlaced", "true");
 
-    // ✅ Navigate first
     navigate("/order-success");
-
-    // ✅ Clear cart AFTER navigation
-    setTimeout(() => {
-      clearCart();
-    }, 1000);
   };
 
   return (
@@ -67,7 +86,6 @@ export default function CheckoutPayment() {
 
       <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 items-start">
         
-        {/* LEFT: PAYMENT OPTIONS */}
         <div className="md:col-span-2 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-gray-800">
             Payment Options
@@ -116,7 +134,6 @@ export default function CheckoutPayment() {
           </div>
         </div>
 
-        {/* RIGHT: PRICE DETAILS */}
         <div className="rounded-xl bg-white p-5 shadow-sm sticky top-24">
           <h3 className="mb-4 font-semibold text-gray-800">
             Price Details

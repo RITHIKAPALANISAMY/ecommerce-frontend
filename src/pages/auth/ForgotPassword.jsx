@@ -29,10 +29,10 @@ export default function ForgotPassword() {
       return;
     }
 
-    // ✅ Save email for reset page
+   
     localStorage.setItem("resetEmail", email.trim());
 
-    // ✅ Go to reset password page
+
     navigate("/reset-password", { replace: true });
   };
 
@@ -40,7 +40,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-lg grid grid-cols-1 md:grid-cols-2">
         
-        {/* LEFT SIDE */}
+        
         <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
           <h1 className="text-3xl font-bold mb-3">
             Forgot Password?
@@ -51,7 +51,7 @@ export default function ForgotPassword() {
           </p>
         </div>
 
-        {/* RIGHT SIDE */}
+        
         <div className="p-8 sm:p-10">
           <h2 className="text-2xl font-semibold text-gray-800">
             Reset your password
