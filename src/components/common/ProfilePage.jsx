@@ -55,9 +55,15 @@ export default function ProfilePage() {
         
         <div className="mb-6 flex flex-col gap-6 rounded-xl bg-white p-6 shadow sm:flex-row sm:items-center sm:justify-between transition hover:shadow-md">
           <div className="flex items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-2xl font-bold text-white">
-              {user.username?.charAt(0).toUpperCase()}
-            </div>
+            <img
+  src={
+    user.profileImage ||
+    "https://ui-avatars.com/api/?name=User&background=fee2e2&color=dc2626"
+  }
+  alt="Profile"
+  className="h-16 w-16 rounded-full object-cover border-2 border-red-200 shadow"
+/>
+
 
             <div>
               <h3 className="text-lg font-semibold">

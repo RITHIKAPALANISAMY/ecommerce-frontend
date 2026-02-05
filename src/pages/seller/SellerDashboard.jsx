@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useSellerProducts } from "../../context/SellerProductContext";
 import { useOrders } from "../../context/OrderContext";
+import { useNavigate } from "react-router-dom";
 
 import SellerRevenueAnalytics from "../../components/seller/SellerRevenueAnalytics";
 import SellerProducts from "./SellerProducts";
@@ -20,6 +21,7 @@ export default function SellerDashboard() {
   const { user } = useAuth();
   const { sellerProducts } = useSellerProducts();
   const { orders } = useOrders();
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState("overview");
 
@@ -81,17 +83,55 @@ export default function SellerDashboard() {
           <p className="text-sm text-gray-500">{user?.email}</p>
         </div>
 
-        {/* SELLER INFO */}
+        {/* SELLER PROFILE CARD */}
         {seller && (
-          <div className="mb-8 rounded-2xl bg-white p-6 shadow-md border-l-4 border-red-600">
-            <h3 className="text-lg font-semibold text-gray-800">
-              {seller.storeName}
-            </h3>
-            <div className="mt-2 text-sm text-gray-600 space-y-1">
-              <p><strong>Owner:</strong> {seller.ownerName || "—"}</p>
-              <p><strong>Phone:</strong> {seller.phone}</p>
-              {seller.gst && <p><strong>GST:</strong> {seller.gst}</p>}
-              <p>{seller.address}</p>
+          <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+
+              {/* LEFT */}
+              <div className="flex items-center gap-5">
+                <img
+                  src={seller.profileImage || "/default-store.png"}
+                  alt="Seller Profile"
+                  className="h-24 w-24 rounded-full object-cover border-4 border-red-100 shadow"
+                />
+
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    {seller.storeName}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Owner: {seller.ownerName || "—"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {user.email}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-gray-100 px-3 py-1">
+                      📞 {seller.phone}
+                    </span>
+
+                    {seller.gst && (
+                      <span className="rounded-full bg-gray-100 px-3 py-1">
+                        🧾 GST: {seller.gst}
+                      </span>
+                    )}
+
+                    <span className="rounded-full bg-gray-100 px-3 py-1">
+                      📍 {seller.address}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <button
+                onClick={() => navigate("/seller/profile")}
+                className="rounded-lg border border-red-600 px-5 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white"
+              >
+                ✏️ Edit Profile
+              </button>
             </div>
           </div>
         )}
@@ -116,53 +156,21 @@ export default function SellerDashboard() {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <>
-            {/* STAT CARDS */}
             <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
               <h3 className="mb-6 text-lg font-semibold text-gray-800">
                 Store Performance
               </h3>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <StatCard
-                  title="Products"
-                  value={sellerProducts.length}
-                  icon={Package}
-                  accent="bg-indigo-100 text-indigo-600"
-                />
-                <StatCard
-                  title="Orders"
-                  value={sellerOrders.length}
-                  icon={ShoppingCart}
-                  accent="bg-blue-100 text-blue-600"
-                />
-                <StatCard
-                  title="Revenue"
-                  value={`₹${revenue}`}
-                  icon={IndianRupee}
-                  accent="bg-green-100 text-green-600"
-                />
-                <StatCard
-                  title="Pending Orders"
-                  value={pendingOrders}
-                  icon={Clock}
-                  accent="bg-yellow-100 text-yellow-600"
-                />
-                <StatCard
-                  title="Low Stock"
-                  value={lowStock}
-                  icon={AlertTriangle}
-                  accent="bg-orange-100 text-orange-600"
-                />
-                <StatCard
-                  title="Out of Stock"
-                  value={outOfStock}
-                  icon={XCircle}
-                  accent="bg-red-100 text-red-600"
-                />
+                <StatCard title="Products" value={sellerProducts.length} icon={Package} accent="bg-indigo-100 text-indigo-600" />
+                <StatCard title="Orders" value={sellerOrders.length} icon={ShoppingCart} accent="bg-blue-100 text-blue-600" />
+                <StatCard title="Revenue" value={`₹${revenue}`} icon={IndianRupee} accent="bg-green-100 text-green-600" />
+                <StatCard title="Pending Orders" value={pendingOrders} icon={Clock} accent="bg-yellow-100 text-yellow-600" />
+                <StatCard title="Low Stock" value={lowStock} icon={AlertTriangle} accent="bg-orange-100 text-orange-600" />
+                <StatCard title="Out of Stock" value={outOfStock} icon={XCircle} accent="bg-red-100 text-red-600" />
               </div>
             </div>
 
-            {/* ADVANCED REVENUE ANALYTICS */}
             <SellerRevenueAnalytics sellerOrders={sellerOrders} />
           </>
         )}
@@ -180,9 +188,7 @@ function StatCard({ title, value, icon: Icon, accent }) {
     <div className="group rounded-xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-500">{title}</p>
-        <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}
-        >
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>

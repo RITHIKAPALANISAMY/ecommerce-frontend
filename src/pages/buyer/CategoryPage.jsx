@@ -16,21 +16,18 @@ export default function CategoryPage() {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
 
-  
   const categoryProducts = products.filter(
     (p) =>
       p.category &&
       p.category.toLowerCase() === category.toLowerCase()
   );
 
-  
   const allBrands = [
     ...new Set(
       categoryProducts.map((p) => p.brand).filter(Boolean)
     ),
   ];
 
-  
   const getProductRating = (product) => {
     const baseReviews = product.reviews || [];
 
@@ -96,24 +93,24 @@ export default function CategoryPage() {
   };
 
   return (
-    <div className="bg-gray-50 px-3 sm:px-4 py-6 min-h-screen">
+    <div className="min-h-screen bg-gray-50 px-3 py-6 sm:px-4">
       <div className="flex gap-6">
 
-        
-        <aside className="hidden w-64 shrink-0 rounded-xl bg-white p-4 shadow md:block">
+        {/* FILTERS */}
+        <aside className="hidden w-64 shrink-0 rounded-2xl bg-white p-5 shadow-sm md:block">
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-semibold text-gray-900">
               Filters
             </h3>
             <button
               onClick={clearFilters}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm font-medium text-red-600 transition hover:underline"
             >
               Clear All
             </button>
           </div>
 
-          
+          {/* PRICE */}
           <div className="mb-6">
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Price Range
@@ -133,7 +130,7 @@ export default function CategoryPage() {
             </p>
           </div>
 
-          
+          {/* RATING */}
           <div className="mb-6">
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Customer Rating
@@ -141,20 +138,21 @@ export default function CategoryPage() {
             {[4, 3, 2].map((r) => (
               <label
                 key={r}
-                className="flex items-center gap-2 text-sm text-gray-700"
+                className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
               >
                 <input
                   type="radio"
                   name="rating"
                   checked={minRating === r}
                   onChange={() => setMinRating(r)}
+                  className="accent-red-600"
                 />
                 {r} ★ & above
               </label>
             ))}
           </div>
 
-          
+          {/* BRAND */}
           <div>
             <h4 className="mb-2 text-sm font-semibold text-gray-800">
               Brand
@@ -163,12 +161,13 @@ export default function CategoryPage() {
               {allBrands.map((b) => (
                 <label
                   key={b}
-                  className="flex items-center gap-2 text-sm text-gray-700"
+                  className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
                 >
                   <input
                     type="checkbox"
                     checked={brands.includes(b)}
                     onChange={() => toggleBrand(b)}
+                    className="accent-red-600"
                   />
                   {b}
                 </label>
@@ -177,19 +176,19 @@ export default function CategoryPage() {
           </div>
         </aside>
 
-        
+        {/* PRODUCTS */}
         <main className="flex-1">
 
-         
+          {/* HEADER */}
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold capitalize">
+            <h2 className="text-xl font-semibold capitalize text-gray-800">
               {category}
             </h2>
 
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full rounded-md border px-3 py-2 text-sm sm:w-56"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition focus:border-red-500 focus:outline-none sm:w-56"
             >
               <option value="FEATURED">Featured</option>
               <option value="LOW_HIGH">Price: Low to High</option>
@@ -203,13 +202,14 @@ export default function CategoryPage() {
             </select>
           </div>
 
-          
+          {/* EMPTY */}
           {filteredProducts.length === 0 && (
             <p className="text-gray-500">
               No products found
             </p>
           )}
 
+          {/* GRID */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {filteredProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
