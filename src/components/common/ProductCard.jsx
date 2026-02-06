@@ -1,14 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { useCompare } from "../../context/CompareContext";
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } =
     useWishlist();
+  const { compareItems, addToCompare, removeFromCompare } =
+    useCompare();
 
   const productImage = product.images?.[0];
+  const isCompared = compareItems.some(
+    (item) => item.id === product.id
+  );
 
   return (
     <div className="group flex h-full flex-col rounded-2xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
@@ -24,9 +30,7 @@ export default function ProductCard({ product }) {
             className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
-          <div className="text-sm text-gray-400">
-            No Image
-          </div>
+          <div className="text-sm text-gray-400">No Image</div>
         )}
 
         {/* WISHLIST BUTTON */}
@@ -37,7 +41,7 @@ export default function ProductCard({ product }) {
               ? removeFromWishlist(product.id)
               : addToWishlist(product);
           }}
-          className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow-md backdrop-blur hover:scale-110 transition"
+          className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow-md backdrop-blur transition hover:scale-110"
         >
           {isInWishlist(product.id) ? "❤️" : "🤍"}
         </button>

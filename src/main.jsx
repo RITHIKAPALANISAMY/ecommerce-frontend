@@ -11,6 +11,8 @@ import { ProductProvider } from "./context/ProductContext";
 import { OrderProvider } from "./context/OrderContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { UserProvider } from "./context/UserContext";
+import { CompareProvider } from "./context/CompareContext";
+
 
 
 
@@ -39,7 +41,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <OrderProvider>
                 <WishlistProvider>
                   <UserProvider>
-                    <App />
+                    <CompareProvider>
+  <App />
+</CompareProvider>
                   </UserProvider>
                 </WishlistProvider>
               </OrderProvider>

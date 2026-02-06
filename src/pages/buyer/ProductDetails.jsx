@@ -4,6 +4,9 @@ import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import Reviews from "../../components/buyer/Reviews";
+import { useCompare } from "../../context/CompareContext";
+import { BarChart3 } from "lucide-react";
+
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -31,6 +34,12 @@ export default function ProductDetails() {
         Product not found
       </h2>
     );
+    const { compareItems, addToCompare, removeFromCompare } = useCompare();
+
+const isCompared = compareItems.some(
+  (item) => item.id === product.id
+);
+
 
   const { averageRating, reviewCount } = useMemo(() => {
     const allReviews =
@@ -139,14 +148,33 @@ export default function ProductDetails() {
                 {product.title}
               </h1>
 
-              <button
-                onClick={toggleWishlist}
-                className="text-sm font-medium text-red-600 transition hover:underline"
-              >
-                {isInWishlist(product.id)
-                  ? "❤️ Wishlisted"
-                  : "🤍 Wishlist"}
-              </button>
+              <div className="flex items-center gap-4">
+  <button
+    onClick={toggleWishlist}
+    className="text-sm font-medium text-red-600 transition hover:underline"
+  >
+    {isInWishlist(product.id) ? "❤️ Wishlisted" : "🤍 Wishlist"}
+  </button>
+
+  <button
+    onClick={() =>
+      isCompared
+        ? removeFromCompare(product.id)
+        : addToCompare(product)
+    }
+    className={`flex items-center gap-1 text-sm font-medium transition
+      ${
+        isCompared
+          ? "text-blue-600"
+          : "text-gray-600 hover:text-blue-600"
+      }`}
+  >
+    <BarChart3 size={16} />
+    {isCompared ? "Added to Compare" : "Add to Compare"}
+  </button>
+</div>
+
+              
             </div>
 
             {averageRating && (
