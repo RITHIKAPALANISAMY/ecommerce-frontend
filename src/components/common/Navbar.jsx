@@ -38,6 +38,7 @@ export default function Navbar() {
   const role = user?.role;
   const username = user?.username || "User";
 
+  /* CLOSE DROPDOWN ON OUTSIDE CLICK */
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -87,7 +88,10 @@ export default function Navbar() {
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleSearchKey}
               />
-              <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search
+                size={18}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
             </div>
           </div>
 
@@ -103,8 +107,8 @@ export default function Navbar() {
             {user?.role !== "seller" && (
               <button
                 onClick={() => navigate("/become-seller")}
-                className="hidden sm:flex items-center gap-2 rounded-full border border-red-600 px-4 py-1.5
-                           text-sm text-red-600 hover:bg-red-600 hover:text-white"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-red-600
+                           px-4 py-1.5 text-sm text-red-600 hover:bg-red-600 hover:text-white"
               >
                 <Store size={16} />
                 Become a Seller
@@ -135,22 +139,38 @@ export default function Navbar() {
                     </div>
 
                     {/* COMMON */}
-                    <Link to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                    <Link
+                      to="/profile"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
                       <User size={16} /> My Profile
                     </Link>
 
-                    <Link to="/settings" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                    <Link
+                      to="/settings"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
                       <Settings size={16} /> Settings
                     </Link>
 
                     {/* BUYER */}
                     {role === "buyer" && (
                       <>
-                        <Link to="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Link
+                          to="/orders"
+                          onClick={() => setOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                        >
                           <Package size={16} /> My Orders
                         </Link>
 
-                        <Link to="/wishlist" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Link
+                          to="/wishlist"
+                          onClick={() => setOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                        >
                           <Heart size={16} /> Wishlist
                         </Link>
 
@@ -158,7 +178,10 @@ export default function Navbar() {
                           <>
                             <button
                               disabled={compareCount < 2}
-                              onClick={() => navigate("/compare")}
+                              onClick={() => {
+                                navigate("/compare");
+                                setOpen(false); // ✅ FIX
+                              }}
                               className={`flex w-full items-center justify-between px-4 py-2 text-sm
                                 ${compareCount < 2
                                   ? "cursor-not-allowed text-gray-400"
@@ -189,14 +212,22 @@ export default function Navbar() {
 
                     {/* SELLER */}
                     {role === "seller" && (
-                      <Link to="/seller/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                      <Link
+                        to="/seller/dashboard"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                      >
                         <Store size={16} /> Seller Dashboard
                       </Link>
                     )}
 
                     {/* ADMIN */}
                     {role === "admin" && (
-                      <Link to="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                      >
                         <Settings size={16} /> Admin Dashboard
                       </Link>
                     )}
@@ -204,7 +235,8 @@ export default function Navbar() {
                     {/* LOGOUT */}
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 border-t px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-2 border-t px-4 py-2
+                                 text-sm text-red-600 hover:bg-red-50"
                     >
                       <LogOut size={16} /> Logout
                     </button>

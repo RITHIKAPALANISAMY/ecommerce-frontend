@@ -1,5 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Smartphone,
+  Laptop,
+  Shirt,
+  Home as HomeIcon,
+  Sparkles,
+  ShoppingCart,
+} from "lucide-react";
 import ProductCard from "../../components/common/ProductCard";
 import { useProducts } from "../../context/ProductContext";
 
@@ -53,10 +63,8 @@ function HeroSlider() {
               className="absolute inset-0 h-full w-full object-cover"
             />
 
-            {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
 
-            {/* Content */}
             <div className="relative z-10 flex h-full items-center px-6 sm:px-12">
               <div className="max-w-lg">
                 <h2 className="text-2xl sm:text-4xl font-bold text-white">
@@ -77,15 +85,15 @@ function HeroSlider() {
       {/* Controls */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
+        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/60"
       >
-        ❮
+        <ChevronLeft size={20} />
       </button>
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/60"
       >
-        ❯
+        <ChevronRight size={20} />
       </button>
     </div>
   );
@@ -94,12 +102,12 @@ function HeroSlider() {
 /* ---------------- CATEGORIES ---------------- */
 
 const categories = [
-  { name: "Mobiles", icon: "📱" },
-  { name: "Electronics", icon: "💻" },
-  { name: "Fashion", icon: "👗" },
-  { name: "Home", icon: "🏠" },
-  { name: "Beauty", icon: "💄" },
-  { name: "Grocery", icon: "🛒" },
+  { name: "Mobiles", icon: Smartphone },
+  { name: "Electronics", icon: Laptop },
+  { name: "Fashion", icon: Shirt },
+  { name: "Home", icon: HomeIcon },
+  { name: "Beauty", icon: Sparkles },
+  { name: "Grocery", icon: ShoppingCart },
 ];
 
 /* ---------------- HOME PAGE ---------------- */
@@ -122,20 +130,25 @@ export default function Home() {
         </h3>
 
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-          {categories.map((c) => (
-            <div
-              key={c.name}
-              onClick={() => navigate(`/category/${c.name}`)}
-              className="group cursor-pointer rounded-2xl bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="text-3xl transition group-hover:scale-110">
-                {c.icon}
+          {categories.map((c) => {
+            const Icon = c.icon;
+
+            return (
+              <div
+                key={c.name}
+                onClick={() => navigate(`/category/${c.name}`)}
+                className="group cursor-pointer rounded-2xl bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                <Icon
+                  size={28}
+                  className="mx-auto text-gray-600 transition group-hover:text-red-600"
+                />
+                <p className="mt-2 text-sm font-medium text-gray-700">
+                  {c.name}
+                </p>
               </div>
-              <p className="mt-2 text-sm font-medium text-gray-700">
-                {c.name}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

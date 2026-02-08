@@ -1,11 +1,19 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
+import {
+  BarChart3,
+  Heart,
+  Star,
+  Truck,
+  RotateCcw,
+  ShieldCheck,
+  Package,
+} from "lucide-react";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCompare } from "../../context/CompareContext";
 import Reviews from "../../components/buyer/Reviews";
-import { BarChart3 } from "lucide-react";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -48,7 +56,8 @@ export default function ProductDetails() {
     const avg =
       count > 0
         ? (
-            productReviews.reduce((sum, r) => sum + r.rating, 0) / count
+            productReviews.reduce((sum, r) => sum + r.rating, 0) /
+            count
           ).toFixed(1)
         : null;
 
@@ -86,11 +95,10 @@ export default function ProductDetails() {
 
   return (
     <div className="bg-gray-50 px-4 py-8">
-      {/* ================= TOP CARD ================= */}
       <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
 
-          {/* IMAGE SECTION */}
+          {/* IMAGE */}
           <div>
             <div className="flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
               <img
@@ -105,12 +113,11 @@ export default function ProductDetails() {
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`h-16 w-16 rounded-lg border p-1 transition
-                    ${
-                      i === activeImg
-                        ? "border-red-500 ring-2 ring-red-200"
-                        : "border-gray-200 hover:border-gray-400"
-                    }`}
+                  className={`h-16 w-16 rounded-lg border p-1 transition ${
+                    i === activeImg
+                      ? "border-red-500 ring-2 ring-red-200"
+                      : "border-gray-200 hover:border-gray-400"
+                  }`}
                 >
                   <img
                     src={img}
@@ -122,7 +129,7 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* DETAILS SECTION */}
+          {/* DETAILS */}
           <div>
             {product.brand && (
               <p className="text-sm uppercase tracking-wide text-gray-500">
@@ -130,8 +137,7 @@ export default function ProductDetails() {
               </p>
             )}
 
-            {/* TITLE + ACTIONS */}
-            <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:justify-between">
               <h1 className="text-2xl font-semibold text-gray-900">
                 {product.title}
               </h1>
@@ -140,14 +146,18 @@ export default function ProductDetails() {
                 {/* WISHLIST */}
                 <button
                   onClick={toggleWishlist}
-                  className={`rounded-full border p-2 transition
-                    ${
-                      isInWishlist(product.id)
-                        ? "border-red-500 bg-red-50 text-red-600"
-                        : "border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500"
-                    }`}
+                  className={`rounded-full border p-2 transition ${
+                    isInWishlist(product.id)
+                      ? "border-red-500 bg-red-50 text-red-600"
+                      : "border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500"
+                  }`}
                 >
-                  ❤️
+                  <Heart
+                    size={18}
+                    fill={
+                      isInWishlist(product.id) ? "currentColor" : "none"
+                    }
+                  />
                 </button>
 
                 {/* COMPARE */}
@@ -157,12 +167,11 @@ export default function ProductDetails() {
                       ? removeFromCompare(product.id)
                       : addToCompare(product)
                   }
-                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition
-                    ${
-                      isCompared
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-gray-300 text-gray-600 hover:border-blue-500 hover:text-blue-600"
-                    }`}
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    isCompared
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-300 text-gray-600 hover:border-blue-500 hover:text-blue-600"
+                  }`}
                 >
                   <BarChart3 size={16} />
                   {isCompared ? "Added to Compare" : "Add to Compare"}
@@ -173,9 +182,14 @@ export default function ProductDetails() {
             {/* RATING */}
             {averageRating && (
               <div className="mt-3 flex items-center gap-2">
-                <span className="text-yellow-500">
-                  {"★".repeat(Math.round(averageRating))}
-                </span>
+                {[...Array(Math.round(averageRating))].map((_, i) => (
+                  <Star
+                    key={i}
+                    size={16}
+                    className="text-yellow-500"
+                    fill="currentColor"
+                  />
+                ))}
                 <span className="text-sm font-medium text-gray-700">
                   {averageRating}
                 </span>
@@ -186,27 +200,21 @@ export default function ProductDetails() {
             )}
 
             {/* PRICE */}
-            <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="mt-4 flex items-end gap-3">
               <span className="text-3xl font-bold text-red-600">
                 ₹{product.price}
               </span>
-
               {product.mrp && (
                 <span className="text-sm text-gray-400 line-through">
                   ₹{product.mrp}
                 </span>
               )}
-
               {product.discount && (
                 <span className="rounded bg-green-100 px-2 py-0.5 text-sm font-medium text-green-700">
                   {product.discount}% OFF
                 </span>
               )}
             </div>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Inclusive of all taxes
-            </p>
 
             {/* QUANTITY */}
             <div className="mt-6">
@@ -218,9 +226,7 @@ export default function ProductDetails() {
                 >
                   −
                 </button>
-
                 <span className="font-medium">{qty}</span>
-
                 <button
                   onClick={() =>
                     stock !== null &&
@@ -250,15 +256,14 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            {/* ACTION BUTTONS */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            {/* ACTIONS */}
+            <div className="mt-8 flex gap-3">
               <button
                 onClick={handleAddToCart}
                 className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
               >
                 Add to Cart
               </button>
-
               <button
                 onClick={handleBuyNow}
                 disabled={stock === 0}
@@ -270,56 +275,23 @@ export default function ProductDetails() {
 
             {/* TRUST */}
             <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-gray-600">
-              <li>🚚 Free Delivery</li>
-              <li>↩️ 7 Days Return</li>
-              <li>🛡️ Genuine Product</li>
-              <li>📦 Secure Packaging</li>
+              <li className="flex items-center gap-2">
+                <Truck size={16} /> Free Delivery
+              </li>
+              <li className="flex items-center gap-2">
+                <RotateCcw size={16} /> 7 Days Return
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheck size={16} /> Genuine Product
+              </li>
+              <li className="flex items-center gap-2">
+                <Package size={16} /> Secure Packaging
+              </li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* ================= ABOUT ================= */}
-      <div className="mx-auto mt-10 max-w-7xl rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-3 text-lg font-semibold text-gray-800">
-          About this product
-        </h3>
-
-        <p className="text-gray-700">
-          {desc.about ||
-            "Detailed product information will be provided by the seller soon."}
-        </p>
-
-        {desc.highlights?.length > 0 && (
-          <>
-            <h4 className="mt-6 font-medium text-gray-800">
-              Highlights
-            </h4>
-            <ul className="mt-2 list-disc pl-5 text-gray-700 space-y-1">
-              {desc.highlights.map((h, i) => (
-                <li key={i}>{h}</li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {specs.length > 0 && (
-          <>
-            <h4 className="mt-6 font-medium text-gray-800">
-              Specifications
-            </h4>
-            <div className="mt-2 space-y-1 text-gray-700">
-              {specs.map((s, i) => (
-                <p key={i}>
-                  <strong>{s.label}:</strong> {s.value}
-                </p>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* REVIEWS */}
       <div className="mx-auto mt-10 max-w-7xl">
         <Reviews productId={product.id} />
       </div>
