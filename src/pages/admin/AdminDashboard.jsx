@@ -27,9 +27,18 @@ const getUserName = (order, users) => {
     if (u?.email) return u.email.split("@")[0];
   }
 
-  if (order.userEmail) return order.userEmail.split("@")[0];
+  if (order.userEmail) {
+    const u = users.find((x) => x.email === order.userEmail);
+    if (u?.name) return u.name;
+    return order.userEmail.split("@")[0];
+  }
+
+
+  if (order.address?.name) return order.address.name;
+
   return "User";
 };
+
 
 const AdminDashboard = () => {
   const { orders = [] } = useOrders();
@@ -64,6 +73,21 @@ const AdminDashboard = () => {
     }, 0);
   }, [orders]);
 
+  /* 🟢 NEW: COUPON METRICS */
+  const couponStats = useMemo(() => {
+    let discountGiven = 0;
+    let ordersWithCoupon = 0;
+
+    orders.forEach((o) => {
+      if (o.amount?.coupon && o.amount?.discount > 0) {
+        ordersWithCoupon++;
+        discountGiven += Number(o.amount.discount || 0);
+      }
+    });
+
+    return { discountGiven, ordersWithCoupon };
+  }, [orders]);
+
   const orderStatusCounts = useMemo(() => {
     const counts = {
       PLACED: 0,
@@ -80,28 +104,49 @@ const AdminDashboard = () => {
     return counts;
   }, [orders]);
 
-  /* ================= EXPORT PDF ================= */
+  /* ================= ADMIN REPORT (PDF) ================= */
   const exportPDF = () => {
     const doc = new jsPDF();
     let y = 20;
 
+    const buyers = users.filter((u) => u.role === "buyer").length;
+    const sellers = users.filter((u) => u.role === "seller").length;
+    const blocked = users.filter((u) => u.status === "blocked").length;
+
     doc.setFontSize(18);
-    doc.text("Admin Dashboard Report", 14, y);
+    doc.text("ADMIN DASHBOARD REPORT", 14, y);
     y += 10;
 
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y);
     y += 10;
 
-    doc.text(`Total Users: ${users.length}`, 14, y);
-    y += 6;
-    doc.text(`Total Sellers: ${totalSellers}`, 14, y);
-    y += 6;
+    /* USERS */
+    doc.setFontSize(14);
+    doc.text("USERS SUMMARY", 14, y); y += 6;
+    doc.setFontSize(11);
+    doc.text(`Total Users: ${users.length}`, 14, y); y += 5;
+    doc.text(`Buyers: ${buyers}`, 14, y); y += 5;
+    doc.text(`Sellers: ${sellers}`, 14, y); y += 5;
+    doc.text(`Blocked Users: ${blocked}`, 14, y);
+    y += 8;
+
+    /* ORDERS */
+    doc.setFontSize(14);
+    doc.text("ORDERS SUMMARY", 14, y); y += 6;
+    doc.setFontSize(11);
+    doc.text(`Total Orders: ${orders.length}`, 14, y); y += 5;
+    doc.text(`Delivered: ${orderStatusCounts.DELIVERED}`, 14, y); y += 5;
+    doc.text(`Total Revenue: ₹${totalRevenue}`, 14, y); y += 5;
+    doc.text(`Coupon Orders: ${couponStats.ordersWithCoupon}`, 14, y); y += 5;
+    doc.text(`Discount Given: ₹${couponStats.discountGiven}`, 14, y);
+    y += 8;
+
+    /* PRODUCTS */
+    doc.setFontSize(14);
+    doc.text("PRODUCTS SUMMARY", 14, y); y += 6;
+    doc.setFontSize(11);
     doc.text(`Total Products: ${products.length}`, 14, y);
-    y += 6;
-    doc.text(`Total Orders: ${orders.length}`, 14, y);
-    y += 6;
-    doc.text(`Total Revenue: ₹${totalRevenue}`, 14, y);
 
     doc.save("admin-dashboard-report.pdf");
   };
@@ -149,13 +194,15 @@ const AdminDashboard = () => {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-6">
         {[
-          ["👥", users.length, "Total Users"],
-          ["🏪", totalSellers, "Total Sellers"],
-          ["📦", products.length, "Total Products"],
-          ["🧾", orders.length, "Total Orders"],
-          ["₹", totalRevenue, "Total Revenue"],
+          ["👥", users.length, "Users"],
+          ["🏪", totalSellers, "Sellers"],
+          ["📦", products.length, "Products"],
+          ["🧾", orders.length, "Orders"],
+          ["₹", totalRevenue, "Revenue"],
+          ["🎟️", couponStats.ordersWithCoupon, "Coupon Orders"],
+          ["💸", couponStats.discountGiven, "Discount Given"],
         ].map(([icon, value, label], i) => (
           <div
             key={i}
@@ -165,7 +212,7 @@ const AdminDashboard = () => {
               {icon}
             </div>
             <div>
-              <h2 className="text-xl font-bold">{value}</h2>
+              <h2 className="text-xl font-bold">₹{value}</h2>
               <p className="text-sm text-gray-500">{label}</p>
             </div>
           </div>
@@ -191,6 +238,7 @@ const AdminDashboard = () => {
               <th className="p-2 text-left">User</th>
               <th className="p-2 text-left">Amount</th>
               <th className="p-2 text-left">Status</th>
+              <th className="p-2 text-left">Coupon</th>
               <th className="p-2 text-left">Action</th>
             </tr>
           </thead>
@@ -202,6 +250,9 @@ const AdminDashboard = () => {
                 <td className="p-2">₹{o.amount?.total || 0}</td>
                 <td className="p-2 font-medium">
                   {normalizeStatus(o.status)}
+                </td>
+                <td className="p-2">
+                  {o.amount?.coupon?.code || "-"}
                 </td>
                 <td className="p-2">
                   <button
@@ -231,6 +282,12 @@ const AdminDashboard = () => {
             <p className="text-sm mb-2">
               Amount: ₹{selectedOrder.amount?.total || 0}
             </p>
+            {selectedOrder.amount?.coupon && (
+              <p className="text-sm mb-2 text-green-700">
+                Coupon: {selectedOrder.amount.coupon.code} (
+                -₹{selectedOrder.amount.discount})
+              </p>
+            )}
 
             <label className="block text-sm font-medium mb-1">
               Update Status

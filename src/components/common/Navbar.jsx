@@ -35,8 +35,13 @@ export default function Navbar() {
   const compareCount = compareItems.length;
   const isCheckoutPage = location.pathname.startsWith("/checkout");
 
-  const role = user?.role;
-  const username = user?.username || "User";
+  // ✅ Normalize role properly
+ const role = user?.role;
+
+  const username =
+  user?.name || user?.fullName || user?.username || "User";
+
+
 
   /* CLOSE DROPDOWN ON OUTSIDE CLICK */
   useEffect(() => {
@@ -104,7 +109,8 @@ export default function Navbar() {
               </Link>
             )}
 
-            {user?.role !== "seller" && (
+            {/* Become Seller button */}
+            {role !== "SELLER" && user && (
               <button
                 onClick={() => navigate("/become-seller")}
                 className="hidden sm:flex items-center gap-2 rounded-full border border-red-600
@@ -155,8 +161,8 @@ export default function Navbar() {
                       <Settings size={16} /> Settings
                     </Link>
 
-                    {/* BUYER */}
-                    {role === "buyer" && (
+                    {/* BUYER OPTIONS */}
+                    {role === "BUYER" && (
                       <>
                         <Link
                           to="/orders"
@@ -175,43 +181,35 @@ export default function Navbar() {
                         </Link>
 
                         {!isCheckoutPage && (
-                          <>
-                            <button
-                              disabled={compareCount < 2}
-                              onClick={() => {
-                                navigate("/compare");
-                                setOpen(false); // ✅ FIX
-                              }}
-                              className={`flex w-full items-center justify-between px-4 py-2 text-sm
-                                ${compareCount < 2
-                                  ? "cursor-not-allowed text-gray-400"
-                                  : "hover:bg-gray-50"
-                                }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                <BarChart3 size={16} />
-                                Compare Products
+                          <button
+                            disabled={compareCount < 2}
+                            onClick={() => {
+                              navigate("/compare");
+                              setOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between px-4 py-2 text-sm
+                              ${compareCount < 2
+                                ? "cursor-not-allowed text-gray-400"
+                                : "hover:bg-gray-50"
+                              }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <BarChart3 size={16} />
+                              Compare Products
+                            </span>
+
+                            {compareCount > 0 && (
+                              <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+                                {compareCount}
                               </span>
-
-                              {compareCount > 0 && (
-                                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
-                                  {compareCount}
-                                </span>
-                              )}
-                            </button>
-
-                            {compareCount < 2 && (
-                              <p className="px-4 pb-2 text-xs text-gray-400">
-                                Select at least 2 products to compare
-                              </p>
                             )}
-                          </>
+                          </button>
                         )}
                       </>
                     )}
 
                     {/* SELLER */}
-                    {role === "seller" && (
+                    {role === "SELLER" && (
                       <Link
                         to="/seller/dashboard"
                         onClick={() => setOpen(false)}
@@ -222,7 +220,7 @@ export default function Navbar() {
                     )}
 
                     {/* ADMIN */}
-                    {role === "admin" && (
+                    {role === "ADMIN" && (
                       <Link
                         to="/admin/dashboard"
                         onClick={() => setOpen(false)}

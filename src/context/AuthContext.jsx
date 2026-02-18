@@ -1,196 +1,141 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import api from "../api/axios";
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
   });
 
-  
-  const login = (email, password) => {
-    if (email === "admin@shopverse.com" && password === "admin123") {
-      const adminUser = {
-        username: "Admin",
-        email,
-        role: "admin",
-        phone: "",
-        address: "",
-        sellerInfo: null,
-        mode: "admin",
-      };
-      setUser(adminUser);
-      localStorage.setItem("user", JSON.stringify(adminUser));
-      return adminUser;
+  const [loading, setLoading] = useState(true);
+
+  /* ================= LOAD USER ON APP START ================= */
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await api.get("/user/profile");
+        const profile = response.data;
+
+        const formattedUser = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role:
+            profile.roles && profile.roles.length
+              ? profile.roles[0].replace("ROLE_", "").toLowerCase()
+              : "buyer",
+        };
+
+        setUser(formattedUser);
+        localStorage.setItem("user", JSON.stringify(formattedUser));
+
+      } catch (err) {
+        console.error("Profile load failed:", err);
+        localStorage.clear();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  /* ================= REGISTER ================= */
+
+  const register = async (data) => {
+    try {
+      const response = await api.post("/auth/register", data);
+
+      const { accessToken, refreshToken } = response.data;
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      await fetchUserProfile();
+      return true;
+
+    } catch (error) {
+      console.error("Register failed:", error);
+      return false;
+    }
+  };
+
+  /* ================= LOGIN ================= */
+
+  const login = async (data) => {
+    try {
+      const response = await api.post("/auth/login", data);
+
+      const { accessToken, refreshToken } = response.data;
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      await fetchUserProfile();
+      return true;
+
+    } catch (error) {
+      console.error("Login failed:", error);
+      return false;
+    }
+  };
+
+  /* ================= FETCH PROFILE ================= */
+
+  const fetchUserProfile = async () => {
+    const response = await api.get("/user/profile");
+    const profile = response.data;
+
+    const formattedUser = {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      role:
+        profile.roles && profile.roles.length
+          ? profile.roles[0].replace("ROLE_", "").toLowerCase()
+          : "buyer",
+    };
+
+    setUser(formattedUser);
+    localStorage.setItem("user", JSON.stringify(formattedUser));
+  };
+
+  /* ================= LOGOUT ================= */
+
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (refreshToken) {
+        await api.post("/auth/logout", { refreshToken });
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const found = users.find(
-      (u) => u.email === email && u.password === password
-    );
-    if (!found) return null;
-
-    const loggedUser = {
-      username: found.name,
-      email: found.email,
-      role: found.role || "buyer",
-      phone: found.phone || "",
-      address: found.address || "",
-      sellerInfo: found.sellerInfo || null,
-      mode: "buyer",
-    };
-
-    setUser(loggedUser);
-    localStorage.setItem("user", JSON.stringify(loggedUser));
-    return loggedUser;
-  };
-
-  
-  const signup = (form) => {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
-    const exists = users.find((u) => u.email === form.email);
-    if (exists) return false;
-
-    const newUser = {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-      role: "buyer",
-      phone: "",
-      address: "",
-      sellerInfo: null,
-    };
-
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    return true;
-  };
-
-  
-  const updateUserRole = (sellerData) => {
-    if (!user) return;
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    users = users.map((u) =>
-      u.email === user.email
-        ? {
-            ...u,
-            role: "seller",
-            phone: sellerData.phone,
-            address: sellerData.address,
-            sellerInfo: sellerData,
-          }
-        : u
-    );
-
-    localStorage.setItem("users", JSON.stringify(users));
-
-    const updatedUser = {
-      ...user,
-      role: "seller",
-      phone: sellerData.phone,
-      address: sellerData.address,
-      sellerInfo: sellerData,
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-  };
-
-  
-  const updateUser = (data) => {
-    if (!user) return;
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    users = users.map((u) =>
-      u.email === user.email
-        ? {
-            ...u,
-            name: data.username,
-            phone: data.phone,
-            address: data.address,
-          }
-        : u
-    );
-
-    localStorage.setItem("users", JSON.stringify(users));
-
-    const updatedUser = {
-      ...user,
-      username: data.username,
-      phone: data.phone,
-      address: data.address,
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-  };
-
-  
-  const verifyEmail = (email) => {
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    return users.some((u) => u.email === email);
-  };
-
-  
-  const resetPassword = (email, newPassword) => {
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    users = users.map((u) =>
-      u.email === email ? { ...u, password: newPassword } : u
-    );
-
-    localStorage.setItem("users", JSON.stringify(users));
-  };
-
-  
-  const deleteAccount = () => {
-    if (!user) return;
-
-    const email = user.email;
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    users = users.filter((u) => u.email !== email);
-    localStorage.setItem("users", JSON.stringify(users));
-
-    localStorage.removeItem("user");
-    localStorage.removeItem("cart");
-    localStorage.removeItem("wishlist");
-
-    let orders = JSON.parse(localStorage.getItem("orders")) || [];
-    orders = orders.filter((o) => o.buyerEmail !== email);
-    localStorage.setItem("orders", JSON.stringify(orders));
-
+    localStorage.clear();
     setUser(null);
-  };
-
-  
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+    window.location.href = "/login";
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        login,
-        signup,
-        updateUserRole,
-        updateUser,
-        verifyEmail,
-        resetPassword,
-        deleteAccount,
-        logout,
-      }}
+      value={{ user, login, register, logout, loading }}
     >
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
-}
+};
 
 export const useAuth = () => useContext(AuthContext);

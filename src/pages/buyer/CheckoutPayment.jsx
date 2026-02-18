@@ -2,82 +2,146 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import CheckoutSteps from "./CheckoutSteps";
 import { useAuth } from "../../context/AuthContext";
-import { useSellerProducts } from "../../context/SellerProductContext";
 import { useState } from "react";
+import paymentApi from "../../api/paymentApi";
+import { CreditCard, Wallet, Banknote } from "lucide-react";
 
 export default function CheckoutPayment() {
   const navigate = useNavigate();
-  const { clearCart } = useCart(); 
   const { user } = useAuth();
-  const { reduceStockAfterOrder } = useSellerProducts();
+  const { clearCart } = useCart();
 
-  const [method, setMethod] = useState("cod");
+  const [method, setMethod] = useState("card");
   const [error, setError] = useState("");
 
-  const checkoutAmount = JSON.parse(
-    localStorage.getItem("checkoutAmount")
-  );
+  const checkoutAmount = JSON.parse(localStorage.getItem("checkoutAmount"));
+  const checkoutAddress = JSON.parse(localStorage.getItem("checkoutAddress"));
+  const checkoutItems =
+    JSON.parse(localStorage.getItem("checkoutItems")) || [];
 
-  const checkoutAddress = JSON.parse(
-    localStorage.getItem("checkoutAddress")
-  );
-
-  const checkoutItems = JSON.parse(
-    localStorage.getItem("checkoutItems")
-  ) || [];
-
-  const fullCart = JSON.parse(
-    localStorage.getItem("cart")
-  ) || [];
-
-  const handlePlaceOrder = () => {
-    if (!checkoutItems || checkoutItems.length === 0) {
+  const handlePlaceOrder = async () => {
+    if (!checkoutItems.length) {
       setError("No items to place order");
       return;
     }
 
-    const existingOrders =
-      JSON.parse(localStorage.getItem("orders")) || [];
+    /* ================= COD ================= */
+    if (method === "cod") {
+      const existingOrders =
+        JSON.parse(localStorage.getItem("orders")) || [];
 
-    const newOrder = {
-      id: Date.now(),
-      items: checkoutItems,
-      amount: checkoutAmount,
-      address: checkoutAddress,
-      paymentMethod: method,
-      placedDate: new Date().toLocaleString(),
-      userId: user?.id,
-      status: "Placed",
-    };
+      const newOrder = {
+        id: Date.now(),
+        items: checkoutItems,
+        amount: checkoutAmount,
+        address: checkoutAddress,
+        paymentMethod: "COD",
+        placedDate: new Date().toLocaleString(),
+        userId: user?.id,
+        status: "Placed",
+      };
 
-    localStorage.setItem(
-      "orders",
-      JSON.stringify([...existingOrders, newOrder])
-    );
+      localStorage.setItem(
+        "orders",
+        JSON.stringify([...existingOrders, newOrder])
+      );
 
-    const orderedIds = checkoutItems.map(i => i.id);
+      localStorage.removeItem("checkoutItems");
+      localStorage.removeItem("checkoutAmount");
+      localStorage.removeItem("checkoutAddress");
 
-    const updatedCart = fullCart.filter(
-      item => !orderedIds.includes(item.id)
-    );
+      clearCart();
+      navigate("/order-success");
+      return;
+    }
 
-    const cleanedCart = updatedCart.map(item => {
-      const { buyNow, ...rest } = item;
-      return rest;
-    });
+    /* ================= RAZORPAY ================= */
+    try {
+      // 1️⃣ Create Razorpay order
+      const { data } = await paymentApi.post(
+        "/payment/create-order",
+        {
+          amount: checkoutAmount.total,
+        }
+      );
 
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cleanedCart)
-    );
+      const orderId = data.orderId;
 
-    localStorage.removeItem("checkoutItems");
-    localStorage.removeItem("checkoutAmount");
-    localStorage.removeItem("checkoutAddress");
+      const options = {
+  key: "rzp_test_SH4Bhcf8mzwGFx",
+  amount: checkoutAmount.total * 100,
+  currency: "INR",
+  name: "ShopVerse",
+  description: "Order Payment",
+  order_id: orderId,
 
-    localStorage.setItem("orderPlaced", "true");
+  handler: async function (response) {
+    try {
+      await paymentApi.post("/payment/verify", {
+        razorpayOrderId: response.razorpay_order_id,
+        razorpayPaymentId: response.razorpay_payment_id,
+        razorpaySignature: response.razorpay_signature,
+        userEmail: user.email,
+        amount: checkoutAmount.total,
+        paymentMethod: method,
+      });
 
-    navigate("/order-success");
+      const existingOrders =
+        JSON.parse(localStorage.getItem("orders")) || [];
+
+      const newOrder = {
+        id: Date.now(),
+        items: checkoutItems,
+        amount: checkoutAmount,
+        address: checkoutAddress,
+        paymentMethod: method,
+        placedDate: new Date().toLocaleString(),
+        userId: user?.id,
+        status: "Paid",
+      };
+
+      localStorage.setItem(
+        "orders",
+        JSON.stringify([...existingOrders, newOrder])
+      );
+
+      localStorage.removeItem("checkoutItems");
+      localStorage.removeItem("checkoutAmount");
+      localStorage.removeItem("checkoutAddress");
+
+      clearCart();
+
+      // ✅ FORCE redirect
+      window.location.href = "/order-success";
+
+    } catch (err) {
+      setError("Payment verification failed");
+    }
+  },
+
+  modal: {
+    ondismiss: function () {
+      console.log("Payment popup closed");
+    },
+  },
+
+  prefill: {
+    name: user?.name,
+    email: user?.email,
+  },
+
+  theme: {
+    color: "#dc2626",
+  },
+};
+
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      setError("Payment failed. Try again.");
+    }
   };
 
   return (
@@ -85,7 +149,8 @@ export default function CheckoutPayment() {
       <CheckoutSteps currentStep={3} />
 
       <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 items-start">
-        
+
+        {/* LEFT */}
         <div className="md:col-span-2 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-gray-800">
             Payment Options
@@ -93,26 +158,25 @@ export default function CheckoutPayment() {
 
           {error && (
             <div className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
           {[
-            ["upi", "📱 UPI"],
-            ["card", "💳 Card"],
-            ["netbanking", "🏦 Net Banking"],
-            ["wallet", "👛 Wallet"],
-            ["cod", "💵 Cash on Delivery"],
-          ].map(([key, label]) => (
+            ["card", <CreditCard size={18} />, "Card / UPI / Net Banking"],
+            ["wallet", <Wallet size={18} />, "Wallet"],
+            ["cod", <Banknote size={18} />, "Cash on Delivery"],
+          ].map(([key, icon, label]) => (
             <div
               key={key}
               onClick={() => setMethod(key)}
-              className={`mb-2 cursor-pointer rounded-lg border px-4 py-3 font-medium transition ${
+              className={`mb-2 flex items-center gap-3 cursor-pointer rounded-lg border px-4 py-3 font-medium transition ${
                 method === key
                   ? "border-red-600 bg-red-50"
                   : "hover:bg-gray-50"
               }`}
             >
+              {icon}
               {label}
             </div>
           ))}
@@ -129,39 +193,16 @@ export default function CheckoutPayment() {
               onClick={handlePlaceOrder}
               className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
-              Place Order →
+              Pay Now →
             </button>
           </div>
         </div>
 
+        {/* RIGHT */}
         <div className="rounded-xl bg-white p-5 shadow-sm sticky top-24">
           <h3 className="mb-4 font-semibold text-gray-800">
             Price Details
           </h3>
-
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Subtotal</span>
-            <span>₹{checkoutAmount?.subtotal}</span>
-          </div>
-
-          <div className="mt-1 flex justify-between text-sm text-gray-600">
-            <span>Shipping</span>
-            <span>₹{checkoutAmount?.shipping}</span>
-          </div>
-
-          <div className="mt-1 flex justify-between text-sm text-gray-600">
-            <span>GST</span>
-            <span>₹{checkoutAmount?.gst}</span>
-          </div>
-
-          {checkoutAmount?.discount > 0 && (
-            <div className="mt-1 flex justify-between text-sm text-green-600">
-              <span>Discount</span>
-              <span>-₹{checkoutAmount.discount}</span>
-            </div>
-          )}
-
-          <hr className="my-3" />
 
           <div className="flex justify-between font-semibold text-gray-800">
             <span>Total</span>

@@ -1,68 +1,73 @@
 import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
+import api from "../../api/axios";
 
 export default function ForgotPassword() {
-  const { verifyEmail } = useAuth();
-  const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
     setError("");
 
     if (!email) {
-      setError("Please enter your email");
+      setError("Please enter your registered email");
       return;
     }
 
     setLoading(true);
 
-    const exists = verifyEmail(email.trim());
+    try {
+      const response = await api.post("/auth/forgot-password", {
+        email: email.trim(),
+      });
 
-    if (!exists) {
-      setError("No account found with this email");
+      setMessage(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+        "Something went wrong. Try again."
+      );
+    } finally {
       setLoading(false);
-      return;
     }
-
-   
-    localStorage.setItem("resetEmail", email.trim());
-
-
-    navigate("/reset-password", { replace: true });
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-lg grid grid-cols-1 md:grid-cols-2">
-        
-        
+
+        {/* Left Branding Panel */}
         <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
           <h1 className="text-3xl font-bold mb-3">
             Forgot Password?
           </h1>
           <p className="text-sm leading-relaxed">
-            Enter your registered email and we’ll help you
-            reset your password.
+            Enter your registered email and we’ll send you a secure password reset link.
           </p>
         </div>
 
-        
+        {/* Right Form Panel */}
         <div className="p-8 sm:p-10">
           <h2 className="text-2xl font-semibold text-gray-800">
             Reset your password
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            We’ll guide you through the process
+            We’ll email you a reset link.
           </p>
 
           {error && (
             <div className="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
               ⚠️ {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="mt-4 rounded bg-green-100 px-3 py-2 text-sm text-green-700">
+              ✅ {message}
             </div>
           )}
 
@@ -80,7 +85,7 @@ export default function ForgotPassword() {
               disabled={loading}
               className="w-full rounded-lg bg-red-600 py-2 text-white font-medium hover:bg-red-700 disabled:opacity-60"
             >
-              {loading ? "Checking..." : "Continue"}
+              {loading ? "Sending..." : "Send Reset Link"}
             </button>
           </form>
 

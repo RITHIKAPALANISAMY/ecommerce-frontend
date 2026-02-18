@@ -12,17 +12,23 @@ export default function AdminProducts() {
     unflagProduct,
   } = useProducts();
 
-  
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
 
+  const getSellerName = (p) => {
+    if (p.sellerName) return p.sellerName;
+    if (p.sellerId === "admin") return "Admin";
+    return "Seller";
+  };
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const status = p.status?.toUpperCase();
+
       const matchesSearch =
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.sellerId || "Seller")
+        getSellerName(p)
           .toLowerCase()
           .includes(search.toLowerCase());
 
@@ -35,15 +41,12 @@ export default function AdminProducts() {
     });
   }, [products, search, statusFilter]);
 
-  const totalPages = Math.ceil(
-    filteredProducts.length / PAGE_SIZE
-  );
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
 
   const paginatedProducts = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filteredProducts.slice(start, start + PAGE_SIZE);
   }, [filteredProducts, page]);
-  
 
   const statusBadge = (status) => {
     if (status === "APPROVED")
@@ -87,7 +90,6 @@ export default function AdminProducts() {
         </select>
       </div>
 
-    
       <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -114,12 +116,15 @@ export default function AdminProducts() {
                   <td className="p-3 font-medium">
                     {p.name}
                   </td>
+
                   <td className="p-3">
-                    {p.sellerId || "Seller"}
+                    {getSellerName(p)}
                   </td>
+
                   <td className="p-3 text-right">
                     ₹{p.price}
                   </td>
+
                   <td className="p-3 text-center">
                     {p.stock ?? "—"}
                   </td>

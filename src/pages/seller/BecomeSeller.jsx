@@ -30,6 +30,7 @@ export default function BecomeSeller() {
     updateUserRole(form);
 
     navigate("/seller/dashboard", { replace: true });
+    console.log("Submit clicked");
   };
 
   return (

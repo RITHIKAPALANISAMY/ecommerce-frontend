@@ -1,7 +1,7 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function SellerRoutes() {
+export default function SellerGuard({ children }) {
   const { user } = useAuth();
 
   if (!user) {
@@ -12,5 +12,5 @@ export default function SellerRoutes() {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return <Outlet />;
+  return children;
 }

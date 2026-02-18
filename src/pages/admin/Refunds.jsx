@@ -6,7 +6,7 @@ export default function Refunds() {
   const { orders, updateOrderStatus } = useOrders();
   const [processingId, setProcessingId] = useState(null);
 
-  
+  /* ===== DERIVE REFUNDS (REAL-TIME) ===== */
   const refunds = orders.filter(
     (o) =>
       o.status === "REFUND_REQUESTED" ||
@@ -24,7 +24,7 @@ export default function Refunds() {
     }
   };
 
-  
+  /* ===== EXPORT REFUNDS REPORT ===== */
   const exportRefunds = () => {
     const report = refunds.map((o) => ({
       OrderID: o.id,
@@ -40,7 +40,7 @@ export default function Refunds() {
 
   return (
     <div className="p-6">
-  
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">
           Refund Management

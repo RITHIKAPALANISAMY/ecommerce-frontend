@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "admin_coupons";
-const BUYER_KEY = "coupons"; // 🔑 shared with buyer
+const BUYER_KEY = "coupons"; // shared with buyer
 
 export default function Coupons() {
   const [coupons, setCoupons] = useState(() => {
@@ -22,7 +22,6 @@ export default function Coupons() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(coupons));
 
-    // only ACTIVE + not expired go to buyer
     const buyerCoupons = coupons.filter(
       (c) =>
         c.status === "Active" &&
@@ -32,7 +31,7 @@ export default function Coupons() {
     localStorage.setItem(BUYER_KEY, JSON.stringify(buyerCoupons));
   }, [coupons]);
 
-  /* ✅ REALTIME SYNC (MULTI TAB) */
+  /* ✅ REALTIME SYNC */
   useEffect(() => {
     const sync = (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
@@ -53,17 +52,24 @@ export default function Coupons() {
       return;
     }
 
+    const cleanedCoupon = {
+      ...form,
+      code: form.code.toUpperCase(),
+      discount: Number(form.discount), // ✅ FIX
+      type: form.type.toLowerCase(),    // ✅ FIX
+    };
+
     if (editingId) {
       setCoupons((prev) =>
         prev.map((c) =>
-          c.id === editingId ? { ...form, id: editingId } : c
+          c.id === editingId ? { ...cleanedCoupon, id: editingId } : c
         )
       );
       setEditingId(null);
     } else {
       setCoupons((prev) => [
         ...prev,
-        { ...form, id: Date.now() },
+        { ...cleanedCoupon, id: Date.now() },
       ]);
     }
 
@@ -104,6 +110,7 @@ export default function Coupons() {
 
           <input
             name="discount"
+            type="number"
             placeholder="Discount (10 / 50)"
             value={form.discount}
             onChange={handleChange}
@@ -112,7 +119,7 @@ export default function Coupons() {
 
           <input
             name="type"
-            placeholder="Type (Flat / Percentage)"
+            placeholder="flat / percentage"
             value={form.type}
             onChange={handleChange}
             className="border rounded px-3 py-2"

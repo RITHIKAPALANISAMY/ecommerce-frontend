@@ -97,7 +97,8 @@ export default function Cart() {
     navigate("/checkout/address");
   };
 
-  const isBuyer = user?.role === "buyer";
+  const isBuyer = user?.role === "BUYER";
+
 
   return (
     <div className="bg-gray-100 py-8 pb-16">

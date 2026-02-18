@@ -1,152 +1,132 @@
+import { useMemo } from "react";
 import { useOrders } from "../../context/OrderContext";
-import { useState } from "react";
-import { exportToCSV } from "../../utils/exportReports";
+
+/* ===== HELPERS ===== */
+const normalizeStatus = (status) =>
+  String(status || "PLACED").toUpperCase();
+
+const normalizeCustomer = (customer) =>
+  customer && customer.toLowerCase() === "buyer"
+    ? "Buyer"
+    : "Buyer"; // 🔥 STANDARD
+
+const statusBadge = (status) => {
+  switch (status) {
+    case "PLACED":
+      return "bg-yellow-100 text-yellow-700";
+    case "SHIPPED":
+      return "bg-blue-100 text-blue-700";
+    case "DELIVERED":
+      return "bg-green-100 text-green-700";
+    case "CANCELLED":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-gray-100 text-gray-600";
+  }
+};
 
 const AdminOrders = () => {
-  const { orders, updateOrderStatus } = useOrders();
-  const [processingId, setProcessingId] = useState(null);
+  const { orders = [], updateOrderStatus } = useOrders();
 
-  
-  const handleOrderAction = async (orderId, status) => {
-    setProcessingId(orderId);
-    try {
-      updateOrderStatus(orderId, status);
-    } catch (err) {
-      console.error("Admin order action failed", err);
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
- 
-  const exportOrders = () => {
-    const report = orders.map((o) => ({
-      OrderID: o.id,
-      Customer: o.buyerName,
-      Email: o.buyerEmail,
-      TotalAmount: o.amount?.total || 0,
-      Status: o.status,
-      Date: new Date(o.createdAt).toLocaleString(),
+  /* ===== NORMALIZED ORDERS ===== */
+  const normalizedOrders = useMemo(() => {
+    return orders.map((o) => ({
+      ...o,
+      status: normalizeStatus(o.status),
+      customer: normalizeCustomer(o.customer),
     }));
+  }, [orders]);
 
-    exportToCSV("orders_report", report);
+  /* ===== ACTION HANDLERS ===== */
+  const handleStatusChange = (id, status) => {
+    updateOrderStatus(id, status);
   };
 
   return (
-    <div className="p-6">
-     
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
-          Orders Management
-        </h2>
+    <div>
+      <h2 className="text-xl font-semibold mb-6">Orders Management</h2>
 
-        <button
-          onClick={exportOrders}
-          className="rounded-lg bg-[#931012] px-4 py-2 text-sm text-white hover:opacity-90"
-        >
-          Export Orders
-        </button>
-      </div>
+      <div className="bg-white rounded-2xl shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="text-left">
+              <th className="px-6 py-4">Order ID</th>
+              <th className="px-6 py-4">Customer</th>
+              <th className="px-6 py-4">Amount</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Actions</th>
+            </tr>
+          </thead>
 
-      {orders.length === 0 ? (
-        <div className="rounded-xl bg-white p-6 text-center text-gray-500 shadow">
-          No orders yet
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl bg-white shadow">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+          <tbody>
+            {normalizedOrders.length === 0 ? (
               <tr>
-                <th className="p-3 text-left">Order ID</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Amount</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Actions</th>
+                <td colSpan="5" className="text-center py-10 text-gray-500">
+                  No orders found
+                </td>
               </tr>
-            </thead>
+            ) : (
+              normalizedOrders.map((order) => (
+                <tr key={order.id} className="border-t">
+                  <td className="px-6 py-4 font-medium">
+                    #{order.id}
+                  </td>
 
-            <tbody>
-              {orders.map((o) => {
-                const isPlaced = o.status === "PLACED";
-                const loading = processingId === o.id;
+                  <td className="px-6 py-4">
+                    {order.customer}
+                  </td>
 
-                return (
-                  <tr
-                    key={o.id}
-                    className="border-t transition hover:bg-gray-50"
-                  >
-                    <td className="p-3 font-mono">
-                      #{o.id}
-                    </td>
+                  <td className="px-6 py-4">
+                    ₹{order.amount?.total || order.amount}
+                  </td>
 
-                    <td className="p-3">
-                      {o.buyerName}
-                    </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
 
-                    <td className="p-3 font-semibold">
-                      ₹{o.amount?.total || 0}
-                    </td>
-
-                    <td className="p-3">
-                      <span
-                        className={`rounded px-2 py-1 text-xs font-semibold ${
-                          o.status === "PLACED"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : o.status === "SHIPPED"
-                            ? "bg-blue-100 text-blue-700"
-                            : o.status === "DELIVERED"
-                            ? "bg-green-100 text-green-700"
-                            : o.status === "CANCELLED"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                  <td className="px-6 py-4">
+                    {order.status === "PLACED" && (
+                      <button
+                        onClick={() =>
+                          handleStatusChange(order.id, "SHIPPED")
+                        }
+                        className="text-blue-600 font-medium hover:underline"
                       >
-                        {o.status}
-                      </span>
-                    </td>
+                        Mark Shipped
+                      </button>
+                    )}
 
-                    <td className="p-3">
-                      {isPlaced ? (
-                        <div className="flex gap-3">
-                          <button
-                            disabled={loading}
-                            onClick={() =>
-                              handleOrderAction(
-                                o.id,
-                                "SHIPPED"
-                              )
-                            }
-                            className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-                          >
-                            Ship
-                          </button>
+                    {order.status === "SHIPPED" && (
+                      <button
+                        onClick={() =>
+                          handleStatusChange(order.id, "DELIVERED")
+                        }
+                        className="text-green-600 font-medium hover:underline"
+                      >
+                        Mark Delivered
+                      </button>
+                    )}
 
-                          <button
-                            disabled={loading}
-                            onClick={() =>
-                              handleOrderAction(
-                                o.id,
-                                "CANCELLED"
-                              )
-                            }
-                            className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">
-                          —
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    {order.status === "DELIVERED" && (
+                      <span className="text-gray-400">—</span>
+                    )}
+
+                    {order.status === "CANCELLED" && (
+                      <span className="text-red-400">Cancelled</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
