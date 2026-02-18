@@ -1,22 +1,10 @@
-import { Outlet, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import AdminNavbar from "../components/admin/AdminNavbar";
+import { Outlet } from "react-router-dom";
 
 const AdminRoutes = () => {
-  const { user } = useAuth();
-
-  if (!user || user.role !== "admin") {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
   return (
-    <div className="admin-app">
-      <AdminNavbar />
-
-      {/* SAME CENTER ALIGNMENT AS BUYER & SELLER */}
-      <div className="admin-page">
-        <Outlet />
-      </div>
+    <div className="min-h-screen bg-gray-100">
+     
+      <Outlet />
     </div>
   );
 };

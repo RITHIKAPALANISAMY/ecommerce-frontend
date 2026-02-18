@@ -1,46 +1,57 @@
 import ProductCard from "../../components/common/ProductCard";
 
 export default function ProductList() {
-  // Mock products (later replace with API)
   const products = [
     {
       id: 1,
       title: "Wireless Headphones",
       price: 2999,
-      image: "https://via.placeholder.com/200",
-      stock: 10, // ✅ In stock
+      images: ["https://via.placeholder.com/400"], 
+      stock: 10,
+      rating: 4,
+      brand: "SoundMax",
     },
     {
       id: 2,
       title: "Smart Watch",
       price: 4999,
-      image: "https://via.placeholder.com/200",
-      stock: 3, // ⚠️ Low stock
+      images: ["https://via.placeholder.com/400"],
+      stock: 3, 
+      rating: 3,
+      brand: "TimeTech",
     },
     {
       id: 3,
       title: "Bluetooth Speaker",
       price: 1999,
-      image: "https://via.placeholder.com/200",
-      stock: 0, // ❌ Out of stock
+      images: ["https://via.placeholder.com/400"],
+      stock: 0,
+      rating: 4,
+      brand: "BoomAudio",
     },
     {
       id: 4,
       title: "Gaming Mouse",
       price: 1499,
-      image: "https://via.placeholder.com/200",
+      images: ["https://via.placeholder.com/400"],
       stock: 7,
+      rating: 5,
+      brand: "ProGear",
     },
   ];
 
   return (
-    <div className="product-list">
-      <h2>All Products</h2>
+    <div className="bg-gray-50 px-4 py-6">
+      <div className="mx-auto max-w-7xl">
+        <h2 className="mb-6 text-2xl font-semibold text-gray-800">
+          All Products
+        </h2>
 
-      <div className="product-grid">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
       </div>
     </div>
   );

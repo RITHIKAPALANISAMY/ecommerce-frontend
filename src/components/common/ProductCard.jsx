@@ -1,103 +1,98 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
-import { useAuth } from "../../context/AuthContext";
+import { useCompare } from "../../context/CompareContext";
 
 export default function ProductCard({ product }) {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
-  const {
-    addToWishlist,
-    removeFromWishlist,
-    isInWishlist,
-  } = useWishlist();
-  const { user } = useAuth();
+  const { addToWishlist, removeFromWishlist, isInWishlist } =
+    useWishlist();
+  const { compareItems, addToCompare, removeFromCompare } =
+    useCompare();
 
-  const role = user?.role; // buyer | seller | admin
-
-  const handleWishlist = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // ✅ Guest wishlist allowed
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist({
-        id: product.id,
-        title: product.title,
-        price: product.price,
-        images: product.images,
-      });
-    }
-  };
-
-  const handleAddToCart = () => {
-    // ❌ Block seller & admin
-    if (role === "seller" || role === "admin") return;
-
-    // ✅ Guest + buyer allowed
-    addToCart(product);
-  };
-
-  const isDisabled = role === "seller" || role === "admin";
+  const productImage = product.images?.[0];
+  const isCompared = compareItems.some(
+    (item) => item.id === product.id
+  );
 
   return (
-    <div className="product-card">
-      {/* DISCOUNT */}
-      {product.discount && (
-        <span className="discount-badge">
-          {product.discount}% OFF
-        </span>
-      )}
-
-      {/* WISHLIST */}
-      <button
-        className="wishlist-btn"
-        onClick={handleWishlist}
+    <div className="group flex h-full flex-col rounded-2xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+      {/* IMAGE SECTION */}
+      <div
+        onClick={() => navigate(`/product/${product.id}`)}
+        className="relative flex h-56 w-full cursor-pointer items-center justify-center overflow-hidden rounded-t-2xl bg-gray-100"
       >
-        {isInWishlist(product.id) ? "❤️" : "🤍"}
-      </button>
-
-      {/* IMAGE */}
-      <Link to={`/product/${product.id}`}>
-        <div className="product-card-image">
+        {productImage ? (
           <img
-            src={product.images[0]}
+            src={productImage}
             alt={product.title}
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
           />
-        </div>
-      </Link>
+        ) : (
+          <div className="text-sm text-gray-400">No Image</div>
+        )}
 
-      {/* INFO */}
-      <div className="product-card-info">
-        <h4 className="product-title">
+        {/* WISHLIST BUTTON */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            isInWishlist(product.id)
+              ? removeFromWishlist(product.id)
+              : addToWishlist(product);
+          }}
+          className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow-md backdrop-blur transition hover:scale-110"
+        >
+          {isInWishlist(product.id) ? "❤️" : "🤍"}
+        </button>
+
+        {/* DISCOUNT BADGE */}
+        {product.discount && (
+          <span className="absolute left-3 top-3 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white shadow">
+            {product.discount}% OFF
+          </span>
+        )}
+      </div>
+
+      {/* CONTENT SECTION */}
+      <div className="flex flex-1 flex-col p-4">
+        {product.brand && (
+          <p className="text-xs uppercase tracking-wide text-gray-500">
+            {product.brand}
+          </p>
+        )}
+
+        <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-gray-800">
           {product.title}
-        </h4>
+        </h3>
 
-        <div className="price-box">
-          <span className="price-current">
+        {/* PRICE */}
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-lg font-bold text-red-600">
             ₹{product.price}
           </span>
           {product.mrp && (
-            <span className="price-mrp">
+            <span className="text-xs text-gray-400 line-through">
               ₹{product.mrp}
             </span>
           )}
         </div>
 
-        {/* ADD TO CART — GUEST + BUYER */}
-        <button
-          className="btn full"
-          onClick={handleAddToCart}
-          disabled={isDisabled}
-          title={
-            isDisabled
-              ? "Seller/Admin cannot purchase products"
-              : "Add to Cart"
-          }
-        >
-          Add to Cart
-        </button>
+        {/* ADD TO CART */}
+        <div className="mt-auto pt-4">
+          <button
+            onClick={() =>
+              addToCart({
+                ...product,
+                image: productImage,
+                qty: 1,
+              })
+            }
+            className="w-full rounded-xl bg-red-600 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 hover:shadow-lg"
+          >
+            Add to Cart
+          </button>
+        </div>
       </div>
     </div>
   );

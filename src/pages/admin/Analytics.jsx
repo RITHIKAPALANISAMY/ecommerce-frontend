@@ -1,5 +1,7 @@
-import "./Analytics.css";
-
+import { useMemo, useEffect, useState } from "react";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+import { useOrders } from "../../context/OrderContext";
+import { exportToCSV } from "../../utils/exportReports";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +13,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
-import { useOrders } from "../../context/OrderContext";
 
 ChartJS.register(
   CategoryScale,
@@ -25,195 +25,268 @@ ChartJS.register(
   Legend
 );
 
+const COLORS = {
+  primary: "#931012",
+  success: "#16A34A",
+  warning: "#F59E0B",
+  danger: "#DC2626",
+  info: "#2563EB",
+};
+
+const baseOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "bottom",
+      labels: { boxWidth: 12, padding: 12 },
+    },
+  },
+};
+
+const doughnutOptions = {
+  ...baseOptions,
+  cutout: "65%",
+};
+
+const normalizeStatus = (status) =>
+  String(status || "").toUpperCase();
+
 export default function Analytics() {
-  const { orders } = useOrders();
+  const { orders = [] } = useOrders();
+  const [, forceUpdate] = useState(0);
+
+  /* REALTIME SYNC */
+  useEffect(() => {
+    const sync = () => forceUpdate((v) => v + 1);
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
+  const getAmountValue = (amount) => {
+    if (typeof amount === "number") return amount;
+    if (typeof amount === "object" && amount !== null)
+      return amount.total || 0;
+    return 0;
+  };
 
   /* ================= SALES TREND ================= */
-  const salesByDate = {};
-  orders.forEach((o) => {
-    const date = o.createdAt
-      ? new Date(o.createdAt).toLocaleDateString()
-      : "Unknown";
-    salesByDate[date] = (salesByDate[date] || 0) + (o.totalAmount || 0);
-  });
-
-  const salesTrendData = {
-    labels: Object.keys(salesByDate),
-    datasets: [
-      {
-        label: "Sales Revenue",
-        data: Object.values(salesByDate),
-        borderColor: "#e91e63",
-        backgroundColor: "rgba(233,30,99,0.15)",
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-
-  /* ================= ORDER STATUS ================= */
-  const statusCount = {
-    Pending: 0,
-    Approved: 0,
-    Delivered: 0,
-    Cancelled: 0,
-  };
-
-  orders.forEach((o) => {
-    if (statusCount[o.status] !== undefined) {
-      statusCount[o.status]++;
-    }
-  });
-
-  const statusData = {
-    labels: Object.keys(statusCount),
-    datasets: [
-      {
-        data: Object.values(statusCount),
-        backgroundColor: [
-          "#ffb74d",
-          "#81c784",
-          "#64b5f6",
-          "#e57373",
-        ],
-        cutout: "70%",
-      },
-    ],
-  };
-
-  /* ================= ORDERS vs REVENUE ================= */
-  const barData = {
-    labels: ["Orders", "Revenue"],
-    datasets: [
-      {
-        label: "Performance",
-        data: [
-          orders.length,
-          orders.reduce((s, o) => s + (o.totalAmount || 0), 0),
-        ],
-        backgroundColor: ["#6c63ff", "#00c853"],
-        borderRadius: 10,
-      },
-    ],
-  };
-
-  /* ================= SELLER WISE ANALYTICS ================= */
-  const sellerMap = {};
-
-  orders.forEach((order) => {
-    order.items?.forEach((item) => {
-      const seller = item.sellerName || "Unknown Seller";
-
-      if (!sellerMap[seller]) {
-        sellerMap[seller] = { revenue: 0, orders: 0 };
-      }
-
-      sellerMap[seller].orders += 1;
-
-      sellerMap[seller].revenue +=
-        item.price && item.quantity
-          ? item.price * item.quantity
-          : order.totalAmount / order.items.length;
+  const salesByDate = useMemo(() => {
+    const map = {};
+    orders.forEach((o) => {
+      if (!o.placedDate) return;
+      map[o.placedDate] =
+        (map[o.placedDate] || 0) +
+        getAmountValue(o.amount);
     });
-  });
+    return {
+      labels: Object.keys(map),
+      values: Object.values(map),
+    };
+  }, [orders]);
 
-  const sellerLabels = Object.keys(sellerMap);
-
-  const sellerRevenueData = {
-    labels: sellerLabels,
+  const salesData = {
+    labels: salesByDate.labels,
     datasets: [
       {
-        label: "Revenue (₹)",
-        data: sellerLabels.map((s) => sellerMap[s].revenue),
-        backgroundColor: "#6c63ff",
-        borderRadius: 10,
+        label: "Sales (₹)",
+        data: salesByDate.values,
+        borderColor: COLORS.primary,
+        backgroundColor: "rgba(147,16,18,0.15)",
+        fill: true,
+        tension: 0.4,
       },
     ],
   };
 
-  const sellerOrdersData = {
-    labels: sellerLabels,
-    datasets: [
-      {
-        label: "Orders",
-        data: sellerLabels.map((s) => sellerMap[s].orders),
-        backgroundColor: "#00c853",
-        borderRadius: 10,
-      },
-    ],
-  };
-
+  /* ================= TOTALS ================= */
   const totalRevenue = orders.reduce(
-    (s, o) => s + (o.totalAmount || 0),
+    (sum, o) => sum + getAmountValue(o.amount),
     0
   );
 
-  /* ================= UI ================= */
-  return (
-    <div className="analytics-page">
+  /* ================= ORDERS vs REVENUE (FIXED) ================= */
+  const ordersVsRevenue = {
+    labels: ["Performance"],
+    datasets: [
+      {
+        label: "Orders",
+        data: [orders.length],
+        backgroundColor: COLORS.warning,
+        yAxisID: "yOrders",
+      },
+      {
+        label: "Revenue (₹)",
+        data: [totalRevenue],
+        backgroundColor: COLORS.info,
+        yAxisID: "yRevenue",
+      },
+    ],
+  };
 
-      {/* SALES TREND */}
-      <div className="analytics-card small">
-        <h3>📈 Sales Trend</h3>
-        <div className="chart-sm">
-          <Line data={salesTrendData} />
+  const ordersVsRevenueOptions = {
+    ...baseOptions,
+    scales: {
+      yOrders: {
+        type: "linear",
+        position: "left",
+        title: {
+          display: true,
+          text: "Orders",
+        },
+        ticks: {
+          stepSize: 5,
+        },
+      },
+      yRevenue: {
+        type: "linear",
+        position: "right",
+        title: {
+          display: true,
+          text: "Revenue (₹)",
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+      },
+    },
+  };
+
+  /* ================= STATUS COUNT ================= */
+  const statusCounts = useMemo(() => {
+    const counts = {
+      PLACED: 0,
+      SHIPPED: 0,
+      DELIVERED: 0,
+      CANCELLED: 0,
+    };
+
+    orders.forEach((o) => {
+      const s = normalizeStatus(o.status);
+      if (counts[s] !== undefined) counts[s]++;
+    });
+
+    return counts;
+  }, [orders]);
+
+  const orderStatusData = {
+    labels: ["Placed", "Shipped", "Delivered", "Cancelled"],
+    datasets: [
+      {
+        data: [
+          statusCounts.PLACED,
+          statusCounts.SHIPPED,
+          statusCounts.DELIVERED,
+          statusCounts.CANCELLED,
+        ],
+        backgroundColor: [
+          COLORS.warning,
+          COLORS.info,
+          COLORS.success,
+          COLORS.danger,
+        ],
+      },
+    ],
+  };
+
+  /* ================= TOP PRODUCTS ================= */
+  const productSales = useMemo(() => {
+    const map = {};
+    orders.forEach((o) =>
+      o.items?.forEach((i) => {
+        map[i.title] =
+          (map[i.title] || 0) +
+          i.price * (i.quantity || 1);
+      })
+    );
+    return map;
+  }, [orders]);
+
+  const topProductsData = {
+    labels: Object.keys(productSales),
+    datasets: [
+      {
+        label: "Revenue (₹)",
+        data: Object.values(productSales),
+        backgroundColor: COLORS.primary,
+      },
+    ],
+  };
+
+  /* ================= EXPORT ================= */
+  const exportAnalytics = () => {
+    exportToCSV("analytics_summary", [
+      {
+        TotalOrders: orders.length,
+        TotalRevenue: totalRevenue,
+        Placed: statusCounts.PLACED,
+        Shipped: statusCounts.SHIPPED,
+        Delivered: statusCounts.DELIVERED,
+        Cancelled: statusCounts.CANCELLED,
+      },
+    ]);
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">
+          Analytics Dashboard
+        </h2>
+
+        <button
+          onClick={exportAnalytics}
+          className="bg-[#931012] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+        >
+          Export Analytics
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">📈 Sales Trend</h3>
+          <div className="h-[260px]">
+            <Line data={salesData} options={baseOptions} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">
+            📦 Orders vs Revenue
+          </h3>
+          <div className="h-[260px]">
+            <Bar
+              data={ordersVsRevenue}
+              options={ordersVsRevenueOptions}
+            />
+          </div>
         </div>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="analytics-grid">
-
-        {/* ORDERS vs REVENUE */}
-        <div className="analytics-card">
-          <h3>📊 Orders vs Revenue</h3>
-          <div className="chart-md">
-            <Bar data={barData} />
-          </div>
-        </div>
-         
-        {/* ORDER STATUS */}
-        <div className="analytics-card">
-          <h3>🟢 Order Status</h3>
-          <div className="chart-md donut">
-            <Doughnut data={statusData} />
-            <div className="donut-center">
-              <h2>{orders.length}</h2>
-              <p>Total Orders</p>
-            </div>
-          </div>
-        </div>
-        
-
-        {/* SUMMARY */}
-        <div className="analytics-card stats">
-          <h3>📦 Summary</h3>
-          <div className="stat-box">
-            <p>Total Orders</p>
-            <h2>{orders.length}</h2>
-          </div>
-          <div className="stat-box">
-            <p>Total Revenue</p>
-            <h2>₹{totalRevenue}</h2>
-          </div>
-        </div>
-        
-
-        {/* SELLER WISE REVENUE */}
-        <div className="analytics-card">
-          <h3>🏪 Seller-wise Revenue</h3>
-          <div className="chart-md">
-            <Bar data={sellerRevenueData} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">
+            🏆 Top Selling Products
+          </h3>
+          <div className="h-[260px]">
+            <Bar
+              data={topProductsData}
+              options={{ ...baseOptions, indexAxis: "y" }}
+            />
           </div>
         </div>
 
-        {/* SELLER WISE ORDERS */}
-        <div className="analytics-card">
-          <h3>📦 Seller-wise Orders</h3>
-          <div className="chart-md">
-            <Bar data={sellerOrdersData} />
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="font-semibold mb-4">
+            🟢 Order Status
+          </h3>
+          <div className="h-[260px] flex justify-center">
+            <Doughnut
+              data={orderStatusData}
+              options={doughnutOptions}
+            />
           </div>
         </div>
-
       </div>
     </div>
   );

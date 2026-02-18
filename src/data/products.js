@@ -153,7 +153,7 @@ const products = [
     price: 1499,
     mrp: 2999,
     discount: 50,
-    stock: 0, // ❌ OUT OF STOCK
+    stock: 0, 
     notifySubscribers: [],
     images: [headphone1],
     description: {

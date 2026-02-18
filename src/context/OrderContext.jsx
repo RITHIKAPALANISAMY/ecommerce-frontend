@@ -1,119 +1,111 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useSellerProducts } from "./SellerProductContext";
+import { useCart } from "./CartContext";
+import { useAuth } from "./AuthContext";
 
 const OrderContext = createContext();
 
-export function OrderProvider({ children }) {
+export const OrderProvider = ({ children }) => {
+  const { cartItems, clearCart } = useCart();
+  const { user } = useAuth();
+
+  /* ================= STATE ================= */
+
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem("orders");
-    return saved ? JSON.parse(saved) : [];
+    const stored = localStorage.getItem("orders");
+    return stored ? JSON.parse(stored) : [];
   });
 
-  const { restoreStockAfterCancel } = useSellerProducts();
+  /* ================= PERSIST ================= */
 
   useEffect(() => {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
   /* ================= PLACE ORDER ================= */
-  const placeOrder = (order) => {
-    setOrders((prev) => [
-      ...prev,
-      {
-        ...order,
-        status: "Placed", // 🔥 FIXED
-        items: order.items.map((i) => ({
-          ...i,
-          status: "Placed",
-        })),
-      },
-    ]);
+
+  const placeOrder = ({ address, amount }) => {
+    if (!cartItems.length || !user?.email) return;
+
+    const newOrder = {
+      id: Date.now(),
+
+      buyerEmail: user.email.toLowerCase(), // ✅ FIXED
+      buyerName: user.name || "Customer",
+
+      items: cartItems.map((item) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        image: item.image,
+        quantity: item.quantity || 1,
+        sellerId: item.sellerId,
+      })),
+
+      address: address || {},
+      amount: Number(amount || 0),
+
+      status: "placed",
+      placedDate: new Date().toISOString(),
+      paymentMethod: "cod",
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    clearCart();
   };
 
-  /* ================= UPDATE ORDER STATUS ================= */
-  const updateSellerOrderStatus = (orderId, sellerId, newStatus) => {
+  /* ================= UPDATE ORDER ================= */
+
+  const updateOrderStatus = (orderId, status) => {
     setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== orderId) return order;
-
-        const updatedItems = order.items.map((item) =>
-          item.sellerId === sellerId
-            ? { ...item, status: newStatus }
-            : item
-        );
-
-        return {
-          ...order,
-          items: updatedItems,
-          status: newStatus,
-        };
-      })
+      prev.map((order) =>
+        order.id === orderId
+          ? { ...order, status: status.toLowerCase() }
+          : order
+      )
     );
   };
 
-  /* ================= CANCEL ORDER ================= */
-  const cancelOrderBySeller = (orderId, sellerId) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== orderId) return order;
+  /* ================= GET BUYER ORDERS ================= */
 
-        const cancelledItems = order.items.filter(
-          (i) => i.sellerId === sellerId
-        );
+  const getBuyerOrders = (buyerEmail) => {
+    if (!buyerEmail) return [];
 
-        restoreStockAfterCancel(cancelledItems);
-
-        return {
-          ...order,
-          items: order.items.map((i) =>
-            i.sellerId === sellerId
-              ? { ...i, status: "Cancelled" }
-              : i
-          ),
-          status: "Cancelled",
-        };
-      })
+    return orders.filter(
+      (order) =>
+        order.buyerEmail?.toLowerCase() ===
+        buyerEmail.toLowerCase()
     );
   };
 
-  /* ================= SELLER HELPERS ================= */
-  const getSellerOrders = (sellerId) =>
-    orders
+  /* ================= SELLER ORDERS ================= */
+
+  const getSellerOrders = (sellerId) => {
+    return orders
       .map((order) => {
         const sellerItems = order.items.filter(
-          (i) => i.sellerId === sellerId
+          (item) => item.sellerId === sellerId
         );
-        if (!sellerItems.length) return null;
-        return { ...order, items: sellerItems };
+
+        return sellerItems.length
+          ? { ...order, items: sellerItems }
+          : null;
       })
       .filter(Boolean);
-
-  const getSellerRevenue = (sellerId) =>
-    getSellerOrders(sellerId).reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (s, i) =>
-            i.status === "Cancelled" ? s : s + i.price * i.quantity,
-          0
-        ),
-      0
-    );
+  };
 
   return (
     <OrderContext.Provider
       value={{
         orders,
         placeOrder,
-        updateSellerOrderStatus,
-        cancelOrderBySeller,
+        updateOrderStatus,
+        getBuyerOrders,
         getSellerOrders,
-        getSellerRevenue,
       }}
     >
       {children}
     </OrderContext.Provider>
   );
-}
+};
 
 export const useOrders = () => useContext(OrderContext);

@@ -5,9 +5,16 @@ const LOW_STOCK_LIMIT = 5;
 export default function CartItem({ item }) {
   const { addQty, reduceQty, removeItem } = useCart();
 
-  // ✅ SAFETY
-  const qty = Number(item.qty) || 1;
+ 
+  const quantity = Number(item.quantity) || 1;
   const price = Number(item.price) || 0;
+
+ 
+  const imageSrc =
+    item.image ||
+    item.images?.[0] ||
+    "";
+
   const stock =
     item.stock !== undefined ? Number(item.stock) : null;
 
@@ -15,107 +22,82 @@ export default function CartItem({ item }) {
   const isLowStock =
     stock !== null && stock > 0 && stock <= LOW_STOCK_LIMIT;
 
-  // 🔔 NOTIFY HANDLER
-  const handleNotify = () => {
-    const notifyList =
-      JSON.parse(localStorage.getItem("notifyList")) || [];
-
-    const alreadyAdded = notifyList.some(
-      (n) => n.productId === item.id
-    );
-
-    if (!alreadyAdded) {
-      notifyList.push({
-        productId: item.id,
-        title: item.title,
-        date: new Date().toISOString(),
-      });
-
-      localStorage.setItem(
-        "notifyList",
-        JSON.stringify(notifyList)
-      );
-
-      alert(
-        "You’ll be notified when this product is back in stock."
-      );
-    }
-  };
-
   return (
     <div
-      className={`cart-item-card ${
-        isOutOfStock ? "out-stock-card" : ""
-      }`}
+      className={`flex flex-col sm:flex-row gap-4 rounded-2xl bg-white p-4 shadow-sm border
+        ${isOutOfStock ? "opacity-70" : ""}`}
     >
-      {/* IMAGE */}
-      <div className="cart-img-box">
-        <img
-          src={item.image || item.images?.[0]}
-          alt={item.title}
-        />
+      <div className="h-24 w-24 flex-shrink-0 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={item.title}
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <span className="text-xs text-gray-400">
+            No Image
+          </span>
+        )}
       </div>
 
-      {/* INFO */}
-      <div className="cart-item-info">
-        <h4>{item.title}</h4>
-        <p className="brand">SmartHome · Electronics</p>
+      <div className="flex flex-1 flex-col">
+        <h4 className="font-semibold text-gray-800">
+          {item.title}
+        </h4>
 
-        {/* 🔴 OUT OF STOCK */}
+        <p className="text-sm text-gray-500">
+          {item.brand} · {item.category}
+        </p>
+
         {isOutOfStock && (
-          <p className="stock-label out">Out of stock</p>
+          <p className="mt-1 text-sm font-medium text-red-600">
+            Out of stock
+          </p>
         )}
 
-        {/* 🟠 LOW STOCK */}
         {isLowStock && (
-          <p className="stock-label low">
+          <p className="mt-1 text-sm font-medium text-orange-600">
             Only {stock} left
           </p>
         )}
 
-        {/* 🔢 QUANTITY (DISABLED FOR OOS) */}
         {!isOutOfStock && (
-          <div className="qty-row">
+          <div className="mt-3 flex items-center gap-3">
             <button
               onClick={() => reduceQty(item.id)}
-              disabled={qty <= 1}
+              disabled={quantity <= 1}
+              className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
             >
               −
             </button>
 
-            <span>{qty}</span>
+            <span className="min-w-[24px] text-center font-medium">
+              {quantity}
+            </span>
 
             <button
               onClick={() => addQty(item.id)}
-              disabled={stock !== null && qty >= stock}
+              disabled={stock !== null && quantity >= stock}
+              className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
             >
               +
             </button>
           </div>
         )}
-
-        {/* 🔔 NOTIFY */}
-        {isOutOfStock && (
-          <div className="notify-wrapper">
-            <button
-              className="notify-btn"
-              onClick={handleNotify}
-            >
-              🔔 Notify me when available
-            </button>
-          </div>
-        )}
       </div>
-
-      {/* PRICE */}
-      <div className="cart-price">
+      
+      <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
         {!isOutOfStock && (
-          <p className="price">₹{price * qty}</p>
+          <p className="text-lg font-bold text-gray-900">
+            ₹{price * quantity}
+          </p>
         )}
 
         <button
-          className="remove"
           onClick={() => removeItem(item.id)}
+          className="text-red-600 hover:text-red-700 text-lg"
+          title="Remove item"
         >
           🗑
         </button>

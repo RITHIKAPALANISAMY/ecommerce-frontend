@@ -3,53 +3,103 @@ import baseProducts from "../data/products";
 
 const ProductContext = createContext();
 
+/* ================= HELPERS ================= */
+const loadLS = (key, fallback) => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export function ProductProvider({ children }) {
-  /* ================= LOAD SELLER PRODUCTS ================= */
-  const [sellerProducts, setSellerProducts] = useState(() => {
-    const saved = localStorage.getItem("products");
-    return saved ? JSON.parse(saved) : [];
-  });
+  /* ================= SELLER PRODUCTS ================= */
+  const [sellerProducts, setSellerProducts] = useState(() =>
+    loadLS("products", [])
+  );
 
-  /* ================= LOAD REVIEWS ================= */
-  const [reviewsMap, setReviewsMap] = useState(() => {
-    const saved = localStorage.getItem("productReviews");
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  /* ================= SAVE REVIEWS ================= */
   useEffect(() => {
-    localStorage.setItem(
-      "productReviews",
-      JSON.stringify(reviewsMap)
-    );
+    localStorage.setItem("products", JSON.stringify(sellerProducts));
+  }, [sellerProducts]);
+
+  /* ================= REVIEWS ================= */
+  const [reviewsMap, setReviewsMap] = useState(() =>
+    loadLS("productReviews", {})
+  );
+
+  useEffect(() => {
+    localStorage.setItem("productReviews", JSON.stringify(reviewsMap));
   }, [reviewsMap]);
 
-  /* ================= WATCH PRODUCTS ================= */
+  /* ================= APPROVAL ================= */
+  const [approvalMap, setApprovalMap] = useState(() =>
+    loadLS("productApproval", {})
+  );
+
   useEffect(() => {
-    const syncProducts = () => {
-      const saved = localStorage.getItem("products");
-      setSellerProducts(saved ? JSON.parse(saved) : []);
-    };
+    localStorage.setItem("productApproval", JSON.stringify(approvalMap));
+  }, [approvalMap]);
 
-    window.addEventListener("storage", syncProducts);
-    return () =>
-      window.removeEventListener("storage", syncProducts);
-  }, []);
+  /* ================= FLAGS ================= */
+  const [flagMap, setFlagMap] = useState(() =>
+    loadLS("productFlags", {})
+  );
 
-  /* ================= ADD REVIEW ================= */
+  useEffect(() => {
+    localStorage.setItem("productFlags", JSON.stringify(flagMap));
+  }, [flagMap]);
+
+  /* ================= STOCK ================= */
+  const [stockMap, setStockMap] = useState(() =>
+    loadLS("productStock", {})
+  );
+
+  useEffect(() => {
+    localStorage.setItem("productStock", JSON.stringify(stockMap));
+  }, [stockMap]);
+
+  /* ================= MERGED PRODUCTS ================= */
+  const products = [...baseProducts, ...sellerProducts].map((p) => ({
+    ...p,
+    name: p.name || p.title || "Unnamed Product",
+    image:
+      p.image ||
+      p.img ||
+      p.thumbnail ||
+      "https://via.placeholder.com/80",
+    status: approvalMap[p.id] ?? p.status ?? "Pending",
+    reviews: reviewsMap[p.id] || [],
+    flagged: flagMap[p.id] || false,
+    stock: stockMap[p.id] ?? p.stock ?? 10,
+  }));
+
+  /* ================= ADMIN ACTIONS ================= */
+  const approveProduct = (id) =>
+    setApprovalMap((prev) => ({ ...prev, [id]: "Approved" }));
+
+  const rejectProduct = (id) =>
+    setApprovalMap((prev) => ({ ...prev, [id]: "Rejected" }));
+
+  const flagProduct = (id) =>
+    setFlagMap((prev) => ({ ...prev, [id]: true }));
+
+  const unflagProduct = (id) =>
+    setFlagMap((prev) => ({ ...prev, [id]: false }));
+
+  /* ================= REVIEW ACTIONS ================= */
   const addReview = (productId, review) => {
     setReviewsMap((prev) => {
-      const productReviews = prev[productId] || [];
+      const existing = prev[productId] || [];
 
-      // ❌ Prevent duplicate
-      if (productReviews.some((r) => r.user === review.user)) {
+      if (existing.some((r) => r.user === review.user)) {
         return prev;
       }
 
       return {
         ...prev,
         [productId]: [
-          ...productReviews,
+          ...existing,
           {
             ...review,
             id: Date.now(),
@@ -60,45 +110,90 @@ export function ProductProvider({ children }) {
     });
   };
 
-  /* ================= EDIT REVIEW ================= */
   const editReview = (productId, reviewId, updated) => {
     setReviewsMap((prev) => ({
       ...prev,
-      [productId]: prev[productId].map((r) =>
-        r.id === reviewId
-          ? { ...r, ...updated, edited: true }
-          : r
+      [productId]: (prev[productId] || []).map((r) =>
+        r.id === reviewId ? { ...r, ...updated, edited: true } : r
       ),
     }));
   };
 
-  /* ================= DELETE REVIEW ================= */
   const deleteReview = (productId, reviewId) => {
     setReviewsMap((prev) => ({
       ...prev,
-      [productId]: prev[productId].filter(
+      [productId]: (prev[productId] || []).filter(
         (r) => r.id !== reviewId
       ),
     }));
   };
 
-  /* ================= MERGE PRODUCTS ================= */
-  const products = [...baseProducts, ...sellerProducts].map(
-    (p) => ({
-      ...p,
-      title: p.title || p.name || "Unnamed Product",
-      images: p.images || (p.image ? [p.image] : []),
-      reviews: reviewsMap[p.id] || p.reviews || [],
-    })
-  );
+  /* ================= STOCK HELPERS ================= */
+  const reduceStock = (items) => {
+    setStockMap((prev) => {
+      const updated = { ...prev };
+
+      items.forEach((item) => {
+        const current = updated[item.productId] ?? item.stock ?? 10;
+        updated[item.productId] = Math.max(
+          0,
+          current - item.quantity
+        );
+      });
+
+      return updated;
+    });
+  };
+
+  const restoreStockAfterCancel = (items) => {
+    setStockMap((prev) => {
+      const updated = { ...prev };
+
+      items.forEach((item) => {
+        updated[item.productId] =
+          (updated[item.productId] ?? 0) + item.quantity;
+      });
+
+      return updated;
+    });
+  };
+
+  /* ================= MULTI-TAB SYNC ================= */
+  useEffect(() => {
+    const syncAll = () => {
+      setSellerProducts(loadLS("products", []));
+      setReviewsMap(loadLS("productReviews", {}));
+      setApprovalMap(loadLS("productApproval", {}));
+      setFlagMap(loadLS("productFlags", {}));
+      setStockMap(loadLS("productStock", {}));
+    };
+
+    window.addEventListener("storage", syncAll);
+    return () => window.removeEventListener("storage", syncAll);
+  }, []);
 
   return (
     <ProductContext.Provider
       value={{
         products,
+
+        /* ADMIN */
+        approveProduct,
+        rejectProduct,
+        flagProduct,
+        unflagProduct,
+
+        /* REVIEWS */
         addReview,
         editReview,
         deleteReview,
+
+        /* STOCK */
+        reduceStock,
+        restoreStockAfterCancel,
+
+        /* SELLER */
+        setSellerProducts,
       }}
     >
       {children}
@@ -106,5 +201,4 @@ export function ProductProvider({ children }) {
   );
 }
 
-export const useProducts = () =>
-  useContext(ProductContext);
+export const useProducts = () => useContext(ProductContext);

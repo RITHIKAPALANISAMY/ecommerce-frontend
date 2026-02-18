@@ -1,101 +1,147 @@
-import "../../styles/checkoutSummary.css";
-import CheckoutSteps from "./CheckoutSteps";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
+import CheckoutSteps from "./CheckoutSteps";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CheckoutSummary() {
-  const { cartItems } = useCart();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const address = JSON.parse(
-    localStorage.getItem("checkoutAddress")
-  );
+  const [items, setItems] = useState([]);
+  const [address, setAddress] = useState(null);
+  const [amount, setAmount] = useState(null);
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.qty,
-    0
-  );
+  
+  useEffect(() => {
+    const savedAmount = JSON.parse(
+      localStorage.getItem("checkoutAmount")
+    );
+    const savedAddress = JSON.parse(
+      localStorage.getItem("checkoutAddress")
+    );
+    const checkoutItems = JSON.parse(
+      localStorage.getItem("checkoutItems")
+    ) || [];
 
-  const delivery = 99;
-  const gst = Math.round(subtotal * 0.18);
-  const total = subtotal + delivery + gst;
+    const inStockItems = checkoutItems.filter(
+      (i) => i.stock === undefined || i.stock > 0
+    );
+
+    if (
+      !user ||
+      !savedAmount ||
+      !savedAddress ||
+      inStockItems.length === 0
+    ) {
+      navigate("/cart", { replace: true });
+      return;
+    }
+
+    setItems(inStockItems);
+    setAddress(savedAddress);
+    setAmount(savedAmount);
+  }, [user, navigate]);
+
+  if (!amount || !address) return null;
 
   return (
-    <div className="checkout-page">
-      {/* STEPS */}
+    <div className="min-h-screen bg-gray-50 px-4 py-6">
       <CheckoutSteps currentStep={2} />
 
-      {/* GRID */}
-      <div className="checkout-grid">
-        {/* LEFT */}
-        <div className="summary-card">
-          <h2>Order Summary</h2>
+      <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 rounded-xl bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">
+            Order Summary
+          </h2>
 
-          {cartItems.map(item => (
-            <div key={item.id} className="summary-item">
-              <img src={item.image} alt={item.title} />
-              <div className="summary-info">
-                <p className="title">{item.title}</p>
-                <p>Qty: {item.qty}</p>
-                <p className="price">₹{item.price}</p>
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="mb-4 flex gap-4 border-b pb-4 last:border-none"
+            >
+              <img
+                src={item.image}
+                alt={item.title}
+                className="h-16 w-16 rounded border object-contain"
+              />
+
+              <div className="flex-1">
+                <p className="font-medium">
+                  {item.title}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Qty: {item.quantity}
+                </p>
               </div>
+
+              <p className="font-semibold">
+                ₹{item.price * item.quantity}
+              </p>
             </div>
           ))}
 
-          <hr />
+          <h4 className="mt-4 mb-2 font-semibold">
+            Deliver to
+          </h4>
 
-          <h4 className="section-title">Deliver to:</h4>
+          <div className="rounded-lg border p-3 text-sm">
+            <p className="font-medium">{address.name}</p>
+            <p>{address.phone}</p>
+            <p>
+              {address.address}, {address.city},{" "}
+              {address.state} - {address.pincode}
+            </p>
+          </div>
 
-          {address && (
-            <div className="address-box">
-              <strong>{address.name}</strong>
-              <p>{address.phone}</p>
-              <p>{address.address}</p>
-              <p>
-                {address.city}, {address.state} - {address.pincode}
-              </p>
+          <div className="mt-6 flex justify-between">
+            <button
+              onClick={() => navigate("/checkout/address")}
+              className="rounded border px-4 py-2"
+            >
+              Back
+            </button>
+
+            <button
+              onClick={() => navigate("/checkout/payment")}
+              className="rounded bg-red-600 px-6 py-2 text-white hover:bg-red-700"
+            >
+              Continue to Payment →
+            </button>
+          </div>
+        </div>
+
+        <div className="h-fit rounded-xl bg-white p-6 shadow">
+          <h3 className="mb-4 font-semibold">
+            Price Details
+          </h3>
+
+          <div className="mb-2 flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span>₹{amount.subtotal}</span>
+          </div>
+
+          <div className="mb-2 flex justify-between text-sm">
+            <span>Shipping</span>
+            <span>₹{amount.shipping}</span>
+          </div>
+
+          <div className="mb-2 flex justify-between text-sm">
+            <span>GST</span>
+            <span>₹{amount.gst}</span>
+          </div>
+
+          {amount.discount > 0 && (
+            <div className="mb-2 flex justify-between text-sm text-green-600">
+              <span>Discount</span>
+              <span>-₹{amount.discount}</span>
             </div>
           )}
 
-          {/* ACTION BUTTONS */}
-        <div className="summary-actions">
-  <button className="back-btn" onClick={() => navigate(-1)}>
-    Back
-  </button>
+          <hr className="my-3" />
 
-  <button
-    className="pay-btn"
-    onClick={() => navigate("/checkout/payment")}
-  >
-    Continue to Payment →
-  </button>
-</div>
-        </div>
-
-        {/* RIGHT */}
-        <div className="price-card">
-          <h3>Price Details</h3>
-
-          <div className="price-row">
-            <span>Subtotal (1 item)</span>
-            <span>₹{subtotal}</span>
-          </div>
-
-          <div className="price-row">
-            <span>Delivery Charges</span>
-            <span>₹{delivery}</span>
-          </div>
-
-          <div className="price-row">
-            <span>GST (18%)</span>
-            <span>₹{gst}</span>
-          </div>
-
-          <hr />
-
-          <div className="price-total">
-            <span>Total Amount</span>
-            <span>₹{total}</span>
+          <div className="flex justify-between font-bold">
+            <span>Total</span>
+            <span>₹{amount.total}</span>
           </div>
         </div>
       </div>

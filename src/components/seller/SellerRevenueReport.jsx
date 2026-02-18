@@ -1,174 +1,115 @@
-import { useMemo, useState } from "react";
-import { useOrders } from "../../context/OrderContext";
+import { useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-import "../../styles/seller/sellerRevenue.css";
-
+import { useOrders } from "../../context/OrderContext";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
 export default function SellerRevenueReport() {
-  const { orders = [] } = useOrders();
   const { user } = useAuth();
+  const { orders } = useOrders();
 
-  const [view, setView] = useState("weekly");
   const sellerId = user?.email;
 
-  /* ================= FILTER SELLER ORDERS ================= */
-  const sellerOrders = useMemo(() => {
+ 
+  const chartData = useMemo(() => {
     if (!sellerId) return [];
 
-    return orders.filter((order) =>
-      order.items?.some(
-        (item) =>
-          item.sellerId === sellerId &&
-          item.status !== "Cancelled"
-      )
-    );
-  }, [orders, sellerId]);
+    let cumulative = 0;
 
-  /* ================= CHART DATA ================= */
-  const chartData = useMemo(() => {
-    const map = {};
-
-    sellerOrders.forEach((order) => {
-      let key;
-
-      if (view === "weekly") {
-        key = order.date;
-      } else {
-        const [, month, year] = order.date.split("/");
-        key = `${month}/${year}`;
-      }
-
-      const revenue = order.items
-        .filter(
+    return orders
+      .map((order) => {
+        const sellerItems = order.items.filter(
           (i) =>
             i.sellerId === sellerId &&
             i.status !== "Cancelled"
-        )
-        .reduce(
-          (sum, i) => sum + i.price * i.quantity,
+        );
+
+        if (!sellerItems.length) return null;
+
+        const orderRevenue = sellerItems.reduce(
+          (sum, i) =>
+            sum +
+            Number(i.price || 0) *
+              Number(i.quantity || 1),
           0
         );
 
-      map[key] = (map[key] || 0) + revenue;
-    });
+        cumulative += orderRevenue;
 
-    return Object.entries(map).map(([k, v]) => ({
-      label: k,
-      revenue: v,
-    }));
-  }, [sellerOrders, sellerId, view]);
+        return {
+          label: `${order.placedDate} ${order.placedTime || ""}`,
+          revenue: cumulative,
+        };
+      })
+      .filter(Boolean);
+  }, [orders, sellerId]);
 
-  const totalRevenue = chartData.reduce(
-    (s, d) => s + d.revenue,
-    0
-  );
+  const totalRevenue =
+    chartData.length > 0
+      ? chartData[chartData.length - 1].revenue
+      : 0;
+
+  const avgOrderValue =
+    chartData.length > 0
+      ? Math.round(totalRevenue / chartData.length)
+      : 0;
 
   return (
-    <div className="seller-revenue-modern">
-      {/* HEADER */}
-      <div className="revenue-top">
-        <h3>Revenue Overview</h3>
+    <div className="rounded-2xl bg-white p-6 shadow-md">
+      <h3 className="mb-4 text-lg font-semibold text-gray-800">
+        Revenue Overview
+      </h3>
 
-        <div className="toggle">
-          <button
-            className={view === "weekly" ? "active" : ""}
-            onClick={() => setView("weekly")}
-          >
-            Weekly
-          </button>
-          <button
-            className={view === "monthly" ? "active" : ""}
-            onClick={() => setView("monthly")}
-          >
-            Monthly
-          </button>
-        </div>
-      </div>
-
-      {/* METRICS */}
-      <div className="revenue-metrics">
+  
+      <div className="mb-6 flex gap-12 text-sm">
         <div>
-          <span>Total Revenue</span>
-          <strong>₹{totalRevenue}</strong>
+          <p className="text-gray-500">Total Revenue</p>
+          <p className="text-xl font-semibold">
+            ₹{totalRevenue}
+          </p>
         </div>
+
         <div>
-          <span>Avg Order Value</span>
-          <strong>
-            ₹
-            {chartData.length
-              ? Math.round(
-                  totalRevenue / chartData.length
-                )
-              : 0}
-          </strong>
+          <p className="text-gray-500">Avg Order Value</p>
+          <p className="text-xl font-semibold">
+            ₹{avgOrderValue}
+          </p>
         </div>
       </div>
 
-      {/* CHART */}
-      <div className="revenue-chart-modern">
-        {chartData.length === 0 ? (
-          <p className="empty">No revenue data yet</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient
-                  id="revenueGradient"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor="#22c55e"
-                    stopOpacity={0.4}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="#22c55e"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-
-              <XAxis
-                dataKey="label"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12 }}
-              />
-
-              <YAxis
-                hide
-              />
-
-              <Tooltip
-                formatter={(v) => `₹${v}`}
-                labelStyle={{ fontWeight: 600 }}
-              />
-
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stroke="#22c55e"
-                strokeWidth={3}
-                fill="url(#revenueGradient)"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+  
+      {chartData.length === 0 ? (
+        <p className="text-center text-sm text-gray-400">
+          No revenue yet
+        </p>
+      ) : (
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis />
+            <Tooltip formatter={(v) => `₹${v}`} />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#16a34a"
+              strokeWidth={3}
+              dot={{ r: 5 }}
+              activeDot={{ r: 8 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

@@ -1,115 +1,233 @@
-import "../../styles/orders.css";
+import { useState, useMemo, useEffect } from "react";
+import Swal from "sweetalert2";
 import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../context/ProductContext";
-import { useState } from "react";
+import { useOrders } from "../../context/OrderContext";
 
 export default function Orders() {
-  const orders = JSON.parse(localStorage.getItem("orders")) || [];
   const { user } = useAuth();
-  const { addReview, products } = useProducts();
+  const { products } = useProducts();
+  const { getBuyerOrders, updateOrderStatus } = useOrders();
 
-  const [activeReview, setActiveReview] = useState(null);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const hasReviewed = (productId) => {
-    const product = products.find((p) => p.id === productId);
-    return product?.reviews?.some(
-      (r) => r.user === user.email
+  /* ================= FETCH ORDERS ================= */
+
+  useEffect(() => {
+    if (!user?.email) return;
+
+    const buyerOrders = getBuyerOrders(user.email); // ✅ FIXED
+    setOrders(buyerOrders || []);
+  }, [user, getBuyerOrders]);
+
+  /* ================= ORDER STATS ================= */
+
+  const orderStats = useMemo(() => {
+    const delivered = orders.filter(
+      (o) => o.status?.toLowerCase() === "delivered"
     );
-  };
 
-  const submitReview = () => {
-    if (!activeReview) return;
+    const cancelled = orders.filter(
+      (o) => o.status?.toLowerCase() === "cancelled"
+    );
 
-    addReview(activeReview.productId, {
-      user: user.email,
-      rating,
-      comment,
+    const totalSpent = delivered.reduce(
+      (sum, order) =>
+        sum +
+        order.items.reduce(
+          (s, i) => s + i.price * (i.quantity || 1),
+          0
+        ),
+      0
+    );
+
+    return {
+      totalOrders: orders.length,
+      delivered: delivered.length,
+      cancelled: cancelled.length,
+      totalSpent,
+    };
+  }, [orders]);
+
+  /* ================= CANCEL ORDER ================= */
+
+  const cancelOrder = async (orderId) => {
+    const result = await Swal.fire({
+      title: "Cancel this order?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, cancel",
     });
 
-    setActiveReview(null);
-    setRating(5);
-    setComment("");
+    if (result.isConfirmed) {
+      updateOrderStatus(orderId, "cancelled");
+
+      // refresh local state
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: "cancelled" }
+            : o
+        )
+      );
+
+      Swal.fire("Cancelled!", "", "success");
+    }
   };
 
+  /* ================= FILTER ================= */
+
+  const filteredOrders = orders.filter((order) => {
+    const matchSearch = order.items.some((item) =>
+      item.title.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const matchStatus =
+      statusFilter === "ALL" ||
+      order.status?.toLowerCase() ===
+        statusFilter.toLowerCase();
+
+    return matchSearch && matchStatus;
+  });
+
+  if (!user) return null;
+
   return (
-    <div className="orders-page">
-      <h2>My Orders</h2>
+    <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="mx-auto max-w-6xl">
 
-      {orders.length === 0 && <p>No orders yet</p>}
+        <h2 className="mb-6 text-2xl font-semibold">
+          My Orders
+        </h2>
 
-      {orders.map((order) => (
-        <div key={order.id} className="order-card">
-          <p><strong>Order ID:</strong> {order.id}</p>
-          <p><strong>Status:</strong> {order.status}</p>
+        {/* Stats */}
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatCard label="Total Orders" value={orderStats.totalOrders} />
+          <StatCard label="Delivered" value={orderStats.delivered} />
+          <StatCard label="Cancelled" value={orderStats.cancelled} />
+          <StatCard label="Total Spent" value={`₹${orderStats.totalSpent}`} />
+        </div>
 
-          {order.items.map((item) => {
-            const reviewed = hasReviewed(item.productId);
-            const delivered = order.status === "Delivered";
+        {/* Search + Filter */}
+        <div className="mb-6 flex gap-3">
+          <input
+            placeholder="Search orders"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-lg border px-4 py-2 text-sm"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border px-4 py-2 text-sm"
+          >
+            <option value="ALL">All</option>
+            <option value="placed">Placed</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        {filteredOrders.length === 0 && (
+          <p className="text-center text-gray-500">
+            No orders found
+          </p>
+        )}
+
+        <div className="space-y-6">
+          {filteredOrders.map((order) => {
+            const total = order.items.reduce(
+              (sum, item) =>
+                sum + item.price * (item.quantity || 1),
+              0
+            );
 
             return (
-              <div key={item.productId} className="order-item">
-                <p>{item.title}</p>
+              <div
+                key={order.id}
+                className="rounded-xl bg-white p-5 shadow"
+              >
+                <div className="flex justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Order ID
+                    </p>
+                    <p className="font-medium">
+                      #{order.id}
+                    </p>
+                  </div>
 
-                {/* ✅ WRITE REVIEW */}
-                {delivered && !reviewed && (
-                  <button
-                    onClick={() =>
-                      setActiveReview({ productId: item.productId })
-                    }
-                  >
-                    ✍ Write Review
-                  </button>
-                )}
-
-                {/* ✅ REVIEWED BADGE */}
-                {delivered && reviewed && (
-                  <span className="reviewed-badge">
-                    ✔ Reviewed
+                  <span className="text-sm font-semibold capitalize">
+                    {order.status}
                   </span>
-                )}
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {order.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex gap-4"
+                    >
+                      <img
+                        src={
+                          item.image ||
+                          products.find(
+                            (p) => p.id === item.id
+                          )?.image
+                        }
+                        className="h-16 w-16 rounded-lg border object-cover"
+                      />
+
+                      <div>
+                        <p className="font-medium">
+                          {item.title}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Qty: {item.quantity || 1}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex justify-between border-t pt-4">
+                  <p className="font-semibold">
+                    Total: ₹{total}
+                  </p>
+
+                  {order.status?.toLowerCase() ===
+                    "placed" && (
+                    <button
+                      onClick={() =>
+                        cancelOrder(order.id)
+                      }
+                      className="text-red-600 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
-      ))}
+      </div>
+    </div>
+  );
+}
 
-      {/* REVIEW MODAL */}
-      {activeReview && (
-        <div className="review-modal">
-          <h3>Write Review</h3>
+/* ================= STAT CARD ================= */
 
-          <div className="stars">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <span
-                key={s}
-                onClick={() => setRating(s)}
-                style={{
-                  cursor: "pointer",
-                  fontSize: "22px",
-                  color: s <= rating ? "#facc15" : "#ccc",
-                }}
-              >
-                ★
-              </span>
-            ))}
-          </div>
-
-          <textarea
-            placeholder="Your feedback"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-
-          <div className="review-actions">
-            <button onClick={submitReview}>Submit</button>
-            <button onClick={() => setActiveReview(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-xl bg-white p-4 shadow">
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="mt-1 text-xl font-bold">
+        {value}
+      </p>
     </div>
   );
 }

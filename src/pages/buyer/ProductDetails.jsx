@@ -1,68 +1,76 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  BarChart3,
+  Heart,
+  Star,
+  Truck,
+  RotateCcw,
+  ShieldCheck,
+  Package,
+} from "lucide-react";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
-import { useAuth } from "../../context/AuthContext";
-import "../../styles/productDetails.css";
+import { useCompare } from "../../context/CompareContext";
+import Reviews from "../../components/buyer/Reviews";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const { products } = useProducts();
-  const { addToCart, setCartItems } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } =
-    useWishlist();
-  const { user } = useAuth();
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { compareItems, addToCompare, removeFromCompare } = useCompare();
 
-  /* ✅ SCROLL TO TOP */
+  const [qty, setQty] = useState(1);
+  const [activeImg, setActiveImg] = useState(0);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
 
-  const product = products.find(
-    (p) => p.id === Number(id)
-  );
+  const product = products.find((p) => p.id === Number(id));
 
   if (!product) {
-    return <h2 style={{ padding: 40 }}>Product not found</h2>;
+    return (
+      <h2 className="p-10 text-center text-lg font-semibold">
+        Product not found
+      </h2>
+    );
   }
+
+  const isCompared = compareItems.some(
+    (item) => item.id === product.id
+  );
+
+  /* ================= REVIEWS ================= */
+  const { averageRating, reviewCount } = useMemo(() => {
+    const allReviews = JSON.parse(localStorage.getItem("reviews")) || [];
+    const productReviews = allReviews.filter(
+      (r) => r.productId === product.id
+    );
+
+    const count = productReviews.length;
+    const avg =
+      count > 0
+        ? (
+            productReviews.reduce((sum, r) => sum + r.rating, 0) /
+            count
+          ).toFixed(1)
+        : null;
+
+    return { averageRating: avg, reviewCount: count };
+  }, [product.id]);
 
   /* ================= STOCK ================= */
   const LOW_STOCK_LIMIT = 5;
   const stock = product.stock ?? null;
-
   const stockStatus =
-    stock === 0
-      ? "OUT"
-      : stock <= LOW_STOCK_LIMIT
-      ? "LOW"
-      : "IN";
+    stock === 0 ? "OUT" : stock <= LOW_STOCK_LIMIT ? "LOW" : "IN";
 
-  /* ================= STATE ================= */
-  const [qty, setQty] = useState(1);
-  const [activeImg, setActiveImg] = useState(0);
-
-  const reviews = product.reviews || [];
-
-  const averageRating = useMemo(() => {
-    if (!reviews.length) return null;
-    return (
-      reviews.reduce((s, r) => s + r.rating, 0) /
-      reviews.length
-    ).toFixed(1);
-  }, [reviews]);
-
-  /* ================= DESCRIPTION ================= */
   const desc = product.description || {};
-
-  const hasAbout =
-    desc.about && desc.about.trim().length > 0;
-
-  const hasHighlights =
-    Array.isArray(desc.highlights) &&
-    desc.highlights.length > 0;
 
   const specs = [
     { label: "Material", value: desc.material },
@@ -70,222 +78,222 @@ export default function ProductDetails() {
     { label: "Care Instructions", value: desc.care },
     { label: "Warranty", value: desc.warranty },
     { label: "Expiry Date", value: desc.expiryDate },
-  ].filter(
-    (s) =>
-      s.value &&
-      String(s.value).trim() !== ""
-  );
+  ].filter((s) => s.value);
 
-  /* ================= HANDLERS ================= */
-  const handleAddToCart = () => {
-    addToCart({ ...product, qty });
-  };
+  const handleAddToCart = () =>
+    addToCart({ ...product, quantity: qty });
 
   const handleBuyNow = () => {
-    setCartItems([{ ...product, qty }]);
+    addToCart({ ...product, quantity: qty, buyNow: true });
     navigate("/cart");
   };
 
-  const toggleWishlist = () => {
+  const toggleWishlist = () =>
     isInWishlist(product.id)
       ? removeFromWishlist(product.id)
       : addToWishlist(product);
-  };
 
-  /* ================= UI ================= */
   return (
-    <div className="pd-page">
-      <div className="pd-container">
-        {/* IMAGES */}
-        <div className="pd-images">
-          <img
-            className="pd-main-img"
-            src={product.images?.[activeImg]}
-            alt={product.title}
-          />
+    <div className="bg-gray-50 px-4 py-8">
+      <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
 
-          <div className="pd-thumbs">
-            {product.images?.map((img, i) => (
+          {/* IMAGE */}
+          <div>
+            <div className="flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
               <img
-                key={i}
-                src={img}
-                alt=""
-                className={i === activeImg ? "active" : ""}
-                onClick={() => setActiveImg(i)}
+                src={product.images?.[activeImg]}
+                alt={product.title}
+                className="max-h-full max-w-full object-contain"
               />
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* INFO */}
-        <div className="pd-info">
-          {product.brand && (
-            <p className="brand">{product.brand}</p>
-          )}
-
-          <div className="pd-title-row">
-            <h1 className="pd-title">{product.title}</h1>
-
-            <button
-              className={`pd-wishlist-btn ${
-                isInWishlist(product.id) ? "active" : ""
-              }`}
-              onClick={toggleWishlist}
-            >
-              {isInWishlist(product.id)
-                ? "❤️ Wishlisted"
-                : "🤍 Wishlist"}
-            </button>
-          </div>
-
-          <div className="rating">
-            <span className="badge-green">
-              {averageRating || "New"} ★
-            </span>
-            <span className="reviews">
-              {reviews.length} ratings & reviews
-            </span>
-          </div>
-
-          <div className="price">
-            <span className="current">₹{product.price}</span>
-            {product.mrp && (
-              <span className="old">₹{product.mrp}</span>
-            )}
-            {product.discount && (
-              <span className="off">
-                {product.discount}% off
-              </span>
-            )}
-          </div>
-
-          <p className="tax">Inclusive of all taxes</p>
-
-          {/* QUANTITY */}
-          <div className="qty">
-            <span>Quantity</span>
-
-            <div className="qty-box">
-              <button onClick={() => qty > 1 && setQty(qty - 1)}>
-                −
-              </button>
-
-              <span>{qty}</span>
-
-              <button
-                onClick={() =>
-                  stock !== null &&
-                  qty < stock &&
-                  setQty(qty + 1)
-                }
-                disabled={stock === 0}
-              >
-                +
-              </button>
-
-              {stock !== null && (
-                <span
-                  className={`stock ${
-                    stockStatus === "OUT"
-                      ? "out"
-                      : stockStatus === "LOW"
-                      ? "low"
-                      : "in"
+            <div className="mt-4 flex gap-3">
+              {product.images?.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  className={`h-16 w-16 rounded-lg border p-1 transition ${
+                    i === activeImg
+                      ? "border-red-500 ring-2 ring-red-200"
+                      : "border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  {stockStatus === "OUT" && "Out of stock"}
-                  {stockStatus === "LOW" &&
-                    `Only ${stock} left`}
+                  <img
+                    src={img}
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* DETAILS */}
+          <div>
+            {product.brand && (
+              <p className="text-sm uppercase tracking-wide text-gray-500">
+                {product.brand}
+              </p>
+            )}
+
+            <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:justify-between">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {product.title}
+              </h1>
+
+              <div className="flex items-center gap-3">
+                {/* WISHLIST */}
+                <button
+                  onClick={toggleWishlist}
+                  className={`rounded-full border p-2 transition ${
+                    isInWishlist(product.id)
+                      ? "border-red-500 bg-red-50 text-red-600"
+                      : "border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500"
+                  }`}
+                >
+                  <Heart
+                    size={18}
+                    fill={
+                      isInWishlist(product.id) ? "currentColor" : "none"
+                    }
+                  />
+                </button>
+
+                {/* COMPARE */}
+                <button
+                  onClick={() =>
+                    isCompared
+                      ? removeFromCompare(product.id)
+                      : addToCompare(product)
+                  }
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    isCompared
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-300 text-gray-600 hover:border-blue-500 hover:text-blue-600"
+                  }`}
+                >
+                  <BarChart3 size={16} />
+                  {isCompared ? "Added to Compare" : "Add to Compare"}
+                </button>
+              </div>
+            </div>
+
+            {/* RATING */}
+            {averageRating && (
+              <div className="mt-3 flex items-center gap-2">
+                {[...Array(Math.round(averageRating))].map((_, i) => (
+                  <Star
+                    key={i}
+                    size={16}
+                    className="text-yellow-500"
+                    fill="currentColor"
+                  />
+                ))}
+                <span className="text-sm font-medium text-gray-700">
+                  {averageRating}
+                </span>
+                <span className="text-sm text-gray-500">
+                  ({reviewCount} reviews)
+                </span>
+              </div>
+            )}
+
+            {/* PRICE */}
+            <div className="mt-4 flex items-end gap-3">
+              <span className="text-3xl font-bold text-red-600">
+                ₹{product.price}
+              </span>
+              {product.mrp && (
+                <span className="text-sm text-gray-400 line-through">
+                  ₹{product.mrp}
+                </span>
+              )}
+              {product.discount && (
+                <span className="rounded bg-green-100 px-2 py-0.5 text-sm font-medium text-green-700">
+                  {product.discount}% OFF
                 </span>
               )}
             </div>
+
+            {/* QUANTITY */}
+            <div className="mt-6">
+              <p className="mb-2 text-sm font-medium">Quantity</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => qty > 1 && setQty(qty - 1)}
+                  className="h-8 w-8 rounded border"
+                >
+                  −
+                </button>
+                <span className="font-medium">{qty}</span>
+                <button
+                  onClick={() =>
+                    stock !== null &&
+                    qty < stock &&
+                    setQty(qty + 1)
+                  }
+                  disabled={stock === 0}
+                  className="h-8 w-8 rounded border disabled:cursor-not-allowed"
+                >
+                  +
+                </button>
+
+                {stock !== null && (
+                  <span
+                    className={`text-sm font-medium ${
+                      stockStatus === "OUT"
+                        ? "text-red-600"
+                        : stockStatus === "LOW"
+                        ? "text-orange-500"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {stockStatus === "OUT" && "Out of stock"}
+                    {stockStatus === "LOW" && `Only ${stock} left`}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
+              >
+                Add to Cart
+              </button>
+              <button
+                onClick={handleBuyNow}
+                disabled={stock === 0}
+                className="flex-1 rounded-xl border py-3 font-semibold hover:bg-gray-50 disabled:cursor-not-allowed"
+              >
+                Buy Now
+              </button>
+            </div>
+
+            {/* TRUST */}
+            <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-gray-600">
+              <li className="flex items-center gap-2">
+                <Truck size={16} /> Free Delivery
+              </li>
+              <li className="flex items-center gap-2">
+                <RotateCcw size={16} /> 7 Days Return
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheck size={16} /> Genuine Product
+              </li>
+              <li className="flex items-center gap-2">
+                <Package size={16} /> Secure Packaging
+              </li>
+            </ul>
           </div>
-
-          {/* ACTIONS */}
-          <div className="pd-actions">
-            <button
-              className={`btn-cart ${
-                stockStatus === "OUT" ? "disabled" : ""
-              }`}
-              onClick={handleAddToCart}
-            >
-              🛒 Add to Cart
-            </button>
-
-            <button
-              className="btn-buy"
-              onClick={handleBuyNow}
-              disabled={stock === 0}
-            >
-              Buy Now
-            </button>
-          </div>
-
-          {stockStatus === "OUT" && (
-            <button className="btn-notify">
-              🔔 Notify me when available
-            </button>
-          )}
-
-          <ul className="highlights">
-            <li>🚚 Free Delivery</li>
-            <li>↩️ 7 Days Return</li>
-            <li>🛡️ Genuine Product</li>
-          </ul>
         </div>
       </div>
 
-      {/* DESCRIPTION */}
-      <div className="pd-desc">
-        <h3>About this product</h3>
-
-        {hasAbout ? (
-          <p>{desc.about}</p>
-        ) : (
-          <p className="muted">
-            Detailed product information will be provided by the seller soon.
-          </p>
-        )}
-
-        {hasHighlights && (
-          <>
-            <h4>Highlights</h4>
-            <ul>
-              {desc.highlights.map((h, i) => (
-                <li key={i}>✔ {h}</li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {specs.length > 0 && (
-          <>
-            <h4>Specifications</h4>
-            <div className="pd-specs">
-              {specs.map((s, i) => (
-                <p key={i}>
-                  <strong>{s.label}:</strong> {s.value}
-                </p>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* REVIEWS */}
-      <div className="pd-reviews">
-        <h3>Ratings & Reviews</h3>
-
-        {reviews.length === 0 && <p>No reviews yet.</p>}
-
-        {reviews.map((r) => (
-          <div key={r.id} className="review-card">
-            <span className="review-rating">{r.rating} ★</span>
-            <strong>{r.user}</strong>
-            <p>{r.comment}</p>
-            <small>{r.date}</small>
-          </div>
-        ))}
+      <div className="mx-auto mt-10 max-w-7xl">
+        <Reviews productId={product.id} />
       </div>
     </div>
   );

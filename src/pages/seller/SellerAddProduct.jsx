@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
 import { useSellerProducts } from "../../context/SellerProductContext";
-import "../../styles/seller/addProduct.css";
 
 export default function SellerAddProduct({ onClose }) {
-  const { user } = useAuth();
   const { addSellerProduct } = useSellerProducts();
 
+  
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -47,22 +45,22 @@ export default function SellerAddProduct({ onClose }) {
     return Math.round(mrp - (mrp * discount) / 100);
   };
 
-  const handleSave = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
     if (!form.title || !form.category || !form.mrp || !form.stock) {
       alert("Please fill all required fields");
       return;
     }
 
     addSellerProduct({
-      id: Date.now(),
-      title: form.title,
+      title: form.title.trim(),
       category: form.category,
       mrp: Number(form.mrp),
       discount: Number(form.discount) || 0,
       price: calculatePrice(),
       stock: Number(form.stock),
       images: form.images.filter(Boolean),
-      sellerId: user.email,
       description: {
         about: form.about || "",
         highlights: form.highlights
@@ -75,120 +73,151 @@ export default function SellerAddProduct({ onClose }) {
         expiryDate: form.expiryDate || "",
       },
       reviews: [],
+      sold: 0,
+      revenue: 0,
     });
 
     onClose();
   };
 
   return (
-    /* ================= OVERLAY (FIXED) ================= */
-    <div className="add-product-overlay">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="mb-4 text-xl font-semibold text-gray-800">
+          Add New Product
+        </h3>
 
-      {/* ================= MODAL CARD ================= */}
-      <div className="add-product-container">
-        <h3>Add New Product</h3>
+        <form onSubmit={handleSubmit} className="space-y-6">
+      
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Basic Information
+            </h4>
 
-        <div className="add-product-form">
-          <h4>Basic Information</h4>
-          <input
-            name="title"
-            placeholder="Product Name *"
-            onChange={handleChange}
-          />
-
-          <select name="category" onChange={handleChange}>
-            <option value="">Select Category *</option>
-            <option>Mobiles</option>
-            <option>Electronics</option>
-            <option>Fashion</option>
-            <option>Beauty</option>
-            <option>Grocery</option>
-            <option>Home</option>
-          </select>
-
-          <h4>Pricing</h4>
-          <input name="mrp" placeholder="MRP *" onChange={handleChange} />
-          <input
-            name="discount"
-            placeholder="Discount (%)"
-            onChange={handleChange}
-          />
-
-          <p>Selling Price: ₹{calculatePrice()}</p>
-
-          <input
-            name="stock"
-            placeholder="Stock *"
-            onChange={handleChange}
-          />
-
-          <h4>Description</h4>
-          <textarea
-            name="about"
-            placeholder="About this product"
-            onChange={handleChange}
-          />
-
-          <textarea
-            name="highlights"
-            placeholder="Highlights (one per line)"
-            onChange={handleChange}
-          />
-
-          <input
-            name="material"
-            placeholder="Material (if applicable)"
-            onChange={handleChange}
-          />
-
-          <input
-            name="usage"
-            placeholder="Usage"
-            onChange={handleChange}
-          />
-
-          <input
-            name="care"
-            placeholder="Care Instructions"
-            onChange={handleChange}
-          />
-
-          <input
-            name="warranty"
-            placeholder="Warranty (if applicable)"
-            onChange={handleChange}
-          />
-
-          <input
-            name="expiryDate"
-            placeholder="Expiry Date (for food/grocery)"
-            onChange={handleChange}
-          />
-
-          <h4>Product Images</h4>
-          {form.images.map((img, i) => (
             <input
-              key={i}
-              placeholder="Image URL"
-              value={img}
-              onChange={(e) =>
-                handleImageChange(i, e.target.value)
-              }
+              name="title"
+              placeholder="Product Name *"
+              onChange={handleChange}
+              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
             />
-          ))}
 
-          <button onClick={addImageField}>+ Add Image</button>
-        </div>
+            <select
+              name="category"
+              onChange={handleChange}
+              className="w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+            >
+              <option value="">Select Category *</option>
+              <option>Mobiles</option>
+              <option>Electronics</option>
+              <option>Fashion</option>
+              <option>Beauty</option>
+              <option>Grocery</option>
+              <option>Home</option>
+            </select>
+          </div>
 
-        {/* FOOTER — SINGLE, CLEAN */}
-        <div className="form-actions">
-          <button className="close-btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="save-btn" onClick={handleSave}>
-            Save Product
-          </button>
-        </div>
+        
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Pricing
+            </h4>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                type="number"
+                name="mrp"
+                placeholder="MRP *"
+                onChange={handleChange}
+                className="rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+              />
+              <input
+                type="number"
+                name="discount"
+                placeholder="Discount (%)"
+                onChange={handleChange}
+                className="rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+
+            <p className="mt-2 text-sm text-gray-600">
+              Selling Price: <strong>₹{calculatePrice()}</strong>
+            </p>
+
+            <input
+              type="number"
+              name="stock"
+              placeholder="Stock *"
+              onChange={handleChange}
+              className="mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+        
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Description
+            </h4>
+
+            <textarea
+              name="about"
+              placeholder="About this product"
+              onChange={handleChange}
+              rows={3}
+              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+            />
+
+            <textarea
+              name="highlights"
+              placeholder="Highlights (one per line)"
+              onChange={handleChange}
+              rows={3}
+              className="w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          <div>
+            <h4 className="mb-2 font-medium text-gray-700">
+              Product Images
+            </h4>
+
+            {form.images.map((img, i) => (
+              <input
+                key={i}
+                placeholder="Image URL"
+                value={img}
+                onChange={(e) =>
+                  handleImageChange(i, e.target.value)
+                }
+                className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:ring-2 focus:ring-red-500"
+              />
+            ))}
+
+            <button
+              type="button"
+              onClick={addImageField}
+              className="text-sm text-red-600 hover:underline"
+            >
+              + Add Image
+            </button>
+          </div>
+
+    
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              Save Product
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
-import "../../styles/cart.css";
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -10,46 +9,36 @@ export default function Cart() {
     cartItems,
     appliedCoupon,
     applyCoupon,
-    removeCoupon
+    removeCoupon,
   } = useCart();
 
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  /* ================= BLOCK CART AFTER ORDER ================= */
-  useEffect(() => {
-    const orderPlaced = localStorage.getItem("orderPlaced");
-    if (orderPlaced === "true") {
-      navigate("/order-success", { replace: true });
-    }
-  }, [navigate]);
-  /* ========================================================== */
-
-  /* ================= AUTH & ROLE GUARD ================= */
   useEffect(() => {
     if (!user) {
       navigate("/login", { replace: true });
       return;
     }
-
     if (user.role === "admin") {
       navigate("/admin/dashboard", { replace: true });
     }
   }, [user, navigate]);
 
-  /* ================= BUY NOW ================= */
-  const buyNowItem = location.state?.buyNowItem;
-  const itemsToShow = buyNowItem ? [buyNowItem] : cartItems;
+  const buyNowItems = cartItems.filter(
+    (item) => item.buyNow === true
+  );
+
+  const itemsToShow =
+    buyNowItems.length > 0 ? buyNowItems : cartItems;
 
   const [couponInput, setCouponInput] = useState("");
   const [error, setError] = useState("");
 
-  /* ================= SPLIT STOCK ================= */
   const inStockItems = useMemo(
     () =>
       itemsToShow.filter(
-        (item) => item.stock === undefined || item.stock > 0
+        (i) => i.stock === undefined || i.stock > 0
       ),
     [itemsToShow]
   );
@@ -57,151 +46,196 @@ export default function Cart() {
   const outOfStockItems = useMemo(
     () =>
       itemsToShow.filter(
-        (item) => item.stock !== undefined && item.stock === 0
+        (i) => i.stock !== undefined && i.stock === 0
       ),
     [itemsToShow]
   );
 
-  /* ================= PRICE (ONLY IN STOCK) ================= */
   const subtotal = inStockItems.reduce(
-    (sum, i) =>
-      sum + Number(i.price) * (Number(i.qty) || 1),
+    (sum, i) => sum + Number(i.price) * Number(i.quantity),
     0
   );
 
+  const shipping = subtotal > 0 ? 99 : 0;
   const gst = Math.round(subtotal * 0.18);
-  let discount = 0;
 
+  let discount = 0;
   if (appliedCoupon && subtotal > 0) {
-    if (appliedCoupon.type === "PERCENT") {
-      discount = Math.round(
-        subtotal * (appliedCoupon.value / 100)
-      );
-    } else {
-      discount = appliedCoupon.value;
-    }
+    discount =
+      appliedCoupon.type === "PERCENT"
+        ? Math.round(subtotal * (appliedCoupon.value / 100))
+        : appliedCoupon.value;
   }
 
-  const total =
-    subtotal > 0 ? subtotal + gst + 99 - discount : 0;
+  const total = subtotal + gst + shipping - discount;
 
   const handleApply = () => {
     const msg = applyCoupon(couponInput.trim(), subtotal);
     setError(msg || "");
   };
 
-  const isBuyer = user?.role === "buyer";
+  const handleCheckout = () => {
+    if (inStockItems.length === 0) return;
+
+    localStorage.setItem(
+      "checkoutAmount",
+      JSON.stringify({
+        subtotal,
+        gst,
+        shipping,
+        discount,
+        total,
+        coupon: appliedCoupon,
+      })
+    );
+
+    localStorage.setItem(
+      "checkoutItems",
+      JSON.stringify(inStockItems)
+    );
+
+    navigate("/checkout/address");
+  };
+
+  const isBuyer = user?.role === "BUYER";
+
 
   return (
-    <div className="cart-page">
-      <h2 className="cart-title">
+    <div className="bg-gray-100 py-8 pb-16">
+      <h2 className="mx-auto mb-6 max-w-6xl text-xl font-semibold text-gray-800">
         Shopping Cart ({itemsToShow.length} items)
       </h2>
 
       {outOfStockItems.length > 0 && (
-        <div className="cart-warning centered">
+        <div className="mx-auto mb-5 max-w-6xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           Some items are currently <strong>out of stock</strong>.
           <br />
           They won’t be included in checkout.
         </div>
       )}
 
-      <div className="cart-container">
-        <div className="cart-left">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3">
+
+        {/* LEFT */}
+        <div className="lg:col-span-2 flex flex-col gap-5">
           {itemsToShow.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
 
-          <div className="coupon-box">
-            <h4>Available Coupons</h4>
+          <div className="rounded-xl bg-white p-5 shadow-sm">
+            <h4 className="mb-4 font-semibold text-gray-800">
+              Available Coupons
+            </h4>
 
-            <div className="coupon">
-              <div>
-                <strong>WELCOME10</strong>
-                <p>10% OFF on orders above ₹500</p>
-              </div>
-              <button
-                onClick={() => setCouponInput("WELCOME10")}
+            {[
+              {
+                code: "WELCOME10",
+                desc: "10% OFF on orders above ₹500",
+              },
+              {
+                code: "SAVE500",
+                desc: "₹500 OFF on orders above ₹2000",
+              },
+            ].map((c) => (
+              <div
+                key={c.code}
+                className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-600 bg-red-50/30 p-3"
               >
-                Apply
-              </button>
-            </div>
+                <div>
+                  <strong className="text-red-700">
+                    {c.code}
+                  </strong>
+                  <p className="text-sm text-gray-600">
+                    {c.desc}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCouponInput(c.code)}
+                  className="rounded-md bg-red-700 px-4 py-1.5 text-sm text-white transition hover:bg-red-800"
+                >
+                  Apply
+                </button>
+              </div>
+            ))}
 
-            <div className="coupon">
-              <div>
-                <strong>SAVE500</strong>
-                <p>₹500 OFF on orders above ₹2000</p>
-              </div>
+            {appliedCoupon && (
               <button
-                onClick={() => setCouponInput("SAVE500")}
+                onClick={removeCoupon}
+                className="mt-2 text-sm font-medium text-red-600 underline"
               >
-                Apply
+                Remove Coupon
               </button>
-            </div>
+            )}
           </div>
         </div>
 
-        <div className="cart-right">
-          <h4>Price Details</h4>
+        {/* RIGHT */}
+        <div className="h-fit rounded-xl bg-white p-6 shadow-md">
+          <h4 className="mb-4 font-semibold text-gray-800">
+            Price Details
+          </h4>
 
-          <div className="coupon-input">
+          <div className="mb-4 flex gap-2">
             <input
               value={couponInput}
-              onChange={(e) =>
-                setCouponInput(e.target.value)
-              }
+              onChange={(e) => setCouponInput(e.target.value)}
               placeholder="Enter coupon code"
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm transition focus:border-red-500 focus:outline-none"
             />
-            <button onClick={handleApply}>Apply</button>
+            <button
+              onClick={handleApply}
+              className="rounded-md bg-red-700 px-4 py-2 text-sm text-white transition hover:bg-red-800"
+            >
+              Apply
+            </button>
           </div>
 
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && (
+            <p className="mb-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
 
-          <div className="price-row">
+          <div className="my-2 flex justify-between text-sm">
             <span>Subtotal</span>
             <span>₹{subtotal}</span>
           </div>
 
-          <div className="price-row">
+          <div className="my-2 flex justify-between text-sm">
             <span>Shipping</span>
-            <span>₹{subtotal > 0 ? 99 : 0}</span>
+            <span>₹{shipping}</span>
           </div>
 
-          <div className="price-row">
+          <div className="my-2 flex justify-between text-sm">
             <span>GST (18%)</span>
             <span>₹{gst}</span>
           </div>
 
           {discount > 0 && (
-            <div
-              className="price-row"
-              style={{ color: "green" }}
-            >
-              <span>Coupon Discount</span>
+            <div className="my-2 flex justify-between text-sm font-medium text-green-600">
+              <span>Discount</span>
               <span>-₹{discount}</span>
             </div>
           )}
 
-          <hr />
+          <hr className="my-4" />
 
-          <div className="price-total">
-            <span>Total Amount</span>
+          <div className="flex justify-between text-lg font-bold text-gray-900">
+            <span>Total</span>
             <span>₹{total}</span>
           </div>
 
           {isBuyer && (
             <button
-              className="checkout-btn"
               disabled={inStockItems.length === 0}
-              onClick={() =>
-                navigate("/checkout/address", {
-                  state: { checkoutItems: inStockItems },
-                })
-              }
+              onClick={handleCheckout}
+              className={`mt-6 w-full rounded-lg py-3 text-sm font-semibold text-white transition ${
+                inStockItems.length === 0
+                  ? "cursor-not-allowed bg-gray-300"
+                  : "bg-red-800 hover:bg-red-900 hover:shadow"
+              }`}
             >
-              {inStockItems.length === 0
-                ? "No available items to checkout"
-                : "Proceed to Checkout →"}
+              Proceed to Checkout →
             </button>
           )}
         </div>
