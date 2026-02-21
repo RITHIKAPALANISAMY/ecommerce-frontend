@@ -1,21 +1,22 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, role }) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ allowedRoles }) {
+  const { user } = useAuth();
 
-  // Wait until user loads
-  if (loading) return null;
-
-  // Not logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Role check (SAFE LOWERCASE CHECK)
-  if (role && user.role?.toLowerCase() !== role.toLowerCase()) {
+  const userRoles = user.roles?.map((r) => r.toUpperCase());
+
+  const isAllowed = allowedRoles.some((role) =>
+    userRoles?.includes(role)
+  );
+
+  if (!isAllowed) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return children;
+  return <Outlet />;
 }

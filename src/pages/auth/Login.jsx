@@ -25,14 +25,14 @@ export default function Login() {
 
     setLoading(true);
 
-    const success = await login(form);
+    const result = await login(form);
 
     setLoading(false);
 
-    if (success) {
+    if (result.success) {
       navigate("/", { replace: true });
     } else {
-      setError("Invalid email or password");
+      setError(result.message);
     }
   };
 
@@ -40,7 +40,6 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
 
-        {/* LEFT SIDE - BRAND SECTION */}
         <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
           <h1 className="text-4xl font-bold mb-4">
             Welcome Back to ShopVerse
@@ -61,7 +60,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* RIGHT SIDE - LOGIN FORM */}
         <div className="p-8 sm:p-12 flex flex-col justify-center">
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">
             Login to your account
@@ -127,7 +125,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Mobile Signup Link */}
           <div className="mt-6 text-center text-sm text-gray-600 md:hidden">
             Don’t have an account?{" "}
             <Link

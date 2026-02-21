@@ -5,11 +5,6 @@ import { useOrders } from "../../context/OrderContext";
 const normalizeStatus = (status) =>
   String(status || "PLACED").toUpperCase();
 
-const normalizeCustomer = (customer) =>
-  customer && customer.toLowerCase() === "buyer"
-    ? "Buyer"
-    : "Buyer"; // 🔥 STANDARD
-
 const statusBadge = (status) => {
   switch (status) {
     case "PLACED":
@@ -33,7 +28,6 @@ const AdminOrders = () => {
     return orders.map((o) => ({
       ...o,
       status: normalizeStatus(o.status),
-      customer: normalizeCustomer(o.customer),
     }));
   }, [orders]);
 
@@ -72,12 +66,14 @@ const AdminOrders = () => {
                     #{order.id}
                   </td>
 
+                  {/* ✅ FIXED */}
                   <td className="px-6 py-4">
-                    {order.customer}
+                    {order.buyerName || order.buyerEmail}
                   </td>
 
+                  {/* ✅ FIXED */}
                   <td className="px-6 py-4">
-                    ₹{order.amount?.total || order.amount}
+                    ₹{order.amount}
                   </td>
 
                   <td className="px-6 py-4">
@@ -113,12 +109,9 @@ const AdminOrders = () => {
                       </button>
                     )}
 
-                    {order.status === "DELIVERED" && (
+                    {(order.status === "DELIVERED" ||
+                      order.status === "CANCELLED") && (
                       <span className="text-gray-400">—</span>
-                    )}
-
-                    {order.status === "CANCELLED" && (
-                      <span className="text-red-400">Cancelled</span>
                     )}
                   </td>
                 </tr>

@@ -6,15 +6,16 @@ import ProductCard from "../../components/common/ProductCard";
 export default function CategoryPage() {
   const { category } = useParams();
   const { search } = useLocation();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
 
   const params = new URLSearchParams(search);
   const query = params.get("q") || "";
 
   const [sort, setSort] = useState("FEATURED");
-  const [minRating, setMinRating] = useState(0);
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
+
+  /* ================= FILTER BY CATEGORY ================= */
 
   const categoryProducts = products.filter(
     (p) =>
@@ -22,41 +23,19 @@ export default function CategoryPage() {
       p.category.toLowerCase() === category.toLowerCase()
   );
 
+  /* ================= AVAILABLE BRANDS ================= */
+
   const allBrands = [
     ...new Set(
       categoryProducts.map((p) => p.brand).filter(Boolean)
     ),
   ];
 
-  const getProductRating = (product) => {
-    const baseReviews = product.reviews || [];
-
-    const orderReviews = JSON.parse(
-      localStorage.getItem("reviews") || "[]"
-    ).filter((r) => r.productId === product.id);
-
-    const verified = [...baseReviews, ...orderReviews].filter(
-      (r) => r.verified === true
-    );
-
-    if (!verified.length) return 0;
-
-    return (
-      verified.reduce(
-        (sum, r) => sum + Number(r.rating || 0),
-        0
-      ) / verified.length
-    );
-  };
+  /* ================= APPLY FILTERS ================= */
 
   const filteredProducts = categoryProducts
     .filter((p) =>
       p.title.toLowerCase().includes(query.toLowerCase())
-    )
-    .filter((p) =>
-      minRating === 0
-        ? true
-        : getProductRating(p) >= minRating
     )
     .filter((p) => p.price <= maxPrice)
     .filter((p) =>
@@ -68,10 +47,6 @@ export default function CategoryPage() {
           return a.price - b.price;
         case "HIGH_LOW":
           return b.price - a.price;
-        case "RATING_HIGH":
-          return getProductRating(b) - getProductRating(a);
-        case "RATING_LOW":
-          return getProductRating(a) - getProductRating(b);
         default:
           return 0;
       }
@@ -86,7 +61,6 @@ export default function CategoryPage() {
   };
 
   const clearFilters = () => {
-    setMinRating(0);
     setMaxPrice(100000);
     setBrands([]);
     setSort("FEATURED");
@@ -96,7 +70,7 @@ export default function CategoryPage() {
     <div className="min-h-screen bg-gray-50 px-3 py-6 sm:px-4">
       <div className="flex gap-6">
 
-        {/* FILTERS */}
+        {/* FILTER SIDEBAR */}
         <aside className="hidden w-64 shrink-0 rounded-2xl bg-white p-5 shadow-sm md:block">
           <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-semibold text-gray-900">
@@ -104,7 +78,7 @@ export default function CategoryPage() {
             </h3>
             <button
               onClick={clearFilters}
-              className="text-sm font-medium text-red-600 transition hover:underline"
+              className="text-sm font-medium text-red-600 hover:underline"
             >
               Clear All
             </button>
@@ -128,28 +102,6 @@ export default function CategoryPage() {
             <p className="mt-1 text-sm text-gray-600">
               ₹0 – ₹{maxPrice}
             </p>
-          </div>
-
-          {/* RATING */}
-          <div className="mb-6">
-            <h4 className="mb-2 text-sm font-semibold text-gray-800">
-              Customer Rating
-            </h4>
-            {[4, 3, 2].map((r) => (
-              <label
-                key={r}
-                className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="radio"
-                  name="rating"
-                  checked={minRating === r}
-                  onChange={() => setMinRating(r)}
-                  className="accent-red-600"
-                />
-                {r} ★ & above
-              </label>
-            ))}
           </div>
 
           {/* BRAND */}
@@ -176,7 +128,7 @@ export default function CategoryPage() {
           </div>
         </aside>
 
-        {/* PRODUCTS */}
+        {/* PRODUCT AREA */}
         <main className="flex-1">
 
           {/* HEADER */}
@@ -188,34 +140,36 @@ export default function CategoryPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition focus:border-red-500 focus:outline-none sm:w-56"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none sm:w-56"
             >
               <option value="FEATURED">Featured</option>
               <option value="LOW_HIGH">Price: Low to High</option>
               <option value="HIGH_LOW">Price: High to Low</option>
-              <option value="RATING_HIGH">
-                Rating: High to Low
-              </option>
-              <option value="RATING_LOW">
-                Rating: Low to High
-              </option>
             </select>
           </div>
 
+          {/* LOADING */}
+          {loading && (
+            <div className="text-center py-10 text-gray-500">
+              Loading products...
+            </div>
+          )}
+
           {/* EMPTY */}
-          {filteredProducts.length === 0 && (
+          {!loading && filteredProducts.length === 0 && (
             <p className="text-gray-500">
               No products found
             </p>
           )}
 
           {/* GRID */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {filteredProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-
+          {!loading && filteredProducts.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {filteredProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>

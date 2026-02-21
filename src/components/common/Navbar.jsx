@@ -35,13 +35,13 @@ export default function Navbar() {
   const compareCount = compareItems.length;
   const isCheckoutPage = location.pathname.startsWith("/checkout");
 
-  // ✅ Normalize role properly
- const role = user?.role;
+  // ✅ FIXED: Roles array support
+  const isBuyer = user?.roles?.includes("buyer");
+  const isSeller = user?.roles?.includes("seller");
+  const isAdmin = user?.roles?.includes("admin");
 
   const username =
-  user?.name || user?.fullName || user?.username || "User";
-
-
+    user?.name || user?.fullName || user?.username || "User";
 
   /* CLOSE DROPDOWN ON OUTSIDE CLICK */
   useEffect(() => {
@@ -109,8 +109,8 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Become Seller button */}
-            {role !== "SELLER" && user && (
+            {/* Become Seller Button */}
+            {user && !isSeller && (
               <button
                 onClick={() => navigate("/become-seller")}
                 className="hidden sm:flex items-center gap-2 rounded-full border border-red-600
@@ -140,7 +140,11 @@ export default function Navbar() {
                       <p className="font-semibold">{username}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                       <span className="mt-1 inline-block rounded-full bg-gray-200 px-2 py-0.5 text-xs">
-                        {role} Account
+                        {isAdmin
+                          ? "Admin Account"
+                          : isSeller
+                          ? "Seller Account"
+                          : "Buyer Account"}
                       </span>
                     </div>
 
@@ -161,8 +165,8 @@ export default function Navbar() {
                       <Settings size={16} /> Settings
                     </Link>
 
-                    {/* BUYER OPTIONS */}
-                    {role === "BUYER" && (
+                    {/* BUYER */}
+                    {isBuyer && (
                       <>
                         <Link
                           to="/orders"
@@ -209,7 +213,7 @@ export default function Navbar() {
                     )}
 
                     {/* SELLER */}
-                    {role === "SELLER" && (
+                    {isSeller && (
                       <Link
                         to="/seller/dashboard"
                         onClick={() => setOpen(false)}
@@ -220,7 +224,7 @@ export default function Navbar() {
                     )}
 
                     {/* ADMIN */}
-                    {role === "ADMIN" && (
+                    {isAdmin && (
                       <Link
                         to="/admin/dashboard"
                         onClick={() => setOpen(false)}

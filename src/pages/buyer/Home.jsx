@@ -82,7 +82,6 @@ function HeroSlider() {
         ))}
       </div>
 
-      {/* Controls */}
       <button
         onClick={prev}
         className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/60"
@@ -114,10 +113,11 @@ const categories = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
 
   return (
     <div className="bg-gray-50 pb-12">
+
       {/* HERO */}
       <div className="px-3 sm:px-4 pt-4">
         <HeroSlider />
@@ -158,16 +158,30 @@ export default function Home() {
           <h3 className="text-lg font-semibold text-gray-800">
             Top Deals
           </h3>
-          <button className="text-sm font-medium text-red-600 hover:underline">
-            View All
-          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-10 text-gray-500">
+            Loading products...
+          </div>
+        )}
+
+        {/* Empty DB */}
+        {!loading && products.length === 0 && (
+          <div className="text-center py-10 text-gray-500">
+            No products available
+          </div>
+        )}
+
+        {/* Product Grid */}
+        {!loading && products.length > 0 && (
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

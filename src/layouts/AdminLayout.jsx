@@ -12,11 +12,16 @@ import {
   RotateCcw,
   RefreshCcw,
   Settings as SettingsIcon,
+  Store
 } from "lucide-react";
 
 const TABS = [
   { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Users", path: "/admin/users", icon: Users },
+
+  // ✅ NEW SELLER REQUESTS TAB
+  { label: "Seller Requests", path: "/admin/seller-requests", icon: Store },
+
   { label: "Products", path: "/admin/products", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Coupons", path: "/admin/coupons", icon: Ticket },

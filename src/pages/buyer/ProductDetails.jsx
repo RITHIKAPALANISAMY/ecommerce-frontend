@@ -1,37 +1,64 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart3,
   Heart,
-  Star,
   Truck,
   RotateCcw,
   ShieldCheck,
   Package,
 } from "lucide-react";
-import { useProducts } from "../../context/ProductContext";
+import axios from "axios";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCompare } from "../../context/CompareContext";
 import Reviews from "../../components/buyer/Reviews";
 
+const PRODUCT_API = "http://localhost:8082/api/products";
+
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { products } = useProducts();
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  const { compareItems, addToCompare, removeFromCompare } = useCompare();
+  const { addToWishlist, removeFromWishlist, isInWishlist } =
+    useWishlist();
+  const { compareItems, addToCompare, removeFromCompare } =
+    useCompare();
 
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
 
+  /* ================= FETCH PRODUCT ================= */
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${PRODUCT_API}/${id}`);
+        setProduct(res.data);
+      } catch (err) {
+        console.error("Failed to load product:", err);
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
   }, [id]);
 
-  const product = products.find((p) => p.id === Number(id));
+  if (loading) {
+    return (
+      <div className="p-10 text-center text-gray-500">
+        Loading product...
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -41,66 +68,76 @@ export default function ProductDetails() {
     );
   }
 
-  const isCompared = compareItems.some(
-    (item) => item.id === product.id
-  );
+  /* ================= CALCULATIONS ================= */
 
-  /* ================= REVIEWS ================= */
-  const { averageRating, reviewCount } = useMemo(() => {
-    const allReviews = JSON.parse(localStorage.getItem("reviews")) || [];
-    const productReviews = allReviews.filter(
-      (r) => r.productId === product.id
-    );
-
-    const count = productReviews.length;
-    const avg =
-      count > 0
-        ? (
-            productReviews.reduce((sum, r) => sum + r.rating, 0) /
-            count
-          ).toFixed(1)
-        : null;
-
-    return { averageRating: avg, reviewCount: count };
-  }, [product.id]);
-
-  /* ================= STOCK ================= */
+  const stock = product.stock ?? 0;
   const LOW_STOCK_LIMIT = 5;
-  const stock = product.stock ?? null;
+
   const stockStatus =
     stock === 0 ? "OUT" : stock <= LOW_STOCK_LIMIT ? "LOW" : "IN";
 
-  const desc = product.description || {};
+  const isCompared = compareItems.some(
+    (item) => String(item.id) === String(product.id)
+  );
 
-  const specs = [
-    { label: "Material", value: desc.material },
-    { label: "Usage", value: desc.usage },
-    { label: "Care Instructions", value: desc.care },
-    { label: "Warranty", value: desc.warranty },
-    { label: "Expiry Date", value: desc.expiryDate },
-  ].filter((s) => s.value);
+  const discountPercent =
+    product.mrp && product.price
+      ? Math.round(
+          ((product.mrp - product.price) / product.mrp) * 100
+        )
+      : 0;
 
-  const handleAddToCart = () =>
-    addToCart({ ...product, quantity: qty });
+  /* ================= HANDLERS ================= */
+
+  const toggleWishlist = () => {
+    if (!product?.id) return;
+
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product.id);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (stock === 0) return;
+
+    addToCart({
+      ...product,
+      quantity: qty,
+    });
+  };
 
   const handleBuyNow = () => {
-    addToCart({ ...product, quantity: qty, buyNow: true });
+    if (stock === 0) return;
+
+    addToCart({
+      ...product,
+      quantity: qty,
+      buyNow: true,
+    });
+
     navigate("/cart");
   };
 
-  const toggleWishlist = () =>
-    isInWishlist(product.id)
-      ? removeFromWishlist(product.id)
-      : addToWishlist(product);
+  /* ================= UI ================= */
 
   return (
     <div className="bg-gray-50 px-4 py-8">
       <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
 
-          {/* IMAGE */}
+          {/* IMAGE SECTION */}
           <div>
-            <div className="flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
+            <div className="relative flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
+
+              {/* Discount Badge */}
+              {discountPercent > 0 && (
+                <span className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                  {discountPercent}% OFF
+                </span>
+              )}
+
               <img
                 src={product.images?.[activeImg]}
                 alt={product.title}
@@ -113,10 +150,10 @@ export default function ProductDetails() {
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`h-16 w-16 rounded-lg border p-1 transition ${
+                  className={`h-16 w-16 rounded-lg border p-1 ${
                     i === activeImg
                       ? "border-red-500 ring-2 ring-red-200"
-                      : "border-gray-200 hover:border-gray-400"
+                      : "border-gray-200"
                   }`}
                 >
                   <img
@@ -129,7 +166,7 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* DETAILS */}
+          {/* DETAILS SECTION */}
           <div>
             {product.brand && (
               <p className="text-sm uppercase tracking-wide text-gray-500">
@@ -137,83 +174,45 @@ export default function ProductDetails() {
               </p>
             )}
 
-            <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:justify-between">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {product.title}
-              </h1>
-
-              <div className="flex items-center gap-3">
-                {/* WISHLIST */}
-                <button
-                  onClick={toggleWishlist}
-                  className={`rounded-full border p-2 transition ${
-                    isInWishlist(product.id)
-                      ? "border-red-500 bg-red-50 text-red-600"
-                      : "border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500"
-                  }`}
-                >
-                  <Heart
-                    size={18}
-                    fill={
-                      isInWishlist(product.id) ? "currentColor" : "none"
-                    }
-                  />
-                </button>
-
-                {/* COMPARE */}
-                <button
-                  onClick={() =>
-                    isCompared
-                      ? removeFromCompare(product.id)
-                      : addToCompare(product)
-                  }
-                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    isCompared
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-300 text-gray-600 hover:border-blue-500 hover:text-blue-600"
-                  }`}
-                >
-                  <BarChart3 size={16} />
-                  {isCompared ? "Added to Compare" : "Add to Compare"}
-                </button>
-              </div>
-            </div>
-
-            {/* RATING */}
-            {averageRating && (
-              <div className="mt-3 flex items-center gap-2">
-                {[...Array(Math.round(averageRating))].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    className="text-yellow-500"
-                    fill="currentColor"
-                  />
-                ))}
-                <span className="text-sm font-medium text-gray-700">
-                  {averageRating}
-                </span>
-                <span className="text-sm text-gray-500">
-                  ({reviewCount} reviews)
-                </span>
-              </div>
-            )}
+            <h1 className="mt-1 text-2xl font-semibold text-gray-900">
+              {product.title}
+            </h1>
 
             {/* PRICE */}
             <div className="mt-4 flex items-end gap-3">
               <span className="text-3xl font-bold text-red-600">
                 ₹{product.price}
               </span>
+
               {product.mrp && (
-                <span className="text-sm text-gray-400 line-through">
-                  ₹{product.mrp}
-                </span>
+                <>
+                  <span className="text-sm text-gray-400 line-through">
+                    ₹{product.mrp}
+                  </span>
+                  {discountPercent > 0 && (
+                    <span className="text-sm font-semibold text-green-600">
+                      {discountPercent}% off
+                    </span>
+                  )}
+                </>
               )}
-              {product.discount && (
-                <span className="rounded bg-green-100 px-2 py-0.5 text-sm font-medium text-green-700">
-                  {product.discount}% OFF
-                </span>
-              )}
+            </div>
+
+            {/* STOCK */}
+            <div className="mt-3 text-sm font-medium">
+              <span
+                className={
+                  stockStatus === "OUT"
+                    ? "text-red-600"
+                    : stockStatus === "LOW"
+                    ? "text-orange-500"
+                    : "text-green-600"
+                }
+              >
+                {stockStatus === "OUT" && "Out of stock"}
+                {stockStatus === "LOW" && `Only ${stock} left`}
+                {stockStatus === "IN" && "In stock"}
+              </span>
             </div>
 
             {/* QUANTITY */}
@@ -226,33 +225,18 @@ export default function ProductDetails() {
                 >
                   −
                 </button>
-                <span className="font-medium">{qty}</span>
+
+                <span>{qty}</span>
+
                 <button
                   onClick={() =>
-                    stock !== null &&
-                    qty < stock &&
-                    setQty(qty + 1)
+                    qty < stock && setQty(qty + 1)
                   }
                   disabled={stock === 0}
-                  className="h-8 w-8 rounded border disabled:cursor-not-allowed"
+                  className="h-8 w-8 rounded border disabled:opacity-50"
                 >
                   +
                 </button>
-
-                {stock !== null && (
-                  <span
-                    className={`text-sm font-medium ${
-                      stockStatus === "OUT"
-                        ? "text-red-600"
-                        : stockStatus === "LOW"
-                        ? "text-orange-500"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {stockStatus === "OUT" && "Out of stock"}
-                    {stockStatus === "LOW" && `Only ${stock} left`}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -260,20 +244,22 @@ export default function ProductDetails() {
             <div className="mt-8 flex gap-3">
               <button
                 onClick={handleAddToCart}
-                className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
+                disabled={stock === 0}
+                className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white disabled:opacity-50"
               >
                 Add to Cart
               </button>
+
               <button
                 onClick={handleBuyNow}
                 disabled={stock === 0}
-                className="flex-1 rounded-xl border py-3 font-semibold hover:bg-gray-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl border py-3 font-semibold disabled:opacity-50"
               >
                 Buy Now
               </button>
             </div>
 
-            {/* TRUST */}
+            {/* TRUST BADGES */}
             <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-gray-600">
               <li className="flex items-center gap-2">
                 <Truck size={16} /> Free Delivery
@@ -292,6 +278,65 @@ export default function ProductDetails() {
         </div>
       </div>
 
+      {/* DESCRIPTION SECTION */}
+      <div className="mx-auto mt-10 max-w-7xl rounded-2xl bg-white p-6 shadow-md">
+        <h2 className="mb-6 text-xl font-semibold text-gray-800">
+          Product Details
+        </h2>
+
+        {product.description?.about && (
+          <p className="mb-6 text-gray-600 leading-relaxed">
+            {product.description.about}
+          </p>
+        )}
+
+        {product.description?.highlights?.length > 0 && (
+          <ul className="mb-6 list-disc space-y-2 pl-5 text-gray-600">
+            {product.description.highlights.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
+          {product.description?.material && (
+            <div>
+              <strong>Material:</strong>{" "}
+              {product.description.material}
+            </div>
+          )}
+
+          {product.description?.usage && (
+            <div>
+              <strong>Usage:</strong>{" "}
+              {product.description.usage}
+            </div>
+          )}
+
+          {product.description?.care && (
+            <div>
+              <strong>Care:</strong>{" "}
+              {product.description.care}
+            </div>
+          )}
+
+          {product.description?.warranty && (
+            <div>
+              <strong>Warranty:</strong>{" "}
+              {product.description.warranty}
+            </div>
+          )}
+
+          {product.description?.expiryDate && (
+            <div>
+              <strong>Expiry Date:</strong>{" "}
+              {product.description.expiryDate}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* REVIEWS */}
       <div className="mx-auto mt-10 max-w-7xl">
         <Reviews productId={product.id} />
       </div>

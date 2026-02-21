@@ -1,43 +1,61 @@
 import { useState, useMemo, useEffect } from "react";
 import Swal from "sweetalert2";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../context/ProductContext";
-import { useOrders } from "../../context/OrderContext";
+
+/* ✅ CORRECT PORT */
+const ORDER_API = "http://localhost:8085/api/orders";
 
 export default function Orders() {
   const { user } = useAuth();
   const { products } = useProducts();
-  const { getBuyerOrders, updateOrderStatus } = useOrders();
 
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [loading, setLoading] = useState(false);
 
-  /* ================= FETCH ORDERS ================= */
+  /* ================= FETCH BUYER ORDERS ================= */
 
   useEffect(() => {
     if (!user?.email) return;
 
-    const buyerOrders = getBuyerOrders(user.email); // ✅ FIXED
-    setOrders(buyerOrders || []);
-  }, [user, getBuyerOrders]);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+
+        const res = await axios.get(
+          `${ORDER_API}/buyer/${user.email.toLowerCase()}`
+        );
+
+        setOrders(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [user]);
 
   /* ================= ORDER STATS ================= */
 
   const orderStats = useMemo(() => {
     const delivered = orders.filter(
-      (o) => o.status?.toLowerCase() === "delivered"
+      (o) => o.status === "DELIVERED"
     );
 
     const cancelled = orders.filter(
-      (o) => o.status?.toLowerCase() === "cancelled"
+      (o) => o.status === "CANCELLED"
     );
 
     const totalSpent = delivered.reduce(
       (sum, order) =>
         sum +
         order.items.reduce(
-          (s, i) => s + i.price * (i.quantity || 1),
+          (s, i) => s + (i.price || 0) * (i.quantity || 1),
           0
         ),
       0
@@ -61,33 +79,41 @@ export default function Orders() {
       confirmButtonText: "Yes, cancel",
     });
 
-    if (result.isConfirmed) {
-      updateOrderStatus(orderId, "cancelled");
+    if (!result.isConfirmed) return;
 
-      // refresh local state
+    try {
+      await axios.put(
+        `${ORDER_API}/${orderId}/status`,
+        null,
+        {
+          params: { status: "CANCELLED" }, // ✅ enum format
+        }
+      );
+
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: "cancelled" }
+            ? { ...o, status: "CANCELLED" }
             : o
         )
       );
 
       Swal.fire("Cancelled!", "", "success");
+    } catch (err) {
+      Swal.fire("Error", "Failed to cancel order", "error");
     }
   };
 
   /* ================= FILTER ================= */
 
   const filteredOrders = orders.filter((order) => {
-    const matchSearch = order.items.some((item) =>
-      item.title.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = order.items?.some((item) =>
+      item.title?.toLowerCase().includes(search.toLowerCase())
     );
 
     const matchStatus =
       statusFilter === "ALL" ||
-      order.status?.toLowerCase() ===
-        statusFilter.toLowerCase();
+      order.status === statusFilter;
 
     return matchSearch && matchStatus;
   });
@@ -102,7 +128,11 @@ export default function Orders() {
           My Orders
         </h2>
 
-        {/* Stats */}
+        {loading && (
+          <p className="text-gray-500">Loading orders...</p>
+        )}
+
+        {/* ================= STATS ================= */}
         <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Total Orders" value={orderStats.totalOrders} />
           <StatCard label="Delivered" value={orderStats.delivered} />
@@ -110,7 +140,7 @@ export default function Orders() {
           <StatCard label="Total Spent" value={`₹${orderStats.totalSpent}`} />
         </div>
 
-        {/* Search + Filter */}
+        {/* ================= SEARCH + FILTER ================= */}
         <div className="mb-6 flex gap-3">
           <input
             placeholder="Search orders"
@@ -125,13 +155,13 @@ export default function Orders() {
             className="rounded-lg border px-4 py-2 text-sm"
           >
             <option value="ALL">All</option>
-            <option value="placed">Placed</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="PLACED">Placed</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
         </div>
 
-        {filteredOrders.length === 0 && (
+        {filteredOrders.length === 0 && !loading && (
           <p className="text-center text-gray-500">
             No orders found
           </p>
@@ -139,9 +169,12 @@ export default function Orders() {
 
         <div className="space-y-6">
           {filteredOrders.map((order) => {
+
             const total = order.items.reduce(
               (sum, item) =>
-                sum + item.price * (item.quantity || 1),
+                sum +
+                (item.price || 0) *
+                  (item.quantity || 1),
               0
             );
 
@@ -160,24 +193,26 @@ export default function Orders() {
                     </p>
                   </div>
 
-                  <span className="text-sm font-semibold capitalize">
-                    {order.status}
-                  </span>
+                  <StatusBadge status={order.status} />
                 </div>
 
                 <div className="mt-4 space-y-4">
                   {order.items.map((item) => (
                     <div
-                      key={item.id}
+                      key={item.productId}
                       className="flex gap-4"
                     >
                       <img
                         src={
                           item.image ||
                           products.find(
-                            (p) => p.id === item.id
-                          )?.image
+                            (p) =>
+                              p.id === item.productId ||
+                              p._id === item.productId
+                          )?.images?.[0] ||
+                          "/placeholder.png"
                         }
+                        alt=""
                         className="h-16 w-16 rounded-lg border object-cover"
                       />
 
@@ -198,8 +233,7 @@ export default function Orders() {
                     Total: ₹{total}
                   </p>
 
-                  {order.status?.toLowerCase() ===
-                    "placed" && (
+                  {order.status === "PLACED" && (
                     <button
                       onClick={() =>
                         cancelOrder(order.id)
@@ -214,8 +248,28 @@ export default function Orders() {
             );
           })}
         </div>
+
       </div>
     </div>
+  );
+}
+
+/* ================= STATUS BADGE ================= */
+
+function StatusBadge({ status }) {
+  const styles = {
+    DELIVERED: "bg-green-100 text-green-600",
+    CANCELLED: "bg-red-100 text-red-600",
+    PLACED: "bg-yellow-100 text-yellow-600",
+    SHIPPED: "bg-blue-100 text-blue-600",
+  };
+
+  return (
+    <span
+      className={`rounded px-3 py-1 text-sm font-semibold ${styles[status]}`}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -225,9 +279,7 @@ function StatCard({ label, value }) {
   return (
     <div className="rounded-xl bg-white p-4 shadow">
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-xl font-bold">
-        {value}
-      </p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
 
 const CartContext = createContext();
+
+const PRODUCT_API = "http://localhost:8082/api/products";
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => {
@@ -10,27 +13,48 @@ export function CartProvider({ children }) {
 
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  
+  /* ================= SAVE CART ================= */
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  
-  const addToCart = (product) => {
+  /* ================= FETCH LATEST PRODUCT ================= */
+  const fetchLatestProduct = async (id) => {
+    try {
+      const res = await axios.get(`${PRODUCT_API}/${id}`);
+      return res.data;
+    } catch (err) {
+      console.error("Stock check failed:", err);
+      return null;
+    }
+  };
+
+  /* ================= ADD TO CART ================= */
+  const addToCart = async (product) => {
+    const latest = await fetchLatestProduct(product.id);
+    if (!latest) return;
+
+    const stock = latest.stock ?? 0;
+    const qtyToAdd = Number(product.quantity) || 1;
+
+    if (stock === 0) {
+      alert("Product is out of stock");
+      return;
+    }
+
     setCartItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
 
-      const stock = product.stock ?? Infinity;
-      const qtyToAdd = Number(product.quantity) || 1;
-
-      /* 🔑 IMAGE NORMALIZATION */
       const resolvedImage =
         product.image ||
         product.images?.[0] ||
         null;
 
       if (existing) {
-        if (existing.quantity >= stock) return prev;
+        if (existing.quantity >= stock) {
+          alert("Maximum stock reached");
+          return prev;
+        }
 
         return prev.map((i) =>
           i.id === product.id
@@ -40,6 +64,7 @@ export function CartProvider({ children }) {
                   i.quantity + qtyToAdd,
                   stock
                 ),
+                stock: stock,
               }
             : i
         );
@@ -51,22 +76,31 @@ export function CartProvider({ children }) {
           ...product,
           image: resolvedImage,
           quantity: Math.min(qtyToAdd, stock),
+          stock: stock,
         },
       ];
     });
   };
 
- 
-  const addQty = (id) =>
+  /* ================= INCREASE QTY ================= */
+  const addQty = async (id) => {
+    const latest = await fetchLatestProduct(id);
+    if (!latest) return;
+
+    const stock = latest.stock ?? 0;
+
     setCartItems((items) =>
       items.map((i) =>
         i.id === id
-          ? { ...i, quantity: i.quantity + 1 }
+          ? i.quantity < stock
+            ? { ...i, quantity: i.quantity + 1, stock }
+            : i
           : i
       )
     );
+  };
 
-  
+  /* ================= REDUCE QTY ================= */
   const reduceQty = (id) =>
     setCartItems((items) =>
       items.map((i) =>
@@ -76,19 +110,20 @@ export function CartProvider({ children }) {
       )
     );
 
+  /* ================= REMOVE ITEM ================= */
   const removeItem = (id) =>
     setCartItems((items) =>
       items.filter((i) => i.id !== id)
     );
 
- 
+  /* ================= CLEAR CART ================= */
   const clearCart = () => {
     setCartItems([]);
     localStorage.removeItem("cart");
     setAppliedCoupon(null);
   };
 
-  
+  /* ================= COUPONS ================= */
   const applyCoupon = (code, subtotal) => {
     if (code === "WELCOME10") {
       if (subtotal < 500) return "Minimum ₹500 required";

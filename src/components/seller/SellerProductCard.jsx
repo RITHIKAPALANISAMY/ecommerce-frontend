@@ -1,5 +1,5 @@
 import { Pencil, Trash2, AlertTriangle, XCircle } from "lucide-react";
-import { useSellerProducts } from "../../context/SellerProductContext";
+import { useProducts } from "../../context/ProductContext";
 import SellerEditProduct from "../../pages/seller/SellerEditProduct";
 import { useState } from "react";
 
@@ -8,7 +8,7 @@ export default function SellerProductCard({
   lowStock,
   outOfStock,
 }) {
-  const { deleteSellerProduct } = useSellerProducts();
+  const { deleteProduct } = useProducts(); // ✅ use backend
   const [editOpen, setEditOpen] = useState(false);
 
   const image =
@@ -20,7 +20,7 @@ export default function SellerProductCard({
     <>
       <div className="relative rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md">
 
-        
+        {/* STOCK BADGES */}
         {outOfStock && (
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
             <XCircle size={14} />
@@ -35,19 +35,20 @@ export default function SellerProductCard({
           </span>
         )}
 
-        
+        {/* IMAGE */}
         <img
           src={image}
           alt={product.title}
           className="mb-3 h-44 w-full rounded-lg object-cover"
         />
 
-        
+        {/* DETAILS */}
         <h4 className="font-semibold text-gray-800">
           {product.title}
         </h4>
+
         <p className="text-sm text-gray-500">
-          {product.category}
+          {product.category?.name || product.category}
         </p>
 
         <div className="mt-2 space-y-1 text-sm">
@@ -55,11 +56,9 @@ export default function SellerProductCard({
             <strong>₹{product.price}</strong>
           </p>
           <p>Stock: {product.stock}</p>
-          <p>Sold: {product.sold}</p>
-          <p>Revenue: ₹{product.revenue}</p>
         </div>
 
-        
+        {/* ACTIONS */}
         <div className="mt-4 flex gap-4 text-sm">
           <button
             onClick={() => setEditOpen(true)}
@@ -69,7 +68,7 @@ export default function SellerProductCard({
           </button>
 
           <button
-            onClick={() => deleteSellerProduct(product.id)}
+            onClick={() => deleteProduct(product.id)} // ✅ backend delete
             className="flex items-center gap-1 text-red-600 hover:underline"
           >
             <Trash2 size={14} /> Delete
@@ -77,7 +76,6 @@ export default function SellerProductCard({
         </div>
       </div>
 
-      
       {editOpen && (
         <SellerEditProduct
           product={product}

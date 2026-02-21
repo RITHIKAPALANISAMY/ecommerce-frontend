@@ -1,29 +1,22 @@
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 
 export default function OrderSuccess() {
-  const [order, setOrder] = useState(null);
+  const location = useLocation();
   const navigate = useNavigate();
 
+  const [order, setOrder] = useState(location.state?.order || null);
+
   useEffect(() => {
-    
-    const orders =
-      JSON.parse(localStorage.getItem("orders")) || [];
-
-    
-    if (orders.length === 0) {
-      navigate("/cart", { replace: true });
-      return;
+    if (!location.state?.order) {
+      navigate("/", { replace: true });
     }
-
-    const latestOrder = orders[orders.length - 1];
-    setOrder(latestOrder);
-  }, [navigate]);
+  }, [location, navigate]);
 
   if (!order) return null;
 
-  
+  /* ================= DOWNLOAD INVOICE ================= */
   const downloadInvoice = () => {
     const doc = new jsPDF();
     let y = 20;
@@ -35,179 +28,145 @@ export default function OrderSuccess() {
     doc.setFontSize(11);
     doc.text(`Order ID: ${order.id}`, 14, y);
     y += 6;
-    doc.text(`Order Date: ${order.placedDate}`, 14, y);
-
-    y += 10;
-    doc.setFontSize(13);
-    doc.text("Delivery Address", 14, y);
-
+    doc.text(`Payment Method: ${order.paymentMethod}`, 14, y);
     y += 6;
-    doc.setFontSize(11);
-    doc.text(order.address?.name || "", 14, y);
-    y += 5;
-    doc.text(order.address?.phone || "", 14, y);
-    y += 5;
-    doc.text(
-      `${order.address?.address}, ${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}`,
-      14,
-      y
-    );
-
-    y += 10;
-    doc.setFontSize(13);
-    doc.text("Order Items", 14, y);
-
-    y += 6;
-    doc.setFontSize(11);
-    order.items.forEach((item) => {
-      const qty = item.quantity || 1;
-      const price = item.price || 0;
-
-      doc.text(
-        `${item.title} | Qty: ${qty} | ₹${price * qty}`,
-        14,
-        y
-      );
-      y += 6;
-    });
-
-    y += 6;
-    doc.line(14, y, 195, y);
-
-    y += 8;
-    doc.setFontSize(12);
-    doc.text(`Total Paid: ₹${order.amount?.total}`, 14, y);
-
-    y += 6;
-    doc.text(
-      `Payment Method: ${order.paymentMethod}`,
-      14,
-      y
-    );
+    doc.text(`Total Paid: ₹${order.amount}`, 14, y);
 
     doc.save(`Invoice_${order.id}.pdf`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl">
-        
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-600">
-            ✔
-          </div>
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Order Placed Successfully!
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Thank you for shopping with ShopVerse
-          </p>
+  <div className="min-h-screen bg-gray-50 py-14 px-4">
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-10">
+
+      {/* ===== SUCCESS HEADER ===== */}
+      <div className="text-center border-b pb-8">
+        <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-3xl mb-4">
+          ✓
         </div>
 
-        
-        <div className="mb-6 flex justify-center">
-          <button
-            onClick={downloadInvoice}
-            className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
-          >
-            ⬇ Download Invoice (PDF)
-          </button>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Order Confirmed 🎉
+        </h1>
 
-        
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Order ID</p>
-              <p className="font-semibold">{order.id}</p>
-            </div>
+        <p className="text-gray-500 mt-2">
+          Thank you for shopping with{" "}
+          <span className="text-red-600 font-semibold">ShopVerse</span>
+        </p>
 
-            
-            <div className="text-right">
-              <p className="text-gray-500">Order Date</p>
-              <p className="font-semibold">{order.placedDate}</p>
-            </div>
-          </div>
+        <p className="text-sm text-gray-600 mt-2">
+          Order ID: <span className="font-semibold">{order.id}</span>
+        </p>
+      </div>
 
-          <hr className="my-6" />
+      {/* ===== ORDER ITEMS ===== */}
+      <div className="py-8 border-b">
+        <h2 className="text-xl font-semibold mb-6 text-gray-800">
+          Order Items
+        </h2>
 
-          
-          <h4 className="mb-2 font-semibold text-gray-800">
-            Delivery Address
-          </h4>
-          <p className="text-sm text-gray-600">
-            {order.address?.name}
-          </p>
-          <p className="text-sm text-gray-600">
-            {order.address?.phone}
-          </p>
-          <p className="text-sm text-gray-600">
-            {order.address?.address}, {order.address?.city},{" "}
-            {order.address?.state} - {order.address?.pincode}
-          </p>
+        <div className="space-y-6">
+          {order.items?.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-6"
+            >
+              <img
+                src={item.image}
+                alt={item.title}
+                className="h-24 w-24 object-cover rounded-lg border"
+              />
 
-          <hr className="my-6" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800">
+                  {item.title}
+                </h3>
 
-          
-          <h4 className="mb-3 font-semibold text-gray-800">
-            Order Items
-          </h4>
+                <p className="text-sm text-gray-500 mt-1">
+                  Quantity: {item.quantity || 1}
+                </p>
 
-          <div className="space-y-4">
-            {order.items.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
-                <div>
-                  <p className="font-medium text-gray-800">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Qty: {item.quantity || 1}
-                  </p>
-                </div>
-                <p className="font-semibold text-gray-800">
-                  ₹{(item.price || 0) * (item.quantity || 1)}
+                <p className="text-sm text-gray-500">
+                  Price: ₹{item.price}
                 </p>
               </div>
-            ))}
-          </div>
 
-          <hr className="my-6" />
+              <div className="font-semibold text-gray-800 text-lg">
+                ₹{(item.price || 0) * (item.quantity || 1)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          
-          <div className="flex items-center justify-between text-lg font-semibold">
-            <span>Total Paid</span>
-            <span className="text-green-600">
-              ₹{order.amount?.total}
-            </span>
-          </div>
+      {/* ===== DELIVERY + PAYMENT ===== */}
+      <div className="py-8 grid md:grid-cols-2 gap-10 border-b">
 
-          <p className="mt-2 text-sm text-gray-600">
-            Payment Method:{" "}
-            <strong className="text-gray-800">
-              {order.paymentMethod}
-            </strong>
+        {/* Delivery */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            Delivery Address
+          </h2>
+
+          <p className="text-gray-600 text-sm leading-relaxed">
+            {order.address}
           </p>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
-            onClick={() => navigate("/orders")}
-            className="rounded-lg border px-6 py-2 text-sm font-medium hover:bg-gray-100 transition"
-          >
-            View Orders
-          </button>
-          <button
-            onClick={() => navigate("/")}
-            className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
-          >
-            Continue Shopping
-          </button>
+        {/* Payment */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            Payment Summary
+          </h2>
+
+          <div className="space-y-2 text-sm text-gray-600">
+            <div className="flex justify-between">
+              <span>Total Amount</span>
+              <span>₹{order.amount}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span>Payment Method</span>
+              <span className="capitalize">
+                {order.paymentMethod}
+              </span>
+            </div>
+
+            <hr className="my-3" />
+
+            <div className="flex justify-between font-semibold text-lg text-green-600">
+              <span>Paid</span>
+              <span>₹{order.amount}</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ===== ACTION BUTTONS ===== */}
+      <div className="pt-8 flex flex-col md:flex-row gap-4 justify-center">
+        <button
+          onClick={downloadInvoice}
+          className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+        >
+          Download Invoice
+        </button>
+
+        <button
+          onClick={() => navigate("/orders")}
+          className="px-6 py-3 border rounded-lg font-medium hover:bg-gray-100 transition"
+        >
+          View Orders
+        </button>
+
+        <button
+          onClick={() => navigate("/")}
+          className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:opacity-90 transition"
+        >
+          Continue Shopping
+        </button>
+      </div>
+
     </div>
-  );
+  </div>
+);
 }

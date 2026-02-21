@@ -1,11 +1,17 @@
 import { useProducts } from "../../context/ProductContext";
 import ProductCard from "../common/ProductCard";
 
-export default function RelatedProducts({ currentId }) {
+export default function RelatedProducts({ currentProduct }) {
   const { products } = useProducts();
 
+  if (!currentProduct) return null;
+
   const related = products
-    .filter((p) => p.id !== currentId)
+    .filter(
+      (p) =>
+        String(p.id) !== String(currentProduct.id) &&
+        p.category === currentProduct.category
+    )
     .slice(0, 4);
 
   if (!related.length) return null;

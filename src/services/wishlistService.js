@@ -1,15 +1,25 @@
-import axios from "./axiosInstance";
+import api from "../api/axios";
 
-const getWishlist = () => axios.get("/wishlist");
+/* ================= GET WISHLIST ================= */
 
-const add = (productId) =>
-  axios.post("/wishlist/add", { productId });
+const getWishlist = () => {
+  return api.get("/buyer/wishlist");
+};
 
-const remove = (productId) =>
-  axios.delete(`/wishlist/remove/${productId}`);
+/* ================= ADD TO WISHLIST ================= */
+
+const add = (productId) => {
+  return api.post(`/buyer/wishlist/${productId}`);
+};
+
+/* ================= REMOVE FROM WISHLIST ================= */
+
+const remove = (productId) => {
+  return api.delete(`/buyer/wishlist/${productId}`);
+};
 
 export default {
   getWishlist,
   add,
-  remove
+  remove,
 };

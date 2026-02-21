@@ -1,36 +1,49 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 
 export default function BecomeSeller() {
-  const { user, updateUserRole } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
     storeName: "",
-    ownerName: "",
-    email: user?.email || "",
     phone: "",
-    gst: "",
+    gstNumber: "",
     address: "",
   });
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (!form.storeName || !form.phone || !form.address) {
-      alert("Please fill all required fields");
+      setError("Please fill all required fields");
       return;
     }
 
-    updateUserRole(form);
+    try {
+      setLoading(true);
 
-    navigate("/seller/dashboard", { replace: true });
-    console.log("Submit clicked");
+      await api.post("/seller/request", form);
+
+      alert("Seller request submitted successfully!");
+      navigate("/", { replace: true });
+
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+        "Failed to submit seller request"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,100 +52,53 @@ export default function BecomeSeller() {
         <h2 className="text-2xl font-semibold text-gray-800">
           Become a Seller
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Start selling your products on{" "}
-          <strong>ShopVerse</strong>
-        </p>
+
+        {error && (
+          <div className="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
+            ⚠️ {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-      
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Store Name <span className="text-red-600">*</span>
-            </label>
-            <input
-              name="storeName"
-              value={form.storeName}
-              onChange={handleChange}
-              placeholder="Your Store Name"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
 
-        
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Owner Name
-            </label>
-            <input
-              name="ownerName"
-              value={form.ownerName}
-              onChange={handleChange}
-              placeholder="Owner Full Name"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
+          <input
+            name="storeName"
+            placeholder="Store Name"
+            value={form.storeName}
+            onChange={handleChange}
+            className="w-full border px-4 py-2 rounded"
+          />
 
-      
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Email
-            </label>
-            <input
-              value={form.email}
-              disabled
-              className="w-full cursor-not-allowed rounded-lg border bg-gray-100 px-4 py-2 text-sm"
-            />
-          </div>
+          <input
+            name="phone"
+            placeholder="Phone"
+            value={form.phone}
+            onChange={handleChange}
+            className="w-full border px-4 py-2 rounded"
+          />
 
-    
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Phone Number <span className="text-red-600">*</span>
-            </label>
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="10-digit mobile number"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
+          <input
+            name="gstNumber"
+            placeholder="GST Number (optional)"
+            value={form.gstNumber}
+            onChange={handleChange}
+            className="w-full border px-4 py-2 rounded"
+          />
 
-      
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              GST Number (optional)
-            </label>
-            <input
-              name="gst"
-              value={form.gst}
-              onChange={handleChange}
-              placeholder="GSTIN"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-
-      
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Business Address <span className="text-red-600">*</span>
-            </label>
-            <textarea
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Complete business address"
-              rows={3}
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
+          <textarea
+            name="address"
+            placeholder="Business Address"
+            value={form.address}
+            onChange={handleChange}
+            className="w-full border px-4 py-2 rounded"
+          />
 
           <button
             type="submit"
-            className="mt-4 w-full rounded-lg bg-red-600 py-2 text-white font-medium hover:bg-red-700"
+            disabled={loading}
+            className="w-full bg-red-600 text-white py-2 rounded"
           >
-            Become a Seller
+            {loading ? "Submitting..." : "Submit Request"}
           </button>
         </form>
       </div>

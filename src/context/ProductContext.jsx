@@ -1,199 +1,162 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import baseProducts from "../data/products";
+import axios from "axios";
 
 const ProductContext = createContext();
 
-/* ================= HELPERS ================= */
-const loadLS = (key, fallback) => {
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+const API_BASE = "http://localhost:8082/api/products";
 
 export function ProductProvider({ children }) {
-  /* ================= SELLER PRODUCTS ================= */
-  const [sellerProducts, setSellerProducts] = useState(() =>
-    loadLS("products", [])
-  );
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(sellerProducts));
-  }, [sellerProducts]);
+  /* ================= NORMALIZE PRODUCT ================= */
+  const normalizeProduct = (product) => {
+    if (!product) return null;
 
-  /* ================= REVIEWS ================= */
-  const [reviewsMap, setReviewsMap] = useState(() =>
-    loadLS("productReviews", {})
-  );
+    return {
+      ...product,
+      id: product.id || product._id, // MongoDB compatibility
+    };
+  };
 
-  useEffect(() => {
-    localStorage.setItem("productReviews", JSON.stringify(reviewsMap));
-  }, [reviewsMap]);
+  /* ================= FETCH ALL PRODUCTS ================= */
+  const fetchProducts = async () => {
+    setLoading(true);
 
-  /* ================= APPROVAL ================= */
-  const [approvalMap, setApprovalMap] = useState(() =>
-    loadLS("productApproval", {})
-  );
+    try {
+      const response = await axios.get(API_BASE);
 
-  useEffect(() => {
-    localStorage.setItem("productApproval", JSON.stringify(approvalMap));
-  }, [approvalMap]);
-
-  /* ================= FLAGS ================= */
-  const [flagMap, setFlagMap] = useState(() =>
-    loadLS("productFlags", {})
-  );
-
-  useEffect(() => {
-    localStorage.setItem("productFlags", JSON.stringify(flagMap));
-  }, [flagMap]);
-
-  /* ================= STOCK ================= */
-  const [stockMap, setStockMap] = useState(() =>
-    loadLS("productStock", {})
-  );
-
-  useEffect(() => {
-    localStorage.setItem("productStock", JSON.stringify(stockMap));
-  }, [stockMap]);
-
-  /* ================= MERGED PRODUCTS ================= */
-  const products = [...baseProducts, ...sellerProducts].map((p) => ({
-    ...p,
-    name: p.name || p.title || "Unnamed Product",
-    image:
-      p.image ||
-      p.img ||
-      p.thumbnail ||
-      "https://via.placeholder.com/80",
-    status: approvalMap[p.id] ?? p.status ?? "Pending",
-    reviews: reviewsMap[p.id] || [],
-    flagged: flagMap[p.id] || false,
-    stock: stockMap[p.id] ?? p.stock ?? 10,
-  }));
-
-  /* ================= ADMIN ACTIONS ================= */
-  const approveProduct = (id) =>
-    setApprovalMap((prev) => ({ ...prev, [id]: "Approved" }));
-
-  const rejectProduct = (id) =>
-    setApprovalMap((prev) => ({ ...prev, [id]: "Rejected" }));
-
-  const flagProduct = (id) =>
-    setFlagMap((prev) => ({ ...prev, [id]: true }));
-
-  const unflagProduct = (id) =>
-    setFlagMap((prev) => ({ ...prev, [id]: false }));
-
-  /* ================= REVIEW ACTIONS ================= */
-  const addReview = (productId, review) => {
-    setReviewsMap((prev) => {
-      const existing = prev[productId] || [];
-
-      if (existing.some((r) => r.user === review.user)) {
-        return prev;
+      if (!Array.isArray(response.data)) {
+        setProducts([]);
+        return;
       }
 
-      return {
-        ...prev,
-        [productId]: [
-          ...existing,
-          {
-            ...review,
-            id: Date.now(),
-            date: new Date().toLocaleDateString(),
-          },
-        ],
-      };
-    });
+      const normalized = response.data
+        .map(normalizeProduct)
+        .filter(Boolean);
+
+      setProducts(normalized);
+
+    } catch (error) {
+      console.error(
+        "Fetch products error:",
+        error.response?.data || error.message
+      );
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const editReview = (productId, reviewId, updated) => {
-    setReviewsMap((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] || []).map((r) =>
-        r.id === reviewId ? { ...r, ...updated, edited: true } : r
-      ),
-    }));
-  };
-
-  const deleteReview = (productId, reviewId) => {
-    setReviewsMap((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] || []).filter(
-        (r) => r.id !== reviewId
-      ),
-    }));
-  };
-
-  /* ================= STOCK HELPERS ================= */
-  const reduceStock = (items) => {
-    setStockMap((prev) => {
-      const updated = { ...prev };
-
-      items.forEach((item) => {
-        const current = updated[item.productId] ?? item.stock ?? 10;
-        updated[item.productId] = Math.max(
-          0,
-          current - item.quantity
-        );
-      });
-
-      return updated;
-    });
-  };
-
-  const restoreStockAfterCancel = (items) => {
-    setStockMap((prev) => {
-      const updated = { ...prev };
-
-      items.forEach((item) => {
-        updated[item.productId] =
-          (updated[item.productId] ?? 0) + item.quantity;
-      });
-
-      return updated;
-    });
-  };
-
-  /* ================= MULTI-TAB SYNC ================= */
   useEffect(() => {
-    const syncAll = () => {
-      setSellerProducts(loadLS("products", []));
-      setReviewsMap(loadLS("productReviews", {}));
-      setApprovalMap(loadLS("productApproval", {}));
-      setFlagMap(loadLS("productFlags", {}));
-      setStockMap(loadLS("productStock", {}));
-    };
-
-    window.addEventListener("storage", syncAll);
-    return () => window.removeEventListener("storage", syncAll);
+    fetchProducts();
   }, []);
+
+  /* ================= CREATE PRODUCT ================= */
+  const createProduct = async (productData) => {
+    try {
+      const response = await axios.post(API_BASE, productData);
+
+      const created = normalizeProduct(response.data);
+
+      // Prevent duplicates
+      setProducts((prev) => {
+        if (prev.some((p) => p.id === created.id)) return prev;
+        return [...prev, created];
+      });
+
+      return created;
+
+    } catch (error) {
+      console.error(
+        "Create product error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
+
+  /* ================= UPDATE PRODUCT ================= */
+  const updateProduct = async (id, updatedData) => {
+    try {
+      const response = await axios.put(
+        `${API_BASE}/${id}`,
+        updatedData
+      );
+
+      const updated = normalizeProduct(response.data);
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id ? updated : p
+        )
+      );
+
+      return updated;
+
+    } catch (error) {
+      console.error(
+        "Update product error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
+
+  /* ================= DELETE PRODUCT ================= */
+  const deleteProduct = async (id) => {
+    try {
+      await axios.delete(`${API_BASE}/${id}`);
+
+      setProducts((prev) =>
+        prev.filter((p) => p.id !== id)
+      );
+
+    } catch (error) {
+      console.error(
+        "Delete product error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  };
+
+  /* ================= GET PRODUCTS BY SELLER ================= */
+  const getProductsBySeller = async (email) => {
+    if (!email) return [];
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const response = await axios.get(
+        `${API_BASE}/seller/${normalizedEmail}`
+      );
+
+      if (!Array.isArray(response.data)) return [];
+
+      return response.data
+        .map(normalizeProduct)
+        .filter(Boolean);
+
+    } catch (error) {
+      console.error(
+        "Fetch seller products error:",
+        error.response?.data || error.message
+      );
+      return [];
+    }
+  };
 
   return (
     <ProductContext.Provider
       value={{
         products,
-
-        /* ADMIN */
-        approveProduct,
-        rejectProduct,
-        flagProduct,
-        unflagProduct,
-
-        /* REVIEWS */
-        addReview,
-        editReview,
-        deleteReview,
-
-        /* STOCK */
-        reduceStock,
-        restoreStockAfterCancel,
-
-        /* SELLER */
-        setSellerProducts,
+        loading,
+        fetchProducts,
+        createProduct,
+        updateProduct,
+        deleteProduct,
+        getProductsBySeller,
       }}
     >
       {children}
