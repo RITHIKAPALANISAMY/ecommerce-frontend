@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
-  BarChart3,
-  Heart,
   Truck,
   RotateCcw,
   ShieldCheck,
@@ -23,13 +21,15 @@ export default function ProductDetails() {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } =
     useWishlist();
-  const { compareItems, addToCompare, removeFromCompare } =
-    useCompare();
+  const { compareItems } = useCompare();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
+
+  /* ✅ NEW: review refresh state */
+  const [refreshReviews, setRefreshReviews] = useState(false);
 
   /* ================= FETCH PRODUCT ================= */
 
@@ -39,7 +39,10 @@ export default function ProductDetails() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
+
         const res = await axios.get(`${PRODUCT_API}/${id}`);
+        console.log("PRODUCT RESPONSE:", res.data);
+
         setProduct(res.data);
       } catch (err) {
         console.error("Failed to load product:", err);
@@ -52,6 +55,19 @@ export default function ProductDetails() {
     fetchProduct();
   }, [id]);
 
+  /* ✅ NEW: listen for review submission event */
+  useEffect(() => {
+    const handleReviewRefresh = () => {
+      setRefreshReviews(prev => !prev);
+    };
+
+    window.addEventListener("reviewSubmitted", handleReviewRefresh);
+
+    return () => {
+      window.removeEventListener("reviewSubmitted", handleReviewRefresh);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="p-10 text-center text-gray-500">
@@ -62,11 +78,15 @@ export default function ProductDetails() {
 
   if (!product) {
     return (
-      <h2 className="p-10 text-center text-lg font-semibold">
+      <div className="p-10 text-center text-gray-500">
         Product not found
-      </h2>
+      </div>
     );
   }
+
+  /* ================= SAFE ID FIX ================= */
+
+  const productId = String(product._id || product.id);
 
   /* ================= CALCULATIONS ================= */
 
@@ -75,10 +95,6 @@ export default function ProductDetails() {
 
   const stockStatus =
     stock === 0 ? "OUT" : stock <= LOW_STOCK_LIMIT ? "LOW" : "IN";
-
-  const isCompared = compareItems.some(
-    (item) => String(item.id) === String(product.id)
-  );
 
   const discountPercent =
     product.mrp && product.price
@@ -89,21 +105,12 @@ export default function ProductDetails() {
 
   /* ================= HANDLERS ================= */
 
-  const toggleWishlist = () => {
-    if (!product?.id) return;
-
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product.id);
-    }
-  };
-
   const handleAddToCart = () => {
     if (stock === 0) return;
 
     addToCart({
       ...product,
+      id: productId,
       quantity: qty,
     });
   };
@@ -113,11 +120,22 @@ export default function ProductDetails() {
 
     addToCart({
       ...product,
+      id: productId,
       quantity: qty,
       buyNow: true,
     });
 
     navigate("/cart");
+  };
+
+  const toggleWishlist = () => {
+    if (!productId) return;
+
+    if (isInWishlist(productId)) {
+      removeFromWishlist(productId);
+    } else {
+      addToWishlist(productId);
+    }
   };
 
   /* ================= UI ================= */
@@ -131,7 +149,6 @@ export default function ProductDetails() {
           <div>
             <div className="relative flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
 
-              {/* Discount Badge */}
               {discountPercent > 0 && (
                 <span className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
                   {discountPercent}% OFF
@@ -139,7 +156,7 @@ export default function ProductDetails() {
               )}
 
               <img
-                src={product.images?.[activeImg]}
+                src={product.images?.[activeImg] || "/placeholder.png"}
                 alt={product.title}
                 className="max-h-full max-w-full object-contain"
               />
@@ -229,9 +246,7 @@ export default function ProductDetails() {
                 <span>{qty}</span>
 
                 <button
-                  onClick={() =>
-                    qty < stock && setQty(qty + 1)
-                  }
+                  onClick={() => qty < stock && setQty(qty + 1)}
                   disabled={stock === 0}
                   className="h-8 w-8 rounded border disabled:opacity-50"
                 >
@@ -300,45 +315,26 @@ export default function ProductDetails() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
           {product.description?.material && (
-            <div>
-              <strong>Material:</strong>{" "}
-              {product.description.material}
-            </div>
+            <div><strong>Material:</strong> {product.description.material}</div>
           )}
-
           {product.description?.usage && (
-            <div>
-              <strong>Usage:</strong>{" "}
-              {product.description.usage}
-            </div>
+            <div><strong>Usage:</strong> {product.description.usage}</div>
           )}
-
           {product.description?.care && (
-            <div>
-              <strong>Care:</strong>{" "}
-              {product.description.care}
-            </div>
+            <div><strong>Care:</strong> {product.description.care}</div>
           )}
-
           {product.description?.warranty && (
-            <div>
-              <strong>Warranty:</strong>{" "}
-              {product.description.warranty}
-            </div>
+            <div><strong>Warranty:</strong> {product.description.warranty}</div>
           )}
-
           {product.description?.expiryDate && (
-            <div>
-              <strong>Expiry Date:</strong>{" "}
-              {product.description.expiryDate}
-            </div>
+            <div><strong>Expiry Date:</strong> {product.description.expiryDate}</div>
           )}
         </div>
       </div>
 
       {/* REVIEWS */}
       <div className="mx-auto mt-10 max-w-7xl">
-        <Reviews productId={product.id} />
+        <Reviews productId={productId} refresh={refreshReviews} />
       </div>
     </div>
   );

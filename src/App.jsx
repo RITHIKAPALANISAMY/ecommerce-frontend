@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import CompareBar from "./components/common/CompareBar";
+
 import "./index.css";
 
 /* ROUTE GUARD */
@@ -16,10 +17,13 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
 import OrdersAdmin from "./pages/admin/AdminOrders";
+import AdminSellerRequests from "./pages/admin/AdminSellerRequests";
 
 /* SELLER */
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerOrders from "./pages/seller/SellerOrders";
+import SellerReviews from "./pages/seller/SellerReviews";
+import BecomeSeller from "./pages/seller/BecomeSeller";
 
 /* BUYER */
 import Home from "./pages/buyer/Home";
@@ -59,7 +63,7 @@ export default function App() {
             <Route path="users" element={<Users />} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<OrdersAdmin />} />
-
+           <Route path="seller-requests" element={<AdminSellerRequests />} />
             <Route path="coupons" element={<Coupons />} />
              
 
@@ -71,9 +75,14 @@ export default function App() {
           <Route path="/seller" element={<SellerLayout />}>
             <Route path="dashboard" element={<SellerDashboard />} />
             <Route path="orders" element={<SellerOrders />} />
+            <Route path="/seller/reviews" element={<SellerReviews />} />
           </Route>
         </Route>
 
+      {/* ================= BECOME SELLER ================= */}
+<Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
+  <Route path="/become-seller" element={<BecomeSeller />} />
+</Route>
         {/* ================= BUYER PUBLIC ================= */}
         <Route element={<BuyerLayout />}>
           <Route index element={<Home />} />

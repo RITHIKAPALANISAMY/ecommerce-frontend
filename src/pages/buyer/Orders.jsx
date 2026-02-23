@@ -1,22 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
-import { useProducts } from "../../context/ProductContext";
 
-/* ✅ CORRECT PORT */
 const ORDER_API = "http://localhost:8085/api/orders";
+const REVIEW_API = "http://localhost:8082/api/reviews";
 
 export default function Orders() {
   const { user } = useAuth();
-  const { products } = useProducts();
 
   const [orders, setOrders] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [reviewedProducts, setReviewedProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  /* ================= FETCH BUYER ORDERS ================= */
+  /* ================= FETCH ORDERS ================= */
 
   useEffect(() => {
     if (!user?.email) return;
@@ -24,14 +21,12 @@ export default function Orders() {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-
         const res = await axios.get(
           `${ORDER_API}/buyer/${user.email.toLowerCase()}`
         );
-
         setOrders(res.data || []);
       } catch (err) {
-        console.error("Failed to fetch orders:", err);
+        console.error("Order fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -40,83 +35,105 @@ export default function Orders() {
     fetchOrders();
   }, [user]);
 
-  /* ================= ORDER STATS ================= */
+  /* ================= FETCH USER REVIEWS ================= */
 
-  const orderStats = useMemo(() => {
-    const delivered = orders.filter(
-      (o) => o.status === "DELIVERED"
-    );
+  useEffect(() => {
+    if (!user?.email) return;
 
-    const cancelled = orders.filter(
-      (o) => o.status === "CANCELLED"
-    );
+    const fetchUserReviews = async () => {
+      try {
+        const res = await axios.get(
+          `${REVIEW_API}/buyer/${user.email}`
+        );
 
-    const totalSpent = delivered.reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (s, i) => s + (i.price || 0) * (i.quantity || 1),
-          0
-        ),
-      0
-    );
-
-    return {
-      totalOrders: orders.length,
-      delivered: delivered.length,
-      cancelled: cancelled.length,
-      totalSpent,
+        const productIds = res.data.map(r => r.productId);
+        setReviewedProducts(productIds);
+      } catch (err) {
+        console.error("Review fetch error:", err);
+      }
     };
-  }, [orders]);
 
-  /* ================= CANCEL ORDER ================= */
+    fetchUserReviews();
+  }, [user]);
 
-  const cancelOrder = async (orderId) => {
-    const result = await Swal.fire({
-      title: "Cancel this order?",
-      icon: "warning",
+  /* ================= WRITE REVIEW ================= */
+
+  const writeReview = async (productId) => {
+
+    const { value: formValues } = await Swal.fire({
+      title: "Share Your Experience ⭐",
+      html: `
+        <div style="text-align:left">
+          <label style="font-weight:600">Rating</label>
+          <select id="rating" class="swal2-input">
+            <option value="5">⭐⭐⭐⭐⭐ - Excellent</option>
+            <option value="4">⭐⭐⭐⭐ - Very Good</option>
+            <option value="3">⭐⭐⭐ - Good</option>
+            <option value="2">⭐⭐ - Fair</option>
+            <option value="1">⭐ - Poor</option>
+          </select>
+          <label style="font-weight:600">Your Review</label>
+          <textarea id="comment" class="swal2-textarea" placeholder="Tell others what you liked or disliked..."></textarea>
+        </div>
+      `,
+      confirmButtonText: "Submit Review",
+      confirmButtonColor: "#4f46e5",
       showCancelButton: true,
-      confirmButtonText: "Yes, cancel",
+      cancelButtonColor: "#d33",
+      focusConfirm: false,
+      preConfirm: () => {
+        const rating = document.getElementById("rating").value;
+        const comment = document.getElementById("comment").value;
+
+        if (!comment || comment.trim().length < 5) {
+          Swal.showValidationMessage("Review must be at least 5 characters");
+          return false;
+        }
+
+        return { rating, comment };
+      },
     });
 
-    if (!result.isConfirmed) return;
+    if (!formValues) return;
 
     try {
-      await axios.put(
-        `${ORDER_API}/${orderId}/status`,
-        null,
-        {
-          params: { status: "CANCELLED" }, // ✅ enum format
-        }
-      );
+      await axios.post(REVIEW_API, {
+        productId,
+        buyerEmail: user.email,
+        rating: parseInt(formValues.rating),
+        comment: formValues.comment.trim(),
+      });
 
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === orderId
-            ? { ...o, status: "CANCELLED" }
-            : o
-        )
-      );
+      /* ✅ Trigger product page refresh */
+      window.dispatchEvent(new Event("reviewSubmitted"));
 
-      Swal.fire("Cancelled!", "", "success");
+      /* ✅ Premium Success Toast */
+      Swal.fire({
+        icon: "success",
+        title: "Thank You! 💛",
+        text: "Your review has been submitted successfully.",
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: "top-end",
+        background: "#f0fdf4",
+        color: "#166534",
+      });
+
+      setReviewedProducts(prev => [...prev, productId]);
+
     } catch (err) {
-      Swal.fire("Error", "Failed to cancel order", "error");
+
+      console.error("Review error:", err.response?.data);
+
+      Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text: err.response?.data || "Something went wrong. Please try again.",
+        confirmButtonColor: "#dc2626",
+      });
     }
   };
-
-  /* ================= FILTER ================= */
-
-  const filteredOrders = orders.filter((order) => {
-    const matchSearch = order.items?.some((item) =>
-      item.title?.toLowerCase().includes(search.toLowerCase())
-    );
-
-    const matchStatus =
-      statusFilter === "ALL" ||
-      order.status === statusFilter;
-
-    return matchSearch && matchStatus;
-  });
 
   if (!user) return null;
 
@@ -124,162 +141,83 @@ export default function Orders() {
     <div className="min-h-screen bg-gray-50 px-4 py-8">
       <div className="mx-auto max-w-6xl">
 
-        <h2 className="mb-6 text-2xl font-semibold">
+        <h2 className="mb-8 text-3xl font-bold text-gray-800">
           My Orders
         </h2>
 
-        {loading && (
-          <p className="text-gray-500">Loading orders...</p>
-        )}
+        {loading && <p>Loading...</p>}
 
-        {/* ================= STATS ================= */}
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label="Total Orders" value={orderStats.totalOrders} />
-          <StatCard label="Delivered" value={orderStats.delivered} />
-          <StatCard label="Cancelled" value={orderStats.cancelled} />
-          <StatCard label="Total Spent" value={`₹${orderStats.totalSpent}`} />
-        </div>
-
-        {/* ================= SEARCH + FILTER ================= */}
-        <div className="mb-6 flex gap-3">
-          <input
-            placeholder="Search orders"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="rounded-lg border px-4 py-2 text-sm"
-          />
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border px-4 py-2 text-sm"
+        {orders.map((order) => (
+          <div
+            key={order.id}
+            className="mb-6 rounded-2xl bg-white p-6 shadow-md"
           >
-            <option value="ALL">All</option>
-            <option value="PLACED">Placed</option>
-            <option value="DELIVERED">Delivered</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
 
-        {filteredOrders.length === 0 && !loading && (
-          <p className="text-center text-gray-500">
-            No orders found
-          </p>
-        )}
+            <div className="flex justify-between items-center mb-4">
+              <p className="font-semibold text-lg">
+                Order #{order.id}
+              </p>
+              <StatusBadge status={order.status} />
+            </div>
 
-        <div className="space-y-6">
-          {filteredOrders.map((order) => {
+            {order.items.map((item) => {
 
-            const total = order.items.reduce(
-              (sum, item) =>
-                sum +
-                (item.price || 0) *
-                  (item.quantity || 1),
-              0
-            );
+              const alreadyReviewed =
+                reviewedProducts.includes(item.productId);
 
-            return (
-              <div
-                key={order.id}
-                className="rounded-xl bg-white p-5 shadow"
-              >
-                <div className="flex justify-between">
+              return (
+                <div
+                  key={item.productId}
+                  className="flex justify-between items-center border-t pt-4"
+                >
                   <div>
-                    <p className="text-sm text-gray-500">
-                      Order ID
-                    </p>
                     <p className="font-medium">
-                      #{order.id}
+                      {item.title}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Qty: {item.quantity}
                     </p>
                   </div>
 
-                  <StatusBadge status={order.status} />
-                </div>
-
-                <div className="mt-4 space-y-4">
-                  {order.items.map((item) => (
-                    <div
-                      key={item.productId}
-                      className="flex gap-4"
-                    >
-                      <img
-                        src={
-                          item.image ||
-                          products.find(
-                            (p) =>
-                              p.id === item.productId ||
-                              p._id === item.productId
-                          )?.images?.[0] ||
-                          "/placeholder.png"
-                        }
-                        alt=""
-                        className="h-16 w-16 rounded-lg border object-cover"
-                      />
-
-                      <div>
-                        <p className="font-medium">
-                          {item.title}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Qty: {item.quantity || 1}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 flex justify-between border-t pt-4">
-                  <p className="font-semibold">
-                    Total: ₹{total}
-                  </p>
-
-                  {order.status === "PLACED" && (
-                    <button
-                      onClick={() =>
-                        cancelOrder(order.id)
-                      }
-                      className="text-red-600 text-sm"
-                    >
-                      Cancel
-                    </button>
+                  {order.status === "DELIVERED" && (
+                    alreadyReviewed ? (
+                      <span className="text-green-600 font-semibold text-sm">
+                        ✔ Reviewed
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => writeReview(item.productId)}
+                        className="bg-indigo-600 hover:bg-indigo-700 transition text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm"
+                      >
+                        Write Review
+                      </button>
+                    )
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+
+          </div>
+        ))}
 
       </div>
     </div>
   );
 }
 
-/* ================= STATUS BADGE ================= */
-
 function StatusBadge({ status }) {
   const styles = {
-    DELIVERED: "bg-green-100 text-green-600",
-    CANCELLED: "bg-red-100 text-red-600",
-    PLACED: "bg-yellow-100 text-yellow-600",
-    SHIPPED: "bg-blue-100 text-blue-600",
+    DELIVERED: "bg-green-100 text-green-700",
+    CANCELLED: "bg-red-100 text-red-700",
+    PLACED: "bg-yellow-100 text-yellow-700",
+    SHIPPED: "bg-blue-100 text-blue-700",
   };
 
   return (
     <span
-      className={`rounded px-3 py-1 text-sm font-semibold ${styles[status]}`}
+      className={`rounded-full px-4 py-1 text-xs font-semibold ${styles[status]}`}
     >
       {status}
     </span>
-  );
-}
-
-/* ================= STAT CARD ================= */
-
-function StatCard({ label, value }) {
-  return (
-    <div className="rounded-xl bg-white p-4 shadow">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-xl font-bold">{value}</p>
-    </div>
   );
 }
