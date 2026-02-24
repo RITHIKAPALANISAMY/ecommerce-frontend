@@ -1,146 +1,98 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+import {
+  getUserCart,
+  addToCartAPI,
+  updateCartQtyAPI,
+  removeCartItemAPI,
+  clearCartAPI,
+} from "../api/cartService";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext();
 
-const PRODUCT_API = "http://localhost:8082/api/products";
-
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user } = useAuth();
+  const [cartItems, setCartItems] = useState([]);
 
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-
-  /* ================= SAVE CART ================= */
+  /* ================= LOAD CART ================= */
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (user) {
+      loadCart();
+    } else {
+      setCartItems([]);
+    }
+  }, [user]);
 
-  /* ================= FETCH LATEST PRODUCT ================= */
-  const fetchLatestProduct = async (id) => {
+  const loadCart = async () => {
     try {
-      const res = await axios.get(`${PRODUCT_API}/${id}`);
-      return res.data;
+      // ✅ DO NOT send email (JWT handles it)
+      const res = await getUserCart();
+      setCartItems(res.data || []);
     } catch (err) {
-      console.error("Stock check failed:", err);
-      return null;
+      console.error("Failed to load cart", err);
     }
   };
 
   /* ================= ADD TO CART ================= */
   const addToCart = async (product) => {
-    const latest = await fetchLatestProduct(product.id);
-    if (!latest) return;
+    if (!user) return;
 
-    const stock = latest.stock ?? 0;
-    const qtyToAdd = Number(product.quantity) || 1;
+    // ✅ ONLY send required fields
+    const payload = {
+      productId: product.id,
+      quantity: 1,
+    };
 
-    if (stock === 0) {
-      alert("Product is out of stock");
-      return;
+    try {
+      await addToCartAPI(payload);
+      loadCart();
+    } catch (err) {
+      console.error("Add to cart failed", err);
     }
-
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === product.id);
-
-      const resolvedImage =
-        product.image ||
-        product.images?.[0] ||
-        null;
-
-      if (existing) {
-        if (existing.quantity >= stock) {
-          alert("Maximum stock reached");
-          return prev;
-        }
-
-        return prev.map((i) =>
-          i.id === product.id
-            ? {
-                ...i,
-                quantity: Math.min(
-                  i.quantity + qtyToAdd,
-                  stock
-                ),
-                stock: stock,
-              }
-            : i
-        );
-      }
-
-      return [
-        ...prev,
-        {
-          ...product,
-          image: resolvedImage,
-          quantity: Math.min(qtyToAdd, stock),
-          stock: stock,
-        },
-      ];
-    });
   };
 
   /* ================= INCREASE QTY ================= */
-  const addQty = async (id) => {
-    const latest = await fetchLatestProduct(id);
-    if (!latest) return;
-
-    const stock = latest.stock ?? 0;
-
-    setCartItems((items) =>
-      items.map((i) =>
-        i.id === id
-          ? i.quantity < stock
-            ? { ...i, quantity: i.quantity + 1, stock }
-            : i
-          : i
-      )
-    );
+  const addQty = async (cartItemId, currentQty) => {
+    try {
+      await updateCartQtyAPI(cartItemId, currentQty + 1);
+      loadCart();
+    } catch (err) {
+      console.error("Qty update failed", err);
+    }
   };
 
   /* ================= REDUCE QTY ================= */
-  const reduceQty = (id) =>
-    setCartItems((items) =>
-      items.map((i) =>
-        i.id === id && i.quantity > 1
-          ? { ...i, quantity: i.quantity - 1 }
-          : i
-      )
-    );
+  const reduceQty = async (cartItemId, currentQty) => {
+    if (currentQty <= 1) return;
+
+    try {
+      await updateCartQtyAPI(cartItemId, currentQty - 1);
+      loadCart();
+    } catch (err) {
+      console.error("Qty update failed", err);
+    }
+  };
 
   /* ================= REMOVE ITEM ================= */
-  const removeItem = (id) =>
-    setCartItems((items) =>
-      items.filter((i) => i.id !== id)
-    );
+  const removeItem = async (cartItemId) => {
+    try {
+      await removeCartItemAPI(cartItemId);
+      loadCart();
+    } catch (err) {
+      console.error("Remove failed", err);
+    }
+  };
 
   /* ================= CLEAR CART ================= */
-  const clearCart = () => {
-    setCartItems([]);
-    localStorage.removeItem("cart");
-    setAppliedCoupon(null);
-  };
-
-  /* ================= COUPONS ================= */
-  const applyCoupon = (code, subtotal) => {
-    if (code === "WELCOME10") {
-      if (subtotal < 500) return "Minimum ₹500 required";
-      setAppliedCoupon({ type: "PERCENT", value: 10 });
-      return null;
+  const clearCart = async () => {
+    try {
+      // ✅ DO NOT send email
+      await clearCartAPI();
+      setCartItems([]);
+    } catch (err) {
+      console.error("Clear cart failed", err);
     }
-
-    if (code === "SAVE500") {
-      if (subtotal < 2000) return "Minimum ₹2000 required";
-      setAppliedCoupon({ type: "FLAT", value: 500 });
-      return null;
-    }
-
-    return "Invalid coupon code";
   };
-
-  const removeCoupon = () => setAppliedCoupon(null);
 
   return (
     <CartContext.Provider
@@ -151,9 +103,6 @@ export function CartProvider({ children }) {
         reduceQty,
         removeItem,
         clearCart,
-        applyCoupon,
-        removeCoupon,
-        appliedCoupon,
       }}
     >
       {children}

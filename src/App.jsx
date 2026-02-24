@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import CompareBar from "./components/common/CompareBar";
-
 import "./index.css";
 
 /* ROUTE GUARD */
@@ -45,17 +44,23 @@ import OrderSuccess from "./pages/buyer/OrderSuccess";
 /* AUTH */
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 /* COMMON */
+import Profile from "./pages/common/Profile";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+
+/* TOAST */
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
   return (
     <>
       <Routes>
 
-        {/* ================= ADMIN ================= */}
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" />} />
@@ -63,27 +68,25 @@ export default function App() {
             <Route path="users" element={<Users />} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<OrdersAdmin />} />
-           <Route path="seller-requests" element={<AdminSellerRequests />} />
+            <Route path="seller-requests" element={<AdminSellerRequests />} />
             <Route path="coupons" element={<Coupons />} />
-             
-
+            <Route path="profile" element={<Profile />} />
           </Route>
         </Route>
 
-        {/* ================= SELLER ================= */}
         <Route element={<ProtectedRoute allowedRoles={["SELLER"]} />}>
           <Route path="/seller" element={<SellerLayout />}>
             <Route path="dashboard" element={<SellerDashboard />} />
             <Route path="orders" element={<SellerOrders />} />
-            <Route path="/seller/reviews" element={<SellerReviews />} />
+            <Route path="reviews" element={<SellerReviews />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
         </Route>
 
-      {/* ================= BECOME SELLER ================= */}
-<Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
-  <Route path="/become-seller" element={<BecomeSeller />} />
-</Route>
-        {/* ================= BUYER PUBLIC ================= */}
+        <Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
+          <Route path="/become-seller" element={<BecomeSeller />} />
+        </Route>
+
         <Route element={<BuyerLayout />}>
           <Route index element={<Home />} />
           <Route path="product/:id" element={<ProductDetails />} />
@@ -92,40 +95,40 @@ export default function App() {
           <Route path="compare" element={<Compare />} />
         </Route>
 
-        {/* ================= BUYER PROTECTED ================= */}
         <Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
           <Route element={<BuyerLayout />}>
             <Route path="cart" element={<Cart />} />
             <Route path="orders" element={<BuyerOrders />} />
             <Route path="wishlist" element={<Wishlist />} />
-
-            {/* CHECKOUT FLOW */}
+            <Route path="profile" element={<Profile />} />
             <Route path="checkout" element={<Checkout />}>
               <Route index element={<Navigate to="address" />} />
               <Route path="address" element={<CheckoutAddress />} />
               <Route path="summary" element={<CheckoutSummary />} />
               <Route path="payment" element={<CheckoutPayment />} />
             </Route>
-
-            {/* ✅ ORDER SUCCESS FIXED HERE */}
-            {/* ================= ORDER SUCCESS ================= */}
-<Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
-  <Route path="/order-success" element={<OrderSuccess />} />
-</Route>
+            <Route path="order-success" element={<OrderSuccess />} />
           </Route>
         </Route>
 
-        {/* ================= AUTH ================= */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* ================= COMMON ================= */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<NotFound />} />
 
       </Routes>
 
       <CompareBar />
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        newestOnTop
+        pauseOnHover
+      />
     </>
   );
 }

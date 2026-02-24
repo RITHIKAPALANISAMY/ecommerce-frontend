@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,9 +10,24 @@ import {
   Home as HomeIcon,
   Sparkles,
   ShoppingCart,
+  Leaf,
 } from "lucide-react";
 import ProductCard from "../../components/common/ProductCard";
 import { useProducts } from "../../context/ProductContext";
+
+const CATEGORY_API = "http://localhost:8082/api/categories";
+
+/* ---------------- ICON MAPPING ---------------- */
+
+const iconMap = {
+  Mobiles: Smartphone,
+  Electronics: Laptop,
+  Fashion: Shirt,
+  Home: HomeIcon,
+  Beauty: Sparkles,
+  Grocery: ShoppingCart,
+  "Eco-Friendly": Leaf,
+};
 
 /* ---------------- HERO SLIDER ---------------- */
 
@@ -53,18 +69,13 @@ function HeroSlider() {
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {slides.map((s, i) => (
-          <div
-            key={i}
-            className="relative min-w-full h-[260px] sm:h-[360px]"
-          >
+          <div key={i} className="relative min-w-full h-[260px] sm:h-[360px]">
             <img
               src={s.image}
               alt={s.title}
               className="absolute inset-0 h-full w-full object-cover"
             />
-
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
-
             <div className="relative z-10 flex h-full items-center px-6 sm:px-12">
               <div className="max-w-lg">
                 <h2 className="text-2xl sm:text-4xl font-bold text-white">
@@ -73,7 +84,7 @@ function HeroSlider() {
                 <p className="mt-3 text-sm sm:text-base text-white/90">
                   {s.subtitle}
                 </p>
-                <button className="mt-6 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 hover:scale-105">
+                <button className="mt-6 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-red-700">
                   {s.btn}
                 </button>
               </div>
@@ -84,13 +95,14 @@ function HeroSlider() {
 
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/60"
+        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white"
       >
         <ChevronLeft size={20} />
       </button>
+
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur hover:bg-black/60"
+        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white"
       >
         <ChevronRight size={20} />
       </button>
@@ -98,32 +110,33 @@ function HeroSlider() {
   );
 }
 
-/* ---------------- CATEGORIES ---------------- */
-
-const categories = [
-  { name: "Mobiles", icon: Smartphone },
-  { name: "Electronics", icon: Laptop },
-  { name: "Fashion", icon: Shirt },
-  { name: "Home", icon: HomeIcon },
-  { name: "Beauty", icon: Sparkles },
-  { name: "Grocery", icon: ShoppingCart },
-];
-
 /* ---------------- HOME PAGE ---------------- */
 
 export default function Home() {
   const navigate = useNavigate();
   const { products, loading } = useProducts();
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(CATEGORY_API);
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    }
+  };
 
   return (
     <div className="bg-gray-50 pb-12">
 
-      {/* HERO */}
       <div className="px-3 sm:px-4 pt-4">
         <HeroSlider />
       </div>
 
-      {/* CATEGORIES */}
       <div className="mt-10 px-3 sm:px-4">
         <h3 className="mb-4 text-lg font-semibold text-gray-800">
           Shop by Category
@@ -131,17 +144,25 @@ export default function Home() {
 
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
           {categories.map((c) => {
-            const Icon = c.icon;
+            const Icon = iconMap[c.name] || ShoppingCart;
 
             return (
               <div
-                key={c.name}
-                onClick={() => navigate(`/category/${c.name}`)}
-                className="group cursor-pointer rounded-2xl bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                key={c.id}
+                onClick={() => navigate(`/category/${c.id}`)}  // ✅ FIXED HERE
+                className={`group cursor-pointer rounded-2xl p-4 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                  c.name === "Eco-Friendly"
+                    ? "bg-green-100 border border-green-300"
+                    : "bg-white"
+                }`}
               >
                 <Icon
                   size={28}
-                  className="mx-auto text-gray-600 transition group-hover:text-red-600"
+                  className={`mx-auto ${
+                    c.name === "Eco-Friendly"
+                      ? "text-green-600"
+                      : "text-gray-600 group-hover:text-red-600"
+                  }`}
                 />
                 <p className="mt-2 text-sm font-medium text-gray-700">
                   {c.name}
@@ -152,29 +173,23 @@ export default function Home() {
         </div>
       </div>
 
-      {/* PRODUCTS */}
       <section className="mt-12 px-3 sm:px-4">
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Top Deals
-          </h3>
-        </div>
+        <h3 className="mb-5 text-lg font-semibold text-gray-800">
+          Top Deals
+        </h3>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center py-10 text-gray-500">
             Loading products...
           </div>
         )}
 
-        {/* Empty DB */}
         {!loading && products.length === 0 && (
           <div className="text-center py-10 text-gray-500">
             No products available
           </div>
         )}
 
-        {/* Product Grid */}
         {!loading && products.length > 0 && (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {products.map((p) => (

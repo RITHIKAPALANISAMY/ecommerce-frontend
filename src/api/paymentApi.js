@@ -1,13 +1,12 @@
 import axios from "axios";
 
 const paymentApi = axios.create({
-  baseURL: "http://localhost:8084", // ✅ Payment Service
+  baseURL: "http://localhost:8084",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Attach token if needed
 paymentApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 

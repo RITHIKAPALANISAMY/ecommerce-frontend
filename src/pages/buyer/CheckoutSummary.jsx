@@ -1,149 +1,118 @@
-import { useNavigate } from "react-router-dom";
-import CheckoutSteps from "./CheckoutSteps";
 import { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
+import CheckoutSteps from "./CheckoutSteps";
 
 export default function CheckoutSummary() {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const [items, setItems] = useState([]);
-  const [address, setAddress] = useState(null);
-  const [amount, setAmount] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  
+  /* ================= LOAD FROM BACKEND ================= */
   useEffect(() => {
-    const savedAmount = JSON.parse(
-      localStorage.getItem("checkoutAmount")
+    const loadData = async () => {
+      try {
+        const addressId = localStorage.getItem("checkoutAddressId");
+
+        // Must have selected address
+        if (!addressId) {
+          navigate("/checkout/address");
+          return;
+        }
+
+        const [cartRes, summaryRes] = await Promise.all([
+          api.get("/cart"),
+          api.get("/cart/summary"),
+        ]);
+
+        if (!cartRes.data || cartRes.data.length === 0) {
+          navigate("/cart");
+          return;
+        }
+
+        setCartItems(cartRes.data);
+        setSummary(summaryRes.data);
+
+      } catch (err) {
+        console.error("Summary load failed:", err);
+        navigate("/cart");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading order summary...
+      </div>
     );
-    const savedAddress = JSON.parse(
-      localStorage.getItem("checkoutAddress")
-    );
-    const checkoutItems = JSON.parse(
-      localStorage.getItem("checkoutItems")
-    ) || [];
-
-    const inStockItems = checkoutItems.filter(
-      (i) => i.stock === undefined || i.stock > 0
-    );
-
-    if (
-      !user ||
-      !savedAmount ||
-      !savedAddress ||
-      inStockItems.length === 0
-    ) {
-      navigate("/cart", { replace: true });
-      return;
-    }
-
-    setItems(inStockItems);
-    setAddress(savedAddress);
-    setAmount(savedAmount);
-  }, [user, navigate]);
-
-  if (!amount || !address) return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6">
+    <div className="min-h-screen bg-gray-100 p-6">
       <CheckoutSteps currentStep={2} />
 
-      <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 rounded-xl bg-white p-6 shadow">
-          <h2 className="mb-4 text-lg font-semibold">
-            Order Summary
-          </h2>
+      <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
 
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="mb-4 flex gap-4 border-b pb-4 last:border-none"
-            >
-              <img
-                src={item.image}
-                alt={item.title}
-                className="h-16 w-16 rounded border object-contain"
-              />
+        <h2 className="text-xl font-bold mb-6">Order Summary</h2>
 
-              <div className="flex-1">
-                <p className="font-medium">
-                  {item.title}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Qty: {item.quantity}
-                </p>
-              </div>
+        {/* ================= CART ITEMS ================= */}
+        {cartItems.map((item) => (
+          <div
+            key={item.id}
+            className="flex justify-between mb-3 border-b pb-2"
+          >
+            <span>
+              {item.productName} × {item.quantity}
+            </span>
+            <span>
+              ₹{(Number(item.price) * Number(item.quantity)).toFixed(2)}
+            </span>
+          </div>
+        ))}
 
-              <p className="font-semibold">
-                ₹{item.price * item.quantity}
-              </p>
+        {/* ================= PRICE DETAILS ================= */}
+        {summary && (
+          <div className="mt-6 border-t pt-4 space-y-2">
+
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>₹{summary.subtotal.toFixed(2)}</span>
             </div>
-          ))}
 
-          <h4 className="mt-4 mb-2 font-semibold">
-            Deliver to
-          </h4>
-
-          <div className="rounded-lg border p-3 text-sm">
-            <p className="font-medium">{address.name}</p>
-            <p>{address.phone}</p>
-            <p>
-              {address.address}, {address.city},{" "}
-              {address.state} - {address.pincode}
-            </p>
-          </div>
-
-          <div className="mt-6 flex justify-between">
-            <button
-              onClick={() => navigate("/checkout/address")}
-              className="rounded border px-4 py-2"
-            >
-              Back
-            </button>
-
-            <button
-              onClick={() => navigate("/checkout/payment")}
-              className="rounded bg-red-600 px-6 py-2 text-white hover:bg-red-700"
-            >
-              Continue to Payment →
-            </button>
-          </div>
-        </div>
-
-        <div className="h-fit rounded-xl bg-white p-6 shadow">
-          <h3 className="mb-4 font-semibold">
-            Price Details
-          </h3>
-
-          <div className="mb-2 flex justify-between text-sm">
-            <span>Subtotal</span>
-            <span>₹{amount.subtotal}</span>
-          </div>
-
-          <div className="mb-2 flex justify-between text-sm">
-            <span>Shipping</span>
-            <span>₹{amount.shipping}</span>
-          </div>
-
-          <div className="mb-2 flex justify-between text-sm">
-            <span>GST</span>
-            <span>₹{amount.gst}</span>
-          </div>
-
-          {amount.discount > 0 && (
-            <div className="mb-2 flex justify-between text-sm text-green-600">
-              <span>Discount</span>
-              <span>-₹{amount.discount}</span>
+            <div className="flex justify-between">
+              <span>Delivery</span>
+              <span>₹{summary.delivery.toFixed(2)}</span>
             </div>
-          )}
 
-          <hr className="my-3" />
+            <div className="flex justify-between">
+              <span>GST (18%)</span>
+              <span>₹{summary.gst.toFixed(2)}</span>
+            </div>
 
-          <div className="flex justify-between font-bold">
-            <span>Total</span>
-            <span>₹{amount.total}</span>
+            <hr />
+
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>₹{summary.total.toFixed(2)}</span>
+            </div>
+
           </div>
-        </div>
+        )}
+
+        <button
+          onClick={() => navigate("/checkout/payment")}
+          className="mt-6 w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700"
+        >
+          Proceed to Payment →
+        </button>
+
       </div>
     </div>
   );

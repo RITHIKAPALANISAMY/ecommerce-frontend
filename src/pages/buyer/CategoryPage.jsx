@@ -1,52 +1,81 @@
-import { useParams, useLocation } from "react-router-dom";
-import { useState } from "react";
-import { useProducts } from "../../context/ProductContext";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import ProductCard from "../../components/common/ProductCard";
+import { toast } from "react-toastify";
+
+const PRODUCT_API = "http://localhost:8082/api/products";
+const CATEGORY_API = "http://localhost:8082/api/categories";
 
 export default function CategoryPage() {
-  const { category } = useParams();
-  const { search } = useLocation();
-  const { products, loading } = useProducts();
+  const { category } = useParams(); // 🔥 This is Mongo categoryId
 
-  const params = new URLSearchParams(search);
-  const query = params.get("q") || "";
+  const [products, setProducts] = useState([]);
+  const [categoryName, setCategoryName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [sort, setSort] = useState("FEATURED");
   const [maxPrice, setMaxPrice] = useState(100000);
   const [brands, setBrands] = useState([]);
+  const [minRating, setMinRating] = useState(0);
 
-  /* ================= FILTER BY CATEGORY ================= */
+  useEffect(() => {
+    if (category) {
+      fetchCategoryDetails();
+      fetchCategoryProducts();
+    }
+  }, [category]);
 
-  const categoryProducts = products.filter(
-    (p) =>
-      p.category &&
-      p.category.toLowerCase() === category.toLowerCase()
-  );
+  /* ================= FETCH CATEGORY NAME ================= */
+  const fetchCategoryDetails = async () => {
+    try {
+      const res = await axios.get(`${CATEGORY_API}/${category}`);
+      setCategoryName(res.data.name);
+    } catch (err) {
+      console.error(err);
+      setCategoryName("Category");
+    }
+  };
 
-  /* ================= AVAILABLE BRANDS ================= */
+  /* ================= FETCH PRODUCTS ================= */
+  const fetchCategoryProducts = async () => {
+    try {
+      setLoading(true);
 
+      const res = await axios.get(
+        `${PRODUCT_API}/category/${category}`
+      );
+
+      setProducts(res.data || []);
+    } catch (err) {
+      toast.error("Failed to load category products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= BRAND LIST ================= */
   const allBrands = [
-    ...new Set(
-      categoryProducts.map((p) => p.brand).filter(Boolean)
-    ),
+    ...new Set(products.map((p) => p.brand).filter(Boolean)),
   ];
 
-  /* ================= APPLY FILTERS ================= */
-
-  const filteredProducts = categoryProducts
-    .filter((p) =>
-      p.title.toLowerCase().includes(query.toLowerCase())
-    )
+  /* ================= FILTER + SORT ================= */
+  const filteredProducts = products
     .filter((p) => p.price <= maxPrice)
     .filter((p) =>
       brands.length === 0 ? true : brands.includes(p.brand)
     )
+    .filter((p) => (p.averageRating || 0) >= minRating)
     .sort((a, b) => {
       switch (sort) {
         case "LOW_HIGH":
           return a.price - b.price;
         case "HIGH_LOW":
           return b.price - a.price;
+        case "RATING_HIGH_LOW":
+          return (b.averageRating || 0) - (a.averageRating || 0);
+        case "RATING_LOW_HIGH":
+          return (a.averageRating || 0) - (b.averageRating || 0);
         default:
           return 0;
       }
@@ -60,106 +89,93 @@ export default function CategoryPage() {
     );
   };
 
-  const clearFilters = () => {
-    setMaxPrice(100000);
-    setBrands([]);
-    setSort("FEATURED");
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 px-3 py-6 sm:px-4">
+    <div className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="flex gap-6">
 
-        {/* FILTER SIDEBAR */}
+        {/* ================= FILTER SIDEBAR ================= */}
         <aside className="hidden w-64 shrink-0 rounded-2xl bg-white p-5 shadow-sm md:block">
-          <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-gray-900">
-              Filters
-            </h3>
-            <button
-              onClick={clearFilters}
-              className="text-sm font-medium text-red-600 hover:underline"
-            >
-              Clear All
-            </button>
-          </div>
+          <h3 className="mb-4 font-semibold">Filters</h3>
 
           {/* PRICE */}
           <div className="mb-6">
-            <h4 className="mb-2 text-sm font-semibold text-gray-800">
-              Price Range
-            </h4>
+            <h4 className="mb-2 text-sm font-semibold">Price</h4>
             <input
               type="range"
               min="0"
               max="100000"
               value={maxPrice}
-              onChange={(e) =>
-                setMaxPrice(Number(e.target.value))
-              }
-              className="w-full accent-red-600"
+              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              className="w-full"
             />
-            <p className="mt-1 text-sm text-gray-600">
-              ₹0 – ₹{maxPrice}
-            </p>
+            <p className="text-sm">₹0 – ₹{maxPrice}</p>
+          </div>
+
+          {/* RATING */}
+          <div className="mb-6">
+            <h4 className="mb-2 text-sm font-semibold">Minimum Rating</h4>
+            <select
+              value={minRating}
+              onChange={(e) => setMinRating(Number(e.target.value))}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value={0}>All</option>
+              <option value={4}>4★ & above</option>
+              <option value={3}>3★ & above</option>
+              <option value={2}>2★ & above</option>
+            </select>
           </div>
 
           {/* BRAND */}
           <div>
-            <h4 className="mb-2 text-sm font-semibold text-gray-800">
-              Brand
-            </h4>
-            <div className="space-y-1">
-              {allBrands.map((b) => (
-                <label
-                  key={b}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={brands.includes(b)}
-                    onChange={() => toggleBrand(b)}
-                    className="accent-red-600"
-                  />
-                  {b}
-                </label>
-              ))}
-            </div>
+            <h4 className="mb-2 text-sm font-semibold">Brand</h4>
+            {allBrands.length === 0 && (
+              <p className="text-sm text-gray-400">No brands</p>
+            )}
+            {allBrands.map((b) => (
+              <label key={b} className="block text-sm">
+                <input
+                  type="checkbox"
+                  checked={brands.includes(b)}
+                  onChange={() => toggleBrand(b)}
+                  className="mr-2"
+                />
+                {b}
+              </label>
+            ))}
           </div>
         </aside>
 
-        {/* PRODUCT AREA */}
+        {/* ================= PRODUCT SECTION ================= */}
         <main className="flex-1">
 
           {/* HEADER */}
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold capitalize text-gray-800">
-              {category}
+          <div className="mb-5 flex justify-between items-center">
+            <h2 className="text-xl font-semibold">
+              {categoryName || "Loading..."}
             </h2>
 
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none sm:w-56"
+              className="border rounded px-3 py-2"
             >
               <option value="FEATURED">Featured</option>
               <option value="LOW_HIGH">Price: Low to High</option>
               <option value="HIGH_LOW">Price: High to Low</option>
+              <option value="RATING_HIGH_LOW">Rating: High to Low</option>
+              <option value="RATING_LOW_HIGH">Rating: Low to High</option>
             </select>
           </div>
 
           {/* LOADING */}
           {loading && (
-            <div className="text-center py-10 text-gray-500">
-              Loading products...
-            </div>
+            <p className="text-gray-500">Loading products...</p>
           )}
 
           {/* EMPTY */}
           {!loading && filteredProducts.length === 0 && (
-            <p className="text-gray-500">
-              No products found
-            </p>
+            <p className="text-gray-500">No products found</p>
           )}
 
           {/* GRID */}

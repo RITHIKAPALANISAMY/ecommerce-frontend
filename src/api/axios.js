@@ -6,7 +6,6 @@ const api = axios.create({
   },
 });
 
-/* Automatically choose service based on URL */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 
@@ -14,26 +13,32 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  /* 🔥 Smart Microservice Routing */
-
+  /* Product Service */
   if (
     config.url.startsWith("/api/products") ||
     config.url.startsWith("/api/categories") ||
     config.url.startsWith("/api/inventory")
   ) {
-    config.baseURL = "http://localhost:8082"; // Product Service
+    config.baseURL = "http://localhost:8082";
   }
 
+  /* Cart Service */
+  else if (config.url.startsWith("/cart")) {
+    config.baseURL = "http://localhost:8083";
+  }
+
+  /* Order Service */
   else if (
     config.url.startsWith("/api/orders") ||
     config.url.startsWith("/api/coupons") ||
     config.url.startsWith("/api/analytics")
   ) {
-    config.baseURL = "http://localhost:8085"; // ✅ Order Service
+    config.baseURL = "http://localhost:8085";
   }
 
+  /* Auth Service */
   else {
-    config.baseURL = "http://localhost:8081"; // Auth Service
+    config.baseURL = "http://localhost:8081";
   }
 
   return config;
