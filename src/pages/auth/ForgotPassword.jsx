@@ -37,67 +37,78 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-lg grid grid-cols-1 md:grid-cols-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-red-50 to-gray-100 px-6">
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl grid grid-cols-1 md:grid-cols-2 overflow-hidden">
 
-        {/* Left Branding Panel */}
-        <div className="hidden md:flex flex-col justify-center bg-red-600 p-10 text-white">
-          <h1 className="text-3xl font-bold mb-3">
-            Forgot Password?
+        {/* LEFT SIDE — SAME AS RESET */}
+        <div className="flex flex-col justify-center p-12 bg-gradient-to-br from-red-400 to-red-500 text-white">
+          <h1 className="text-4xl font-bold mb-6">
+            Forgot Your <br /> Password?
           </h1>
-          <p className="text-sm leading-relaxed">
-            Enter your registered email and we’ll send you a secure password reset link.
+
+          <p className="text-sm opacity-90 mb-8">
+            Enter your registered email and
+            we’ll send you a secure reset link.
           </p>
+
+          <div className="bg-white/20 backdrop-blur-sm px-6 py-4 rounded-2xl text-sm">
+            📧 Quick & Secure Recovery
+          </div>
         </div>
 
-        {/* Right Form Panel */}
-        <div className="p-8 sm:p-10">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Reset your password
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            We’ll email you a reset link.
+        {/* RIGHT SIDE */}
+        <div className="p-12 flex flex-col justify-center">
+
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">
+            Reset Password
+          </h3>
+
+          <p className="text-sm text-gray-500 mb-6">
+            We’ll email you a reset link
           </p>
 
           {error && (
-            <div className="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
-              ⚠️ {error}
+            <div className="mb-4 bg-red-100 text-red-600 text-sm px-4 py-2 rounded-lg">
+              {error}
             </div>
           )}
 
           {message && (
-            <div className="mt-4 rounded bg-green-100 px-3 py-2 text-sm text-green-700">
-              ✅ {message}
+            <div className="mb-4 bg-green-100 text-green-600 text-sm px-4 py-2 rounded-lg">
+              {message}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
+
             <input
               type="email"
-              placeholder="Registered email"
+              placeholder="Enter your registered email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-5 py-3 rounded-xl bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400"
             />
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-red-600 py-2 text-white font-medium hover:bg-red-700 disabled:opacity-60"
+              className="w-full py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition"
             >
               {loading ? "Sending..." : "Send Reset Link"}
             </button>
+
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Remembered your password?{" "}
+          <p className="mt-6 text-center text-sm text-gray-500">
+            Back to{" "}
             <Link
               to="/login"
-              className="text-red-600 font-medium hover:underline"
+              className="text-red-500 font-medium hover:underline"
             >
               Login
             </Link>
           </p>
+
         </div>
       </div>
     </div>

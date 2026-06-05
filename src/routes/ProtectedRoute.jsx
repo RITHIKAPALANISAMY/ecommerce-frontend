@@ -1,21 +1,35 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, role }) {
+export default function ProtectedRoute({ allowedRoles }) {
   const { user, loading } = useAuth();
 
-  // Wait until user loads
-  if (loading) return null;
+  // ✅ WAIT UNTIL AUTH IS CHECKED
+  if (loading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      Loading...
+    </div>
+  );
+}
 
-  // Not logged in
+  // ✅ NOT LOGGED IN
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Role check (SAFE LOWERCASE CHECK)
-  if (role && user.role?.toLowerCase() !== role.toLowerCase()) {
+  // ✅ ROLE CHECK
+  const userRoles = user.roles?.map((r) =>
+    r.toUpperCase()
+  );
+
+  const isAllowed = allowedRoles?.some((role) =>
+    userRoles?.includes(role)
+  );
+
+  if (!isAllowed) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return children;
+  return <Outlet />;
 }

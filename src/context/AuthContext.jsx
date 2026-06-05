@@ -4,119 +4,94 @@ import api from "../api/axios";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
-  });
-
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD USER ON APP START ================= */
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await api.get("/user/profile");
-        const profile = response.data;
-
-        const formattedUser = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role:
-            profile.roles && profile.roles.length
-              ? profile.roles[0].replace("ROLE_", "").toLowerCase()
-              : "buyer",
-        };
-
-        setUser(formattedUser);
-        localStorage.setItem("user", JSON.stringify(formattedUser));
-
-      } catch (err) {
-        console.error("Profile load failed:", err);
-        localStorage.clear();
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUser();
-  }, []);
-
-  /* ================= REGISTER ================= */
-
-  const register = async (data) => {
+  const fetchUserProfile = async () => {
     try {
-      const response = await api.post("/auth/register", data);
+      const response = await api.get("/user/profile");
+      const profile = response.data;
 
-      const { accessToken, refreshToken } = response.data;
-
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-
-      await fetchUserProfile();
-      return true;
-
+      setUser({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        gender: profile.gender,
+        profileImage: profile.profileImage,
+        verified: profile.verified,
+        storeName: profile.storeName,
+        storePhone: profile.storePhone,
+        gstNumber: profile.gstNumber,
+        storeAddress: profile.storeAddress,
+        roles: profile.roles.map((r) =>
+          r.replace("ROLE_", "").toUpperCase()
+        ),
+      });
     } catch (error) {
-      console.error("Register failed:", error);
-      return false;
+      console.error("Session expired");
+      localStorage.clear();
+      setUser(null);
     }
   };
 
-  /* ================= LOGIN ================= */
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    const init = async () => {
+      await fetchUserProfile();
+      setLoading(false);
+    };
+
+    init();
+  }, []);
 
   const login = async (data) => {
     try {
       const response = await api.post("/auth/login", data);
-
       const { accessToken, refreshToken } = response.data;
 
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
       await fetchUserProfile();
-      return true;
 
+      return { success: true };
     } catch (error) {
-      console.error("Login failed:", error);
-      return false;
+      return {
+        success: false,
+        message: error.response?.data?.message || "Login failed",
+      };
     }
   };
 
-  /* ================= FETCH PROFILE ================= */
+  const register = async (data) => {
+    try {
+      const response = await api.post("/auth/register", data);
+      const { accessToken, refreshToken } = response.data;
 
-  const fetchUserProfile = async () => {
-    const response = await api.get("/user/profile");
-    const profile = response.data;
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
-    const formattedUser = {
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      role:
-        profile.roles && profile.roles.length
-          ? profile.roles[0].replace("ROLE_", "").toLowerCase()
-          : "buyer",
-    };
+      await fetchUserProfile();
 
-    setUser(formattedUser);
-    localStorage.setItem("user", JSON.stringify(formattedUser));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Register failed",
+      };
+    }
   };
-
-  /* ================= LOGOUT ================= */
 
   const logout = async () => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-
       if (refreshToken) {
         await api.post("/auth/logout", { refreshToken });
       }
@@ -126,14 +101,20 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.clear();
     setUser(null);
-    window.location.href = "/login";
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, loading }}
+      value={{
+  user,
+  loading,
+  login,
+  register,
+  logout,
+  fetchUserProfile
+}}
     >
-      {!loading && children}
+      {children} {/* ✅ ALWAYS RENDER */}
     </AuthContext.Provider>
   );
 };

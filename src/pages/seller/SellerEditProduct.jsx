@@ -1,71 +1,118 @@
 import { useState, useEffect } from "react";
-import { useSellerProducts } from "../../context/SellerProductContext";
+import { useProducts } from "../../context/ProductContext";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+const CATEGORY_API = "http://localhost:8082/api/categories";
 
 export default function SellerEditProduct({ product, onClose }) {
-  const { updateSellerProduct } = useSellerProducts();
+  const { updateProduct } = useProducts();
 
-  
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  /* ================= LOAD CATEGORIES ================= */
   useEffect(() => {
     document.body.style.overflow = "hidden";
+    fetchCategories();
     return () => (document.body.style.overflow = "auto");
   }, []);
 
-  const [form, setForm] = useState({
-    title: product.title || "",
-    category: product.category || "",
-    mrp: product.mrp || "",
-    discount: product.discount || "",
-    stock: product.stock || "",
-    images: product.images?.length ? product.images : [""],
-    about: product.description?.about || "",
-    highlights: product.description?.highlights
-      ? product.description.highlights.join("\n")
-      : "",
-    material: product.description?.material || "",
-    usage: product.description?.usage || "",
-    care: product.description?.care || "",
-    warranty: product.description?.warranty || "",
-    expiryDate: product.description?.expiryDate || "",
-  });
-
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleImageChange = (index, value) => {
-    const imgs = [...form.images];
-    imgs[index] = value;
-    setForm({ ...form, images: imgs });
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(CATEGORY_API);
+      setCategories(res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load categories");
+    }
   };
 
-  const addImageField = () =>
-    setForm({ ...form, images: [...form.images, ""] });
+  /* ================= FORM STATE ================= */
+
+  const [form, setForm] = useState({
+    title: product?.title || "",
+    brand: product?.brand || "",
+    categoryId: product?.categoryId || "",
+    mrp: product?.mrp || "",
+    discount: product?.discount || "",
+    stock: product?.stock || "",
+    images: product?.images?.length ? product.images : [""],
+    about: product?.description?.about || "",
+    highlights: product?.description?.highlights
+      ? product.description.highlights.join("\n")
+      : "",
+    material: product?.description?.material || "",
+    usage: product?.description?.usage || "",
+    care: product?.description?.care || "",
+    warranty: product?.description?.warranty || "",
+    expiryDate: product?.description?.expiryDate || "",
+  });
+
+  /* ================= HANDLERS ================= */
+
+  const handleChange = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleImageChange = (index, value) => {
+    const updated = [...form.images];
+    updated[index] = value;
+    setForm((prev) => ({ ...prev, images: updated }));
+  };
+
+  const addImageField = () => {
+    setForm((prev) => ({
+      ...prev,
+      images: [...prev.images, ""],
+    }));
+  };
 
   const calculatePrice = () => {
     const mrp = Number(form.mrp);
-    const discount = Number(form.discount);
-    if (!mrp) return 0;
+    const discount = Number(form.discount) || 0;
+
+    if (!mrp || mrp <= 0) return 0;
+
     return Math.round(mrp - (mrp * discount) / 100);
   };
 
-  const handleSave = () => {
-    if (!form.title || !form.mrp || !form.stock) {
-      alert("Please fill all required fields");
+  /* ================= SUBMIT ================= */
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    if (!form.title.trim()) {
+      toast.warning("Product title is required");
       return;
     }
 
-    updateSellerProduct({
-      ...product,
-      title: form.title,
-      category: form.category,
+    if (!form.categoryId) {
+      toast.warning("Please select a category");
+      return;
+    }
+
+    if (!form.mrp || !form.stock) {
+      toast.warning("MRP and Stock are required");
+      return;
+    }
+
+    const updatedProduct = {
+      title: form.title.trim(),
+      brand: form.brand?.trim() || "",
+      categoryId: form.categoryId,
       mrp: Number(form.mrp),
       discount: Number(form.discount) || 0,
       price: calculatePrice(),
       stock: Number(form.stock),
-      images: form.images.filter(Boolean),
+      images: form.images.filter((img) => img.trim() !== ""),
       description: {
         about: form.about || "",
         highlights: form.highlights
-          ? form.highlights.split("\n")
+          ? form.highlights.split("\n").filter(Boolean)
           : [],
         material: form.material || "",
         usage: form.usage || "",
@@ -73,194 +120,219 @@ export default function SellerEditProduct({ product, onClose }) {
         warranty: form.warranty || "",
         expiryDate: form.expiryDate || "",
       },
-    });
+    };
 
-    onClose();
+    try {
+      setLoading(true);
+
+      await updateProduct(product.id, updatedProduct);
+
+      toast.success("Product updated successfully ✅");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update product");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      
+  /* ================= UI ================= */
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <h3 className="mb-4 text-xl font-semibold text-gray-800">
+
+        <h3 className="mb-6 text-xl font-semibold">
           Edit Product
         </h3>
 
-      
-        <div className="space-y-6">
-        
+        <form onSubmit={handleSave} className="space-y-6">
+
+          {/* BASIC INFO */}
           <div>
-            <h4 className="mb-2 font-medium text-gray-700">
-              Basic Information
-            </h4>
+            <h4 className="mb-2 font-medium">Basic Information</h4>
 
             <input
               name="title"
               value={form.title}
-              onChange={handleChange}
               placeholder="Product Name *"
-              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="mb-3 w-full rounded-lg border px-4 py-2"
             />
 
             <input
-              name="category"
-              value={form.category}
+              name="brand"
+              value={form.brand}
+              placeholder="Brand"
               onChange={handleChange}
-              placeholder="Category"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="mb-3 w-full rounded-lg border px-4 py-2"
             />
+
+            <select
+              name="categoryId"
+              value={form.categoryId}
+              onChange={handleChange}
+              className="w-full rounded-lg border px-4 py-2"
+            >
+              <option value="">Select Category *</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-    
+          {/* PRICING */}
           <div>
-            <h4 className="mb-2 font-medium text-gray-700">
-              Pricing
-            </h4>
+            <h4 className="mb-2 font-medium">Pricing</h4>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <input
+                type="number"
                 name="mrp"
                 value={form.mrp}
-                onChange={handleChange}
                 placeholder="MRP *"
-                className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                onChange={handleChange}
+                className="rounded-lg border px-4 py-2"
               />
 
               <input
+                type="number"
                 name="discount"
                 value={form.discount}
-                onChange={handleChange}
                 placeholder="Discount (%)"
-                className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                onChange={handleChange}
+                className="rounded-lg border px-4 py-2"
               />
             </div>
 
-            <p className="mt-2 text-sm text-gray-600">
-              Selling Price:{" "}
-              <strong>₹{calculatePrice()}</strong>
+            <p className="mt-2 text-sm">
+              Selling Price: <strong>₹{calculatePrice()}</strong>
             </p>
 
             <input
+              type="number"
               name="stock"
               value={form.stock}
-              onChange={handleChange}
               placeholder="Stock *"
-              className="mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="mt-2 w-full rounded-lg border px-4 py-2"
             />
           </div>
 
-      
+          {/* DESCRIPTION */}
           <div>
-            <h4 className="mb-2 font-medium text-gray-700">
-              Description
-            </h4>
+            <h4 className="mb-2 font-medium">Description</h4>
 
             <textarea
               name="about"
               value={form.about}
+              placeholder="About this product"
               onChange={handleChange}
               rows={3}
-              placeholder="About this product"
-              className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="mb-3 w-full rounded-lg border px-4 py-2"
             />
 
             <textarea
               name="highlights"
               value={form.highlights}
+              placeholder="Highlights (one per line)"
               onChange={handleChange}
               rows={3}
-              placeholder="Highlights (one per line)"
-              className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full rounded-lg border px-4 py-2"
             />
           </div>
 
-          
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* EXTRA DETAILS */}
+          <div className="grid gap-3 sm:grid-cols-2">
             <input
               name="material"
               value={form.material}
-              onChange={handleChange}
               placeholder="Material"
-              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="rounded-lg border px-4 py-2"
             />
 
             <input
               name="usage"
               value={form.usage}
-              onChange={handleChange}
               placeholder="Usage"
-              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="rounded-lg border px-4 py-2"
             />
 
             <input
               name="care"
               value={form.care}
-              onChange={handleChange}
               placeholder="Care Instructions"
-              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="rounded-lg border px-4 py-2"
             />
 
             <input
               name="warranty"
               value={form.warranty}
-              onChange={handleChange}
               placeholder="Warranty"
-              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="rounded-lg border px-4 py-2"
             />
 
             <input
               name="expiryDate"
               value={form.expiryDate}
-              onChange={handleChange}
               placeholder="Expiry Date"
-              className="rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              onChange={handleChange}
+              className="rounded-lg border px-4 py-2"
             />
           </div>
 
-          
+          {/* IMAGES */}
           <div>
-            <h4 className="mb-2 font-medium text-gray-700">
-              Product Images
-            </h4>
+            <h4 className="mb-2 font-medium">Product Images</h4>
 
             {form.images.map((img, i) => (
               <input
                 key={i}
                 value={img}
+                placeholder="Image URL"
                 onChange={(e) =>
                   handleImageChange(i, e.target.value)
                 }
-                placeholder="Image URL"
-                className="mb-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="mb-2 w-full rounded-lg border px-4 py-2"
               />
             ))}
 
             <button
+              type="button"
               onClick={addImageField}
               className="text-sm text-red-600 hover:underline"
             >
               + Add Image
             </button>
           </div>
-        </div>
 
+          {/* ACTIONS */}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border px-4 py-2"
+            >
+              Cancel
+            </button>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700"
-          >
-            Update Product
-          </button>
-        </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700"
+            >
+              {loading ? "Updating..." : "Update Product"}
+            </button>
+          </div>
+
+        </form>
       </div>
     </div>
   );

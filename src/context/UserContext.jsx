@@ -1,45 +1,95 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import api from "../api/axios";
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  // 🔹 Load from localStorage
-  const [users, setUsers] = useState(() => {
-    const stored = localStorage.getItem("users");
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🔹 Persist to localStorage
+  /* ================= SORT USERS (LATEST FIRST) ================= */
+
+  const sortUsers = (data) => {
+    if (!Array.isArray(data)) return [];
+
+    return [...data].sort(
+      (a, b) =>
+        new Date(b.createdAt || 0) -
+        new Date(a.createdAt || 0)
+    );
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+
+      const response = await api.get("/user/admin/all");
+
+      const data = response.data.content || response.data;
+
+      const formattedUsers = data.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role:
+          u.roles?.[0]?.replace("ROLE_", "").toLowerCase() ||
+          "buyer",
+        status: u.accountLocked ? "blocked" : "active",
+        createdAt: u.createdAt || null,
+      }));
+
+      /* 🔥 SORT LATEST USERS FIRST */
+      setUsers(sortUsers(formattedUsers));
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem("users", JSON.stringify(users));
-  }, [users]);
+    fetchUsers();
+  }, []);
 
-  // 🔹 Add new user (Buyer / Seller)
-  const addUser = (user) => {
-    setUsers((prev) => [...prev, { ...user, status: "active" }]);
+  /* ================= BLOCK ================= */
+
+  const blockUser = async (userId) => {
+    await api.put(`/user/admin/ban/${userId}`);
+    fetchUsers();
   };
 
-  // 🔹 Block user
-  const blockUser = (id) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id ? { ...u, status: "blocked" } : u
-      )
-    );
+  /* ================= UNBLOCK ================= */
+
+  const unblockUser = async (userId) => {
+    await api.put(`/user/admin/unban/${userId}`);
+    fetchUsers();
   };
 
-  // 🔹 Unblock user
-  const unblockUser = (id) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id ? { ...u, status: "active" } : u
-      )
-    );
+  /* ================= DELETE ================= */
+
+  const deleteUser = async (userId) => {
+    await api.delete(`/user/admin/delete/${userId}`);
+    fetchUsers();
+  };
+
+  /* ================= UPDATE ================= */
+
+  const updateUser = async (userId, data) => {
+    await api.put(`/user/admin/update/${userId}`, data);
+    fetchUsers();
   };
 
   return (
     <UserContext.Provider
-      value={{ users, addUser, blockUser, unblockUser }}
+      value={{
+        users,
+        loading,
+        blockUser,
+        unblockUser,
+        deleteUser,
+        updateUser,
+        refreshUsers: fetchUsers,
+      }}
     >
       {children}
     </UserContext.Provider>

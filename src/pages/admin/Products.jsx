@@ -1,237 +1,411 @@
-import { useState, useMemo } from "react";
-import { useProducts } from "../../context/ProductContext";
+import { useEffect, useMemo, useState } from "react";
+import productApi from "../../api/productApi";
+import { toast } from "react-toastify";
+import { useUsers } from "../../context/UserContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 
 export default function AdminProducts() {
-  const {
-    products,
-    approveProduct,
-    rejectProduct,
-    flagProduct,
-    unflagProduct,
-  } = useProducts();
 
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState("ALL");
 
-  const getSellerName = (p) => {
-    if (p.sellerName) return p.sellerName;
-    if (p.sellerId === "admin") return "Admin";
-    return "Seller";
+  const { users = [] } = useUsers();
+
+  useEffect(() => {
+    fetchAllProducts();
+  }, []);
+
+  const fetchAllProducts = async () => {
+    try {
+
+      setLoading(true);
+
+      const response = await productApi.get("/api/products/admin/all");
+
+      setProducts(response.data || []);
+
+    } catch (error) {
+
+      console.error("Admin fetch error:", error);
+
+      toast.error("Failed to load products");
+
+      setProducts([]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
   };
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const status = p.status?.toUpperCase();
+  const normalizeStatus = (status) =>
+    String(status || "PENDING").toUpperCase();
 
-      const matchesSearch =
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        getSellerName(p)
-          .toLowerCase()
-          .includes(search.toLowerCase());
+  const getSellerName = (email) => {
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        (statusFilter === "FLAGGED" && p.flagged) ||
-        status === statusFilter;
+    if (!email) return "Unknown Seller";
 
-      return matchesSearch && matchesStatus;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const seller = users.find(
+      (u) => u.email?.trim().toLowerCase() === normalizedEmail
+    );
+
+    return seller?.name || seller?.username || email;
+
+  };
+
+  const handleApprove = async (id) => {
+
+    try {
+
+      await productApi.put(`/api/products/admin/${id}/approve`);
+
+      toast.success("Product approved");
+
+      fetchAllProducts();
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Approval failed");
+
+    }
+
+  };
+
+  const handleReject = async (id) => {
+
+    try {
+
+      await productApi.put(`/api/products/admin/${id}/reject`);
+
+      toast.success("Product rejected");
+
+      fetchAllProducts();
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Rejection failed");
+
+    }
+
+  };
+const filteredProducts = useMemo(() => {
+
+  let data = [...products]
+    .sort((a,b)=>
+      new Date(b.createdAt || b.updatedAt || 0) -
+      new Date(a.createdAt || a.updatedAt || 0)
+    );
+
+  if (tab !== "ALL") {
+    data = data.filter((p) => {
+      const status = String(p.status || "").trim().toUpperCase();
+      return status === tab;
     });
-  }, [products, search, statusFilter]);
+  }
 
-  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  if (search) {
+    data = data.filter((p) =>
+      p.title?.toLowerCase().includes(search.toLowerCase())
+    );
+  }
+
+  return data;
+
+}, [products, search, tab]);
+  const totalPages =
+    filteredProducts.length > 0
+      ? Math.ceil(filteredProducts.length / PAGE_SIZE)
+      : 1;
 
   const paginatedProducts = useMemo(() => {
+
     const start = (page - 1) * PAGE_SIZE;
+
     return filteredProducts.slice(start, start + PAGE_SIZE);
+
   }, [filteredProducts, page]);
 
-  const statusBadge = (status) => {
-    if (status === "APPROVED")
-      return "bg-green-100 text-green-700";
-    if (status === "REJECTED")
-      return "bg-red-100 text-red-700";
-    return "bg-blue-100 text-blue-700";
+  const exportCSV = () => {
+
+    const headers = ["Title", "Seller", "Price", "Stock", "Status"];
+
+    const rows = filteredProducts.map((p) => [
+      p.title,
+      getSellerName(p.sellerEmail),
+      p.price,
+      p.stock,
+      normalizeStatus(p.status),
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers, ...rows]
+        .map((row) => row.join(","))
+        .join("\n");
+
+    const link = document.createElement("a");
+
+    link.href = encodeURI(csvContent);
+
+    link.download = "shopverse_products.csv";
+
+    link.click();
+
+  };
+
+  const exportPDF = () => {
+
+    const doc = new jsPDF();
+
+    doc.setFillColor(147, 16, 18);
+
+    doc.rect(0, 0, 210, 30, "F");
+
+    doc.setTextColor(255, 255, 255);
+
+    doc.setFontSize(18);
+
+    doc.text("ShopVerse - Product Report", 14, 18);
+
+    doc.setTextColor(0, 0, 0);
+
+    doc.setFontSize(11);
+
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 40);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [["Title", "Seller", "Price", "Stock", "Status"]],
+      body: filteredProducts.map((p) => [
+        p.title,
+        getSellerName(p.sellerEmail),
+        `₹${p.price}`,
+        p.stock,
+        normalizeStatus(p.status),
+      ]),
+    });
+
+    doc.save("shopverse_products_report.pdf");
+
   };
 
   return (
+
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-6">
-        Products Management
+
+      <h2 className="text-2xl font-semibold mb-6">
+        Product Management
       </h2>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search product or seller..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="border rounded-lg px-4 py-2 w-full md:w-1/2"
-        />
+      <div className="flex gap-3 mb-6">
 
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className="border rounded-lg px-4 py-2 w-full md:w-1/4"
+        <button
+          onClick={exportCSV}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
         >
-          <option value="ALL">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FLAGGED">Flagged</option>
-        </select>
+          Export CSV
+        </button>
+
+        <button
+          onClick={exportPDF}
+          className="px-4 py-2 bg-[#931012] text-white rounded-lg"
+        >
+          Export PDF
+        </button>
+
       </div>
 
-      <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
+      <div className="flex gap-3 mb-6">
+
+        {["ALL", "PENDING", "APPROVED", "REJECTED"].map((t) => (
+
+          <button
+            key={t}
+            onClick={() => {
+              setTab(t);
+              setPage(1);
+            }}
+            className={`px-4 py-2 rounded-lg text-sm ${
+              tab === t
+                ? "bg-[#931012] text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            {t}
+          </button>
+
+        ))}
+
+      </div>
+
+      <input
+        type="text"
+        placeholder="Search product..."
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+        className="border rounded-lg px-4 py-2 w-full md:w-1/2 mb-6"
+      />
+
+      <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
+
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+
             <tr>
-              <th className="p-3 text-left">Product</th>
-              <th className="p-3 text-left">Seller</th>
-              <th className="p-3 text-right">Price</th>
-              <th className="p-3 text-center">Stock</th>
-              <th className="p-3 text-center">Status</th>
-              <th className="p-3 text-center">Risk</th>
-              <th className="p-3 text-center">Actions</th>
+
+              <th className="p-4 text-left">Product</th>
+              <th className="p-4 text-left">Seller</th>
+              <th className="p-4 text-right">Price</th>
+              <th className="p-4 text-center">Stock</th>
+              <th className="p-4 text-center">Status</th>
+              <th className="p-4 text-center">Actions</th>
+
             </tr>
+
           </thead>
 
           <tbody>
-            {paginatedProducts.map((p) => {
-              const status = p.status?.toUpperCase();
 
-              return (
-                <tr
-                  key={p.id}
-                  className="border-t hover:bg-gray-50"
-                >
-                  <td className="p-3 font-medium">
-                    {p.name}
-                  </td>
+            {loading ? (
 
-                  <td className="p-3">
-                    {getSellerName(p)}
-                  </td>
+              <tr>
+                <td colSpan="6" className="text-center py-6">
+                  Loading...
+                </td>
+              </tr>
 
-                  <td className="p-3 text-right">
-                    ₹{p.price}
-                  </td>
+            ) : paginatedProducts.length === 0 ? (
 
-                  <td className="p-3 text-center">
-                    {p.stock ?? "—"}
-                  </td>
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-gray-500">
+                  No products found
+                </td>
+              </tr>
 
-                  <td className="p-3 text-center">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(
-                        status
-                      )}`}
-                    >
-                      {status}
-                    </span>
-                  </td>
+            ) : (
 
-                  <td className="p-3 text-center">
-                    {p.flagged ? (
-                      <span className="text-red-600 font-medium">
-                        🚩 Flagged
+              paginatedProducts.map((p) => {
+
+                const id = p.id || p._id;
+
+                return (
+
+                  <tr key={id} className="border-t hover:bg-gray-50">
+
+                    <td className="p-4 font-medium">{p.title}</td>
+
+                    <td className="p-4 text-gray-600">
+                      {getSellerName(p.sellerEmail)}
+                    </td>
+
+                    <td className="p-4 text-right font-semibold">
+                      ₹{p.price}
+                    </td>
+
+                    <td className="p-4 text-center">{p.stock}</td>
+
+                    <td className="p-4 text-center">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          normalizeStatus(p.status) === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : normalizeStatus(p.status) === "REJECTED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {normalizeStatus(p.status)}
                       </span>
-                    ) : (
-                      <span className="text-green-600 font-medium">
-                        Safe
-                      </span>
-                    )}
-                  </td>
 
-                  <td className="p-3">
-                    <div className="flex justify-center gap-2">
-                      {status === "PENDING" ? (
+                    </td>
+
+                    <td className="p-4 text-center space-x-2">
+
+                      {normalizeStatus(p.status) === "PENDING" && (
+
                         <>
+
                           <button
-                            onClick={() =>
-                              approveProduct(p.id)
-                            }
-                            className="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+                            onClick={() => handleApprove(id)}
+                            className="px-3 py-1 text-xs rounded bg-green-600 text-white"
                           >
                             Approve
                           </button>
+
                           <button
-                            onClick={() =>
-                              rejectProduct(p.id)
-                            }
-                            className="px-3 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700"
+                            onClick={() => handleReject(id)}
+                            className="px-3 py-1 text-xs rounded bg-red-600 text-white"
                           >
                             Reject
                           </button>
+
                         </>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            p.flagged
-                              ? unflagProduct(p.id)
-                              : flagProduct(p.id)
-                          }
-                          className="px-3 py-1 text-xs rounded bg-orange-500 text-white hover:bg-orange-600"
-                        >
-                          {p.flagged ? "Unflag" : "Flag"}
-                        </button>
+
                       )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+
+                    </td>
+
+                  </tr>
+
+                );
+
+              })
+
+            )}
+
           </tbody>
+
         </table>
 
-        {paginatedProducts.length === 0 && (
-          <div className="text-center py-6 text-gray-500">
-            No products found
-          </div>
-        )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-40"
-          >
-            Prev
-          </button>
+      {/* UPDATED PAGINATION */}
 
-          {Array.from({ length: totalPages }).map((_, i) => (
+      <div className="flex justify-center mt-8 gap-2">
+
+        {Array.from({ length: totalPages }, (_, index) => {
+
+          const pageNumber = index + 1;
+
+          return (
+
             <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`px-3 py-1 border rounded ${
-                page === i + 1
+              key={pageNumber}
+              onClick={() => setPage(pageNumber)}
+              className={`w-10 h-10 rounded-md text-sm font-medium ${
+                page === pageNumber
                   ? "bg-[#931012] text-white"
-                  : ""
+                  : "bg-gray-100 hover:bg-gray-200"
               }`}
             >
-              {i + 1}
+              {pageNumber}
             </button>
-          ))}
 
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-40"
-          >
-            Next
-          </button>
-        </div>
-      )}
+          );
+
+        })}
+
+      </div>
+
     </div>
+
   );
 }

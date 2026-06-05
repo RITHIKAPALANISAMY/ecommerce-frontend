@@ -1,200 +1,216 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useSellerProducts } from "../../context/SellerProductContext";
-import { useOrders } from "../../context/OrderContext";
-import { useNavigate } from "react-router-dom";
-
-import SellerRevenueAnalytics from "../../components/seller/SellerRevenueAnalytics";
-import SellerProducts from "./SellerProducts";
-import SellerOrders from "./SellerOrders";
-
+import { getSellerOrders } from "../../api/orderApi";
 import {
-  Package,
-  ShoppingCart,
   IndianRupee,
-  Clock,
-  AlertTriangle,
+  ShoppingCart,
+  CheckCircle,
   XCircle,
+  Truck,
 } from "lucide-react";
 
 export default function SellerDashboard() {
   const { user } = useAuth();
-  const { sellerProducts } = useSellerProducts();
-  const { orders } = useOrders();
-  const navigate = useNavigate();
 
-  const [tab, setTab] = useState("overview");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const sellerId = user?.email;
-  const seller = user?.sellerInfo;
+  const sellerEmail = user?.email?.trim().toLowerCase();
 
-  /* ================= SELLER ORDERS ================= */
-  const sellerOrders = useMemo(() => {
-    if (!sellerId) return [];
+  /* ================= FETCH SELLER ORDERS ================= */
+  useEffect(() => {
+    if (!sellerEmail) return;
 
-    return orders
-      .map((order) => {
-        const items = order.items.filter(
-          (i) => i.sellerId === sellerId
-        );
-        return items.length ? { ...order, items } : null;
-      })
-      .filter(Boolean);
-  }, [orders, sellerId]);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const res = await getSellerOrders(sellerEmail);
+        setOrders(res.data || []);
+      } catch (error) {
+        console.error("Failed to fetch seller orders", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /* ================= TOTAL REVENUE ================= */
-  const revenue = useMemo(() => {
-    return sellerOrders.reduce((total, order) => {
-      if (order.status === "Cancelled") return total;
+    fetchOrders();
+  }, [sellerEmail]);
 
-      const orderRevenue = order.items.reduce((sum, item) => {
-        if (item.status === "Cancelled") return sum;
-        return sum + Number(item.price || 0) * Number(item.quantity || 1);
-      }, 0);
+  /* ================= ORDER FILTERS ================= */
 
-      return total + orderRevenue;
+  const deliveredOrders = useMemo(
+    () => orders.filter((o) => o.status === "DELIVERED"),
+    [orders]
+  );
+
+  const shippedOrders = useMemo(
+    () => orders.filter((o) => o.status === "SHIPPED"),
+    [orders]
+  );
+
+  const cancelledOrders = useMemo(
+    () => orders.filter((o) => o.status === "CANCELLED"),
+    [orders]
+  );
+
+  /* ================= REVENUE ================= */
+
+  const totalRevenue = useMemo(() => {
+    if (!sellerEmail) return 0;
+
+    return deliveredOrders.reduce((sum, order) => {
+      const sellerItems = order.items?.filter(
+        (item) =>
+          item.sellerEmail?.toLowerCase() === sellerEmail
+      );
+
+      const sellerRevenue = sellerItems?.reduce(
+        (itemSum, item) =>
+          itemSum +
+          (item.price || 0) * (item.quantity || 1),
+        0
+      );
+
+      return sum + (sellerRevenue || 0);
     }, 0);
-  }, [sellerOrders]);
+  }, [deliveredOrders, sellerEmail]);
 
-  /* ================= STATS ================= */
-  const pendingOrders = sellerOrders.filter(
-    (o) => o.status === "Placed" || o.status === "Shipped"
-  ).length;
+  const totalOrders = orders.length;
+  const deliveredCount = deliveredOrders.length;
+  const shippedCount = shippedOrders.length;
+  const cancelledCount = cancelledOrders.length;
 
-  const LOW_STOCK_LIMIT = 5;
+  const avgOrderValue = useMemo(() => {
+    if (deliveredCount === 0) return 0;
+    return Math.round(totalRevenue / deliveredCount);
+  }, [totalRevenue, deliveredCount]);
 
-  const lowStock = sellerProducts.filter(
-    (p) => p.stock > 0 && p.stock <= LOW_STOCK_LIMIT
-  ).length;
+  const deliveryRate = totalOrders
+    ? Math.round((deliveredCount / totalOrders) * 100)
+    : 0;
 
-  const outOfStock = sellerProducts.filter(
-    (p) => p.stock === 0
-  ).length;
+  const cancellationRate = totalOrders
+    ? Math.round((cancelledCount / totalOrders) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <p className="text-gray-500 animate-pulse">
+          Loading dashboard...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-6">
-      <div className="mx-auto max-w-7xl">
+    <div className="space-y-10">
 
-        {/* HEADER */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Seller Dashboard
-          </h2>
-          <p className="text-sm text-gray-500">{user?.email}</p>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Dashboard Overview
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Welcome back, {sellerEmail}
+        </p>
+      </div>
+
+      {/* KPI GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <StatCard
+          title="Total Revenue"
+          value={`₹${totalRevenue}`}
+          icon={IndianRupee}
+          color="text-green-600"
+        />
+
+        <StatCard
+          title="Total Orders"
+          value={totalOrders}
+          icon={ShoppingCart}
+          color="text-blue-600"
+        />
+
+        <StatCard
+          title="Delivered"
+          value={deliveredCount}
+          icon={CheckCircle}
+          color="text-emerald-600"
+        />
+
+        <StatCard
+          title="Cancelled"
+          value={cancelledCount}
+          icon={XCircle}
+          color="text-red-600"
+        />
+      </div>
+
+      {/* SECOND SECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* BUSINESS SUMMARY */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Business Summary
+          </h3>
+
+          <div className="space-y-3 text-sm text-gray-600">
+            <p>
+              Shipped Orders: <strong>{shippedCount}</strong>
+            </p>
+            <p>
+              Average Order Value: <strong>₹{avgOrderValue}</strong>
+            </p>
+          </div>
         </div>
 
-        {/* SELLER PROFILE CARD */}
-        {seller && (
-          <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        {/* PERFORMANCE */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Performance
+          </h3>
 
-              {/* LEFT */}
-              <div className="flex items-center gap-5">
-                <img
-                  src={seller.profileImage || "/default-store.png"}
-                  alt="Seller Profile"
-                  className="h-24 w-24 rounded-full object-cover border-4 border-red-100 shadow"
-                />
+          <div className="flex justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Delivery Rate</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {deliveryRate}%
+              </p>
+            </div>
 
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    {seller.storeName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Owner: {seller.ownerName || "—"}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {user.email}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-gray-100 px-3 py-1">
-                      📞 {seller.phone}
-                    </span>
-
-                    {seller.gst && (
-                      <span className="rounded-full bg-gray-100 px-3 py-1">
-                        🧾 GST: {seller.gst}
-                      </span>
-                    )}
-
-                    <span className="rounded-full bg-gray-100 px-3 py-1">
-                      📍 {seller.address}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT */}
-              <button
-                onClick={() => navigate("/seller/profile")}
-                className="rounded-lg border border-red-600 px-5 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white"
-              >
-                ✏️ Edit Profile
-              </button>
+            <div>
+              <p className="text-gray-400 text-sm">Cancellation Rate</p>
+              <p className="text-2xl font-bold text-red-600">
+                {cancellationRate}%
+              </p>
             </div>
           </div>
-        )}
-
-        {/* TABS */}
-        <div className="mb-8 inline-flex rounded-xl bg-white p-1 shadow-sm">
-          {["overview", "products", "orders"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-lg px-5 py-2 text-sm font-medium transition ${
-                tab === t
-                  ? "bg-red-600 text-white shadow"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
         </div>
 
-        {/* OVERVIEW */}
-        {tab === "overview" && (
-          <>
-            <div className="mb-10 rounded-2xl bg-white p-6 shadow-md">
-              <h3 className="mb-6 text-lg font-semibold text-gray-800">
-                Store Performance
-              </h3>
-
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <StatCard title="Products" value={sellerProducts.length} icon={Package} accent="bg-indigo-100 text-indigo-600" />
-                <StatCard title="Orders" value={sellerOrders.length} icon={ShoppingCart} accent="bg-blue-100 text-blue-600" />
-                <StatCard title="Revenue" value={`₹${revenue}`} icon={IndianRupee} accent="bg-green-100 text-green-600" />
-                <StatCard title="Pending Orders" value={pendingOrders} icon={Clock} accent="bg-yellow-100 text-yellow-600" />
-                <StatCard title="Low Stock" value={lowStock} icon={AlertTriangle} accent="bg-orange-100 text-orange-600" />
-                <StatCard title="Out of Stock" value={outOfStock} icon={XCircle} accent="bg-red-100 text-red-600" />
-              </div>
-            </div>
-
-            <SellerRevenueAnalytics sellerOrders={sellerOrders} />
-          </>
-        )}
-
-        {tab === "products" && <SellerProducts />}
-        {tab === "orders" && <SellerOrders />}
       </div>
+
     </div>
   );
 }
 
 /* ================= STAT CARD ================= */
-function StatCard({ title, value, icon: Icon, accent }) {
+
+function StatCard({ title, value, icon: Icon, color }) {
   return (
-    <div className="group rounded-xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
-          <Icon className="h-5 w-5" />
+    <div className="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-lg transition">
+      <div className="flex justify-between items-center">
+        <p className="text-gray-500 text-sm">{title}</p>
+        <div className="p-2 rounded-lg bg-gray-100">
+          <Icon className={`h-5 w-5 ${color}`} />
         </div>
       </div>
 
-      <p className="mt-4 text-3xl font-bold text-gray-800">{value}</p>
-      <div className="mt-2 h-1 w-10 rounded-full bg-gray-200 group-hover:bg-red-500 transition" />
+      <p className="text-3xl font-bold mt-4 text-gray-800">
+        {value}
+      </p>
     </div>
   );
 }

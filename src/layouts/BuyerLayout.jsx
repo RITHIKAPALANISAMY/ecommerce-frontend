@@ -4,14 +4,17 @@ import Footer from "../components/common/Footer";
 
 export default function BuyerLayout() {
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Navbar */}
       <Navbar />
 
-      <div className="buyer-layout">
+      {/* Main Content */}
+      <main className="flex-1">
         <Outlet />
-      </div>
+      </main>
 
+      {/* Footer */}
       <Footer />
-    </>
+    </div>
   );
 }

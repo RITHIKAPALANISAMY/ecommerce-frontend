@@ -1,65 +1,52 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8081", // ✅ Auth Service
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-/* ================= REQUEST INTERCEPTOR ================= */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("accessToken");
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-/* ================= RESPONSE INTERCEPTOR ================= */
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      localStorage.getItem("refreshToken")
-    ) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem("refreshToken");
-
-        const response = await axios.post(
-          "http://localhost:8081/auth/refresh",
-          { refreshToken }
-        );
-
-        const newAccessToken = response.data.accessToken;
-
-        localStorage.setItem("accessToken", newAccessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-        return api(originalRequest);
-
-      } catch (refreshError) {
-        localStorage.clear();
-        window.location.href = "/login";
-      }
-    }
-
-    return Promise.reject(error);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+
+  /* Product Service */
+  if (
+    config.url.startsWith("/api/products") ||
+    config.url.startsWith("/api/categories") ||
+    config.url.startsWith("/api/inventory")
+  ) {
+    config.baseURL = "http://localhost:8082";
+  }
+
+  /* Wishlist Service (Auth Service - 8081) */
+  else if (config.url.startsWith("/buyer/wishlist")) {
+    config.baseURL = "http://localhost:8081";
+  }
+
+  /* Cart Service */
+  else if (config.url.startsWith("/cart")) {
+    config.baseURL = "http://localhost:8083";
+  }
+
+  /* Order Service */
+  else if (
+    config.url.startsWith("/api/orders") ||
+    config.url.startsWith("/api/coupons") ||
+    config.url.startsWith("/api/analytics")
+  ) {
+    config.baseURL = "http://localhost:8085";
+  }
+
+  /* Default → Auth Service */
+  else {
+    config.baseURL = "http://localhost:8081";
+  }
+
+  return config;
+});
 
 export default api;

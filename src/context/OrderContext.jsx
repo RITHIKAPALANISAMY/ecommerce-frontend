@@ -1,106 +1,161 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { useCart } from "./CartContext";
+import { createContext, useContext, useState } from "react";
+import axios from "axios";
 import { useAuth } from "./AuthContext";
 
 const OrderContext = createContext();
+const ORDER_API = "http://localhost:8085/api/orders";
 
 export const OrderProvider = ({ children }) => {
-  const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
 
-  /* ================= STATE ================= */
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const [orders, setOrders] = useState(() => {
-    const stored = localStorage.getItem("orders");
-    return stored ? JSON.parse(stored) : [];
-  });
+  /* ================= SORT NEWEST FIRST ================= */
 
-  /* ================= PERSIST ================= */
+  const sortOrders = (data) => {
+    if (!Array.isArray(data)) return [];
 
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  }, [orders]);
+    return [...data].sort(
+      (a, b) =>
+        new Date(b.orderDate || b.createdAt || 0) -
+        new Date(a.orderDate || a.createdAt || 0)
+    );
+  };
+
+  /* ================= FETCH BUYER ORDERS ================= */
+
+  const fetchBuyerOrders = async () => {
+    if (!user?.email) return;
+
+    try {
+      setLoading(true);
+
+      const response = await axios.get(
+        `${ORDER_API}/buyer/${user.email.toLowerCase()}`
+      );
+
+      const data = response.data?.content || response.data || [];
+
+      setOrders(sortOrders(data));
+    } catch (error) {
+      console.error("Failed to fetch buyer orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= FETCH ADMIN ORDERS ================= */
+
+  const fetchAllOrders = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.get(`${ORDER_API}/admin/all`);
+
+      const data = response.data?.content || response.data || [];
+
+      /* 🔥 SORT LATEST FIRST */
+      setOrders(sortOrders(data));
+    } catch (error) {
+      console.error("Failed to fetch admin orders:", error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ================= PLACE ORDER ================= */
 
-  const placeOrder = ({ address, amount }) => {
-    if (!cartItems.length || !user?.email) return;
+  const placeOrder = async (orderData) => {
 
-    const newOrder = {
-      id: Date.now(),
+  if (!orderData?.items?.length || !user?.email) {
+    console.error("Order failed: Missing items or user");
+    return null;
+  }
 
-      buyerEmail: user.email.toLowerCase(), // ✅ FIXED
+  try {
+
+    setLoading(true);
+
+    /* ✅ FIX DISCOUNTED ITEM PRICE */
+
+    const updatedItems = orderData.items.map((item) => ({
+
+      ...item,
+
+      price:
+        item.finalPrice ||
+        item.discountedPrice ||
+        item.price
+
+    }));
+
+    const response = await axios.post(ORDER_API, {
+
+      ...orderData,
+
+      items: updatedItems,
+
+      buyerEmail: user.email.toLowerCase(),
+
       buyerName: user.name || "Customer",
 
-      items: cartItems.map((item) => ({
-        id: item.id,
-        title: item.title,
-        price: item.price,
-        image: item.image,
-        quantity: item.quantity || 1,
-        sellerId: item.sellerId,
-      })),
+    });
 
-      address: address || {},
-      amount: Number(amount || 0),
+    /* refresh orders */
 
-      status: "placed",
-      placedDate: new Date().toISOString(),
-      paymentMethod: "cod",
-    };
+    await fetchAllOrders();
 
-    setOrders((prev) => [newOrder, ...prev]);
-    clearCart();
+    return response.data;
+
+  } catch (error) {
+
+    console.error("Order placement failed:", error);
+
+    throw error;
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+
+  /* ================= UPDATE STATUS ================= */
+
+  const updateOrderStatus = async (id, status) => {
+    try {
+      await axios.put(`${ORDER_API}/${id}/status?status=${status}`);
+
+      await fetchAllOrders();
+    } catch (error) {
+      console.error("Status update failed:", error);
+    }
   };
 
-  /* ================= UPDATE ORDER ================= */
+  /* ================= CANCEL ORDER ================= */
 
-  const updateOrderStatus = (orderId, status) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId
-          ? { ...order, status: status.toLowerCase() }
-          : order
-      )
-    );
-  };
+  const cancelOrder = async (id) => {
+    try {
+      await axios.delete(`${ORDER_API}/${id}`);
 
-  /* ================= GET BUYER ORDERS ================= */
-
-  const getBuyerOrders = (buyerEmail) => {
-    if (!buyerEmail) return [];
-
-    return orders.filter(
-      (order) =>
-        order.buyerEmail?.toLowerCase() ===
-        buyerEmail.toLowerCase()
-    );
-  };
-
-  /* ================= SELLER ORDERS ================= */
-
-  const getSellerOrders = (sellerId) => {
-    return orders
-      .map((order) => {
-        const sellerItems = order.items.filter(
-          (item) => item.sellerId === sellerId
-        );
-
-        return sellerItems.length
-          ? { ...order, items: sellerItems }
-          : null;
-      })
-      .filter(Boolean);
+      await fetchBuyerOrders();
+    } catch (error) {
+      console.error("Cancel failed:", error);
+    }
   };
 
   return (
     <OrderContext.Provider
       value={{
         orders,
+        loading,
+        fetchBuyerOrders,
+        fetchAllOrders,
         placeOrder,
         updateOrderStatus,
-        getBuyerOrders,
-        getSellerOrders,
+        cancelOrder,
       }}
     >
       {children}

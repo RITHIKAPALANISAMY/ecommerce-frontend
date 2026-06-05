@@ -1,13 +1,16 @@
 import axios from "axios";
 
 const paymentApi = axios.create({
-  baseURL: "http://localhost:8084", // ✅ Payment Service
+  baseURL: "http://localhost:8084",
   headers: {
     "Content-Type": "application/json",
   },
 });
+export const getAllPayments = () =>
+  paymentApi.get("/payment/admin/all");
 
-// Attach token if needed
+export const refundPayment = (id) =>
+  paymentApi.post(`/payment/admin/refund/${id}`);
 paymentApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 

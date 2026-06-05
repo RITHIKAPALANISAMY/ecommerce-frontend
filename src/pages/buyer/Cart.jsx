@@ -1,79 +1,108 @@
+import { motion } from "framer-motion";
+import {
+  ShoppingBag,
+  Trash2,
+  Tag,
+  Truck,
+  Receipt,
+} from "lucide-react";
+
 import CartItem from "../../components/buyer/CartItem";
 import { useCart } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 
 export default function Cart() {
-  const {
-    cartItems,
-    appliedCoupon,
-    applyCoupon,
-    removeCoupon,
-  } = useCart();
-
+  const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(true);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [error, setError] = useState("");
+
+  /* ================= AUTH PROTECTION ================= */
   useEffect(() => {
     if (!user) {
       navigate("/login", { replace: true });
-      return;
-    }
-    if (user.role === "admin") {
-      navigate("/admin/dashboard", { replace: true });
+    } else {
+      setLoading(false);
     }
   }, [user, navigate]);
 
-  const buyNowItems = cartItems.filter(
-    (item) => item.buyNow === true
-  );
+  /* ================= FETCH COUPONS ================= */
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      try {
+        const res = await api.get("/api/coupons");
+        setAvailableCoupons(res.data || []);
+      } catch {
+        setAvailableCoupons([]);
+      }
+    };
+    fetchCoupons();
+  }, []);
 
-  const itemsToShow =
-    buyNowItems.length > 0 ? buyNowItems : cartItems;
-
-  const [couponInput, setCouponInput] = useState("");
-  const [error, setError] = useState("");
-
+  /* ================= STOCK FILTER ================= */
   const inStockItems = useMemo(
-    () =>
-      itemsToShow.filter(
-        (i) => i.stock === undefined || i.stock > 0
-      ),
-    [itemsToShow]
+    () => cartItems.filter((i) => i.stock > 0),
+    [cartItems]
   );
 
   const outOfStockItems = useMemo(
-    () =>
-      itemsToShow.filter(
-        (i) => i.stock !== undefined && i.stock === 0
-      ),
-    [itemsToShow]
+    () => cartItems.filter((i) => i.stock === 0),
+    [cartItems]
   );
 
-  const subtotal = inStockItems.reduce(
-    (sum, i) => sum + Number(i.price) * Number(i.quantity),
-    0
-  );
+  /* ================= SAFE MONEY CALCULATION ================= */
+  const subtotal = useMemo(() => {
+    return inStockItems.reduce((sum, item) => {
+      return sum + Number(item.price) * Number(item.quantity);
+    }, 0);
+  }, [inStockItems]);
 
-  const shipping = subtotal > 0 ? 99 : 0;
-  const gst = Math.round(subtotal * 0.18);
+  const shipping =
+  subtotal >= 799
+    ? 0
+    : subtotal > 0
+    ? 99
+    : 0;
+
+  // GST 18%
+  const gst = Number((subtotal * 0.18).toFixed(2));
 
   let discount = 0;
-  if (appliedCoupon && subtotal > 0) {
-    discount =
-      appliedCoupon.type === "PERCENT"
-        ? Math.round(subtotal * (appliedCoupon.value / 100))
-        : appliedCoupon.value;
+
+  if (appliedCoupon) {
+    discount = Number(
+      ((subtotal * appliedCoupon.discountPercentage) / 100).toFixed(2)
+    );
   }
 
-  const total = subtotal + gst + shipping - discount;
+  const total = Number(
+    (subtotal + gst + shipping - discount).toFixed(2)
+  );
 
-  const handleApply = () => {
-    const msg = applyCoupon(couponInput.trim(), subtotal);
-    setError(msg || "");
+  /* ================= APPLY COUPON ================= */
+  const handleApply = async (code) => {
+    try {
+      const res = await api.get(
+        `/api/coupons/validate/${code}?amount=${subtotal}`
+      );
+      setAppliedCoupon(res.data);
+      setError("");
+    } catch (err) {
+      setAppliedCoupon(null);
+      setError(
+        err.response?.data?.message || "Coupon not valid"
+      );
+    }
   };
 
+  /* ================= CHECKOUT ================= */
   const handleCheckout = () => {
     if (inStockItems.length === 0) return;
 
@@ -97,124 +126,162 @@ export default function Cart() {
     navigate("/checkout/address");
   };
 
-  const isBuyer = user?.role === "BUYER";
+  /* ================= EMPTY STATE ================= */
+  if (!loading && cartItems.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+        <ShoppingBag size={70} className="text-gray-400 mb-4" />
+        <h2 className="text-2xl font-semibold mb-4">
+          Your cart is empty
+        </h2>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate("/")}
+          className="bg-gradient-to-r from-red-700 to-red-900 text-white px-6 py-3 rounded-xl shadow-md"
+        >
+          Continue Shopping
+        </motion.button>
+      </div>
+    );
+  }
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500 text-lg">Loading cart...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-gray-100 py-8 pb-16">
-      <h2 className="mx-auto mb-6 max-w-6xl text-xl font-semibold text-gray-800">
-        Shopping Cart ({itemsToShow.length} items)
-      </h2>
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 py-10">
+      <motion.h2
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto mb-8 max-w-6xl text-2xl font-bold text-gray-800"
+      >
+        Shopping Cart ({cartItems.length} items)
+      </motion.h2>
 
       {outOfStockItems.length > 0 && (
-        <div className="mx-auto mb-5 max-w-6xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          Some items are currently <strong>out of stock</strong>.
-          <br />
-          They won’t be included in checkout.
+        <div className="mx-auto mb-6 max-w-6xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          Some items are currently out of stock.
         </div>
       )}
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3">
 
-        {/* LEFT */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
-          {itemsToShow.map((item) => (
+        {/* LEFT SIDE */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {cartItems.map((item) => (
             <CartItem key={item.id} item={item} />
           ))}
 
-          <div className="rounded-xl bg-white p-5 shadow-sm">
-            <h4 className="mb-4 font-semibold text-gray-800">
-              Available Coupons
+          {/* CLEAR CART BUTTON */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (window.confirm("Clear entire cart?")) {
+                clearCart();
+              }
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-red-600 
+                       border border-red-200 px-4 py-2 rounded-lg w-fit
+                       hover:bg-red-600 hover:text-white transition-all duration-300"
+          >
+            <Trash2 size={16} />
+            Clear Cart
+          </motion.button>
+
+          {/* COUPON SECTION */}
+          <div className="rounded-2xl bg-white p-6 shadow-lg">
+            <h4 className="mb-4 font-semibold text-gray-800 flex items-center gap-2">
+              <Tag size={18} /> Available Coupons
             </h4>
 
-            {[
-              {
-                code: "WELCOME10",
-                desc: "10% OFF on orders above ₹500",
-              },
-              {
-                code: "SAVE500",
-                desc: "₹500 OFF on orders above ₹2000",
-              },
-            ].map((c) => (
-              <div
-                key={c.code}
-                className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-600 bg-red-50/30 p-3"
-              >
-                <div>
-                  <strong className="text-red-700">
-                    {c.code}
-                  </strong>
-                  <p className="text-sm text-gray-600">
-                    {c.desc}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setCouponInput(c.code)}
-                  className="rounded-md bg-red-700 px-4 py-1.5 text-sm text-white transition hover:bg-red-800"
+            {availableCoupons.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                No active coupons available
+              </p>
+            ) : (
+              availableCoupons.map((c) => (
+                <div
+                  key={c.id}
+                  className="mb-3 flex items-center justify-between rounded-lg border border-dashed border-red-600 bg-red-50/30 p-3"
                 >
-                  Apply
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <strong className="text-red-700">
+                      {c.code}
+                    </strong>
+                    <p className="text-sm text-gray-600">
+                      {c.discountPercentage}% OFF
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleApply(c.code)}
+                    className="rounded-md bg-red-700 px-4 py-1.5 text-sm text-white hover:bg-red-800"
+                  >
+                    Apply
+                  </button>
+                </div>
+              ))
+            )}
+
+            {error && (
+              <p className="mt-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
 
             {appliedCoupon && (
-              <button
-                onClick={removeCoupon}
-                className="mt-2 text-sm font-medium text-red-600 underline"
-              >
-                Remove Coupon
-              </button>
+              <p className="mt-2 text-sm text-green-600 font-medium">
+                Coupon "{appliedCoupon.code}" applied successfully
+              </p>
             )}
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div className="h-fit rounded-xl bg-white p-6 shadow-md">
-          <h4 className="mb-4 font-semibold text-gray-800">
-            Price Details
+        {/* RIGHT SIDE */}
+        <div className="h-fit rounded-2xl bg-white p-6 shadow-xl">
+          <h4 className="mb-4 font-semibold text-gray-800 flex items-center gap-2">
+            <Receipt size={18} /> Price Details
           </h4>
-
-          <div className="mb-4 flex gap-2">
-            <input
-              value={couponInput}
-              onChange={(e) => setCouponInput(e.target.value)}
-              placeholder="Enter coupon code"
-              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm transition focus:border-red-500 focus:outline-none"
-            />
-            <button
-              onClick={handleApply}
-              className="rounded-md bg-red-700 px-4 py-2 text-sm text-white transition hover:bg-red-800"
-            >
-              Apply
-            </button>
-          </div>
-
-          {error && (
-            <p className="mb-2 text-sm text-red-600">
-              {error}
-            </p>
-          )}
 
           <div className="my-2 flex justify-between text-sm">
             <span>Subtotal</span>
-            <span>₹{subtotal}</span>
+            <span>₹{subtotal.toFixed(2)}</span>
           </div>
 
           <div className="my-2 flex justify-between text-sm">
-            <span>Shipping</span>
-            <span>₹{shipping}</span>
+            <span className="flex items-center gap-1">
+              <Truck size={14} /> Shipping
+            </span>
+            {shipping === 0 ? (
+  <span className="text-green-600 font-medium">
+    FREE
+  </span>
+) : (
+  <span>₹{shipping.toFixed(2)}</span>
+)}
           </div>
 
           <div className="my-2 flex justify-between text-sm">
             <span>GST (18%)</span>
-            <span>₹{gst}</span>
+            <span>₹{gst.toFixed(2)}</span>
           </div>
+          {subtotal >= 799 && (
+  <p className="text-sm text-green-600 font-medium mt-2">
+    🎉 You got FREE Delivery!
+  </p>
+)}
 
           {discount > 0 && (
             <div className="my-2 flex justify-between text-sm font-medium text-green-600">
               <span>Discount</span>
-              <span>-₹{discount}</span>
+              <span>-₹{discount.toFixed(2)}</span>
             </div>
           )}
 
@@ -222,22 +289,22 @@ export default function Cart() {
 
           <div className="flex justify-between text-lg font-bold text-gray-900">
             <span>Total</span>
-            <span>₹{total}</span>
+            <span>₹{total.toFixed(2)}</span>
           </div>
 
-          {isBuyer && (
-            <button
-              disabled={inStockItems.length === 0}
-              onClick={handleCheckout}
-              className={`mt-6 w-full rounded-lg py-3 text-sm font-semibold text-white transition ${
-                inStockItems.length === 0
-                  ? "cursor-not-allowed bg-gray-300"
-                  : "bg-red-800 hover:bg-red-900 hover:shadow"
-              }`}
-            >
-              Proceed to Checkout →
-            </button>
-          )}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            disabled={inStockItems.length === 0}
+            onClick={handleCheckout}
+            className={`mt-6 w-full rounded-xl py-3 text-sm font-semibold text-white ${
+              inStockItems.length === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-red-700 to-red-900 hover:opacity-90"
+            }`}
+          >
+            Proceed to Checkout →
+          </motion.button>
         </div>
       </div>
     </div>

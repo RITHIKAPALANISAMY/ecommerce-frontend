@@ -1,14 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOrders } from "../../context/OrderContext";
+import { toast } from "react-toastify";
 
-/* ===== HELPERS ===== */
+const PAGE_SIZE = 10;
+
 const normalizeStatus = (status) =>
   String(status || "PLACED").toUpperCase();
-
-const normalizeCustomer = (customer) =>
-  customer && customer.toLowerCase() === "buyer"
-    ? "Buyer"
-    : "Buyer"; // 🔥 STANDARD
 
 const statusBadge = (status) => {
   switch (status) {
@@ -26,20 +23,41 @@ const statusBadge = (status) => {
 };
 
 const AdminOrders = () => {
-  const { orders = [], updateOrderStatus } = useOrders();
+  const { orders = [], fetchAllOrders, updateOrderStatus, loading } = useOrders();
+  const [page, setPage] = useState(1);
 
-  /* ===== NORMALIZED ORDERS ===== */
+  useEffect(() => {
+    fetchAllOrders();
+  }, []);
+
+  /* 🔥 SORT NEWEST FIRST */
   const normalizedOrders = useMemo(() => {
-    return orders.map((o) => ({
-      ...o,
-      status: normalizeStatus(o.status),
-      customer: normalizeCustomer(o.customer),
-    }));
+    return [...orders]
+      .map((o) => ({
+        ...o,
+        status: normalizeStatus(o.status),
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.orderDate || b.createdAt || 0) -
+          new Date(a.orderDate || a.createdAt || 0)
+      );
   }, [orders]);
 
-  /* ===== ACTION HANDLERS ===== */
-  const handleStatusChange = (id, status) => {
-    updateOrderStatus(id, status);
+  const totalPages = Math.ceil(normalizedOrders.length / PAGE_SIZE);
+
+  const paginatedOrders = normalizedOrders.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await updateOrderStatus(id, status);
+      toast.success(`Order marked ${status}`);
+    } catch {
+      toast.error("Failed to update order");
+    }
   };
 
   return (
@@ -47,7 +65,7 @@ const AdminOrders = () => {
       <h2 className="text-xl font-semibold mb-6">Orders Management</h2>
 
       <div className="bg-white rounded-2xl shadow overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-gray-50">
             <tr className="text-left">
               <th className="px-6 py-4">Order ID</th>
@@ -59,26 +77,18 @@ const AdminOrders = () => {
           </thead>
 
           <tbody>
-            {normalizedOrders.length === 0 ? (
+            {paginatedOrders.length === 0 ? (
               <tr>
                 <td colSpan="5" className="text-center py-10 text-gray-500">
                   No orders found
                 </td>
               </tr>
             ) : (
-              normalizedOrders.map((order) => (
-                <tr key={order.id} className="border-t">
-                  <td className="px-6 py-4 font-medium">
-                    #{order.id}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    {order.customer}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    ₹{order.amount?.total || order.amount}
-                  </td>
+              paginatedOrders.map((order) => (
+                <tr key={order.id} className="border-t hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">#{order.id}</td>
+                  <td className="px-6 py-4">{order.buyerName || order.buyerEmail}</td>
+                  <td className="px-6 py-4">₹{order.totalAmount}</td>
 
                   <td className="px-6 py-4">
                     <span
@@ -90,13 +100,12 @@ const AdminOrders = () => {
                     </span>
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 space-x-2">
                     {order.status === "PLACED" && (
                       <button
-                        onClick={() =>
-                          handleStatusChange(order.id, "SHIPPED")
-                        }
-                        className="text-blue-600 font-medium hover:underline"
+                        disabled={loading}
+                        onClick={() => handleStatusChange(order.id, "SHIPPED")}
+                        className="text-blue-600 hover:underline"
                       >
                         Mark Shipped
                       </button>
@@ -104,21 +113,19 @@ const AdminOrders = () => {
 
                     {order.status === "SHIPPED" && (
                       <button
+                        disabled={loading}
                         onClick={() =>
                           handleStatusChange(order.id, "DELIVERED")
                         }
-                        className="text-green-600 font-medium hover:underline"
+                        className="text-green-600 hover:underline"
                       >
                         Mark Delivered
                       </button>
                     )}
 
-                    {order.status === "DELIVERED" && (
+                    {(order.status === "DELIVERED" ||
+                      order.status === "CANCELLED") && (
                       <span className="text-gray-400">—</span>
-                    )}
-
-                    {order.status === "CANCELLED" && (
-                      <span className="text-red-400">Cancelled</span>
                     )}
                   </td>
                 </tr>
@@ -126,6 +133,22 @@ const AdminOrders = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex justify-center mt-8 gap-2 flex-wrap">
+        {Array.from({ length: totalPages }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setPage(i + 1)}
+            className={`px-3 py-1 rounded ${
+              page === i + 1
+                ? "bg-[#931012] text-white"
+                : "border hover:bg-gray-100"
+            }`}
+          >
+            {i + 1}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { useOrders } from "../../context/OrderContext";
 import { exportToCSV } from "../../utils/exportReports";
@@ -37,16 +37,8 @@ const baseOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: {
-      position: "bottom",
-      labels: { boxWidth: 12, padding: 12 },
-    },
+    legend: { position: "bottom" },
   },
-};
-
-const doughnutOptions = {
-  ...baseOptions,
-  cutout: "65%",
 };
 
 const normalizeStatus = (status) =>
@@ -54,33 +46,41 @@ const normalizeStatus = (status) =>
 
 export default function Analytics() {
   const { orders = [] } = useOrders();
-  const [, forceUpdate] = useState(0);
 
-  /* REALTIME SYNC */
-  useEffect(() => {
-    const sync = () => forceUpdate((v) => v + 1);
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
+  /* ================= SAFE DATE ================= */
+  const getOrderDate = (o) =>
+    new Date(o.createdAt || o.orderDate || o.date);
 
-  const getAmountValue = (amount) => {
-    if (typeof amount === "number") return amount;
-    if (typeof amount === "object" && amount !== null)
-      return amount.total || 0;
-    return 0;
-  };
-
-  /* ================= SALES TREND ================= */
+  /* ================= SALES TREND (LAST 7 DAYS) ================= */
   const salesByDate = useMemo(() => {
     const map = {};
+    const today = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      const key = d.toDateString();
+
+      map[key] = 0;
+    }
+
     orders.forEach((o) => {
-      if (!o.placedDate) return;
-      map[o.placedDate] =
-        (map[o.placedDate] || 0) +
-        getAmountValue(o.amount);
+      const dateKey = getOrderDate(o).toDateString();
+
+      if (normalizeStatus(o.status) === "DELIVERED") {
+        if (map[dateKey] !== undefined) {
+          map[dateKey] += Number(o.totalAmount || 0);
+        }
+      }
     });
+
     return {
-      labels: Object.keys(map),
+      labels: Object.keys(map).map((d) =>
+        new Date(d).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        })
+      ),
       values: Object.values(map),
     };
   }, [orders]);
@@ -100,12 +100,19 @@ export default function Analytics() {
   };
 
   /* ================= TOTALS ================= */
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + getAmountValue(o.amount),
-    0
+  const totalRevenue = useMemo(
+    () =>
+      orders.reduce(
+        (sum, o) =>
+          normalizeStatus(o.status) === "DELIVERED"
+            ? sum + Number(o.totalAmount || 0)
+            : sum,
+        0
+      ),
+    [orders]
   );
 
-  /* ================= ORDERS vs REVENUE (FIXED) ================= */
+  /* ================= ORDERS vs REVENUE ================= */
   const ordersVsRevenue = {
     labels: ["Performance"],
     datasets: [
@@ -130,24 +137,15 @@ export default function Analytics() {
       yOrders: {
         type: "linear",
         position: "left",
-        title: {
-          display: true,
-          text: "Orders",
-        },
-        ticks: {
-          stepSize: 5,
-        },
+        beginAtZero: true,
+        title: { display: true, text: "Orders" },
       },
       yRevenue: {
         type: "linear",
         position: "right",
-        title: {
-          display: true,
-          text: "Revenue (₹)",
-        },
-        grid: {
-          drawOnChartArea: false,
-        },
+        beginAtZero: true,
+        title: { display: true, text: "Revenue (₹)" },
+        grid: { drawOnChartArea: false },
       },
     },
   };
@@ -173,12 +171,7 @@ export default function Analytics() {
     labels: ["Placed", "Shipped", "Delivered", "Cancelled"],
     datasets: [
       {
-        data: [
-          statusCounts.PLACED,
-          statusCounts.SHIPPED,
-          statusCounts.DELIVERED,
-          statusCounts.CANCELLED,
-        ],
+        data: Object.values(statusCounts),
         backgroundColor: [
           COLORS.warning,
           COLORS.info,
@@ -192,13 +185,16 @@ export default function Analytics() {
   /* ================= TOP PRODUCTS ================= */
   const productSales = useMemo(() => {
     const map = {};
+
     orders.forEach((o) =>
       o.items?.forEach((i) => {
         map[i.title] =
           (map[i.title] || 0) +
-          i.price * (i.quantity || 1);
+          Number(i.price || 0) *
+            Number(i.quantity || 1);
       })
     );
+
     return map;
   }, [orders]);
 
@@ -219,10 +215,7 @@ export default function Analytics() {
       {
         TotalOrders: orders.length,
         TotalRevenue: totalRevenue,
-        Placed: statusCounts.PLACED,
-        Shipped: statusCounts.SHIPPED,
-        Delivered: statusCounts.DELIVERED,
-        Cancelled: statusCounts.CANCELLED,
+        ...statusCounts,
       },
     ]);
   };
@@ -236,7 +229,7 @@ export default function Analytics() {
 
         <button
           onClick={exportAnalytics}
-          className="bg-[#931012] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+          className="bg-[#931012] text-white px-4 py-2 rounded-lg text-sm"
         >
           Export Analytics
         </button>
@@ -244,7 +237,9 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow p-6">
-          <h3 className="font-semibold mb-4">📈 Sales Trend</h3>
+          <h3 className="font-semibold mb-4">
+            📈 Sales Trend (7 Days)
+          </h3>
           <div className="h-[260px]">
             <Line data={salesData} options={baseOptions} />
           </div>
@@ -283,7 +278,7 @@ export default function Analytics() {
           <div className="h-[260px] flex justify-center">
             <Doughnut
               data={orderStatusData}
-              options={doughnutOptions}
+              options={{ ...baseOptions, cutout: "65%" }}
             />
           </div>
         </div>

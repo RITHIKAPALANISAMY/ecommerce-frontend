@@ -1,113 +1,134 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
-export default function Reviews({ productId }) {
+const REVIEW_API = "http://localhost:8082/api/reviews";
+
+export default function Reviews({ productId, refresh }) {
   const [reviews, setReviews] = useState([]);
+  const [average, setAverage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [totalReviews, setTotalReviews] = useState(0);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get(
+        `${REVIEW_API}/${productId}?page=0&size=10`
+      );
+
+      setReviews(res.data.content || []);
+      setTotalReviews(res.data.totalElements || 0);
+
+      const avgRes = await axios.get(
+        `${REVIEW_API}/${productId}/average`
+      );
+
+      setAverage(avgRes.data || 0);
+
+    } catch (err) {
+      console.error("Failed to load reviews:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const allReviews =
-      JSON.parse(localStorage.getItem("reviews")) || [];
+    if (!productId) return;
+    fetchReviews();
+  }, [productId, refresh]);
 
-    const productReviews = allReviews.filter(
-      (r) => r.productId === productId
-    );
+  /* ⭐ Render Stars Properly */
+  const renderStars = (rating) => {
+    const fullStars = "★".repeat(rating);
+    const emptyStars = "☆".repeat(5 - rating);
+    return fullStars + emptyStars;
+  };
 
-    setReviews(productReviews);
-  }, [productId]);
-
-  const averageRating =
-    reviews.length > 0
-      ? (
-          reviews.reduce((sum, r) => sum + r.rating, 0) /
-          reviews.length
-        ).toFixed(1)
-      : "No ratings yet";
+  /* 📅 Format Date */
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   return (
-    <div
-      id="reviews"
-      className="mx-auto mt-10 max-w-7xl rounded-2xl bg-white p-6 shadow-sm"
-    >
-      {/* HEADER */}
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-gray-800">
-          Customer Reviews
-        </h3>
+    <div className="rounded-2xl bg-white p-6 shadow-md">
+      <h3 className="text-xl font-semibold mb-4">
+        Customer Reviews
+      </h3>
 
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="text-yellow-500">★</span>
-          <span className="font-medium">
-            {averageRating}
+      {/* ⭐ Average Rating */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl font-bold text-yellow-500">
+            {average.toFixed(1)}
           </span>
-          <span>({reviews.length} reviews)</span>
+          <span className="text-yellow-500 text-xl">
+            {renderStars(Math.round(average))}
+          </span>
         </div>
+        <p className="text-sm text-gray-500 mt-1">
+          Based on {totalReviews} review{totalReviews !== 1 ? "s" : ""}
+        </p>
       </div>
 
-      {/* EMPTY */}
-      {reviews.length === 0 && (
-        <p className="text-sm text-gray-400">
+      {loading && <p>Loading...</p>}
+
+      {reviews.length === 0 && !loading && (
+        <p className="text-gray-400">
           No reviews yet
         </p>
       )}
 
-      {/* REVIEWS LIST */}
       <div className="space-y-5">
-        {reviews.map((review, index) => {
-          const displayName =
-            review.buyerName ||
-            review.username ||
-            review.email ||
-            "Verified Buyer";
+        {reviews.map((review) => (
+          <div
+            key={review.id}
+            className="border rounded-xl p-4 hover:shadow-sm transition"
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-gray-800">
+                  {review.buyerEmail}
+                </p>
 
-          const initial =
-            displayName.charAt(0).toUpperCase();
-
-          return (
-            <div
-              key={index}
-              className="rounded-2xl border border-gray-200 bg-gray-50/40 p-5 transition hover:shadow-md"
-            >
-              {/* USER */}
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-100 font-semibold text-red-600 shadow-sm">
-                  {initial}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-800">
-                      {displayName}
-                    </p>
-
-                    {review.verified && (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                        ✔ Verified Buyer
-                      </span>
-                    )}
-                  </div>
-
-                  {review.date && (
-                    <p className="text-xs text-gray-400">
-                      Reviewed on {review.date}
-                    </p>
-                  )}
-                </div>
+                {review.verifiedPurchase && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded mt-1 inline-block">
+                    ✔ Verified Purchase
+                  </span>
+                )}
               </div>
 
-              {/* RATING */}
-              <div className="mb-2 flex items-center gap-1 text-yellow-500">
-                {"★".repeat(review.rating)}
-                <span className="ml-1 text-sm text-gray-500">
-                  ({review.rating}.0)
-                </span>
-              </div>
-
-              {/* COMMENT */}
-              <p className="text-gray-700 leading-relaxed">
-                {review.comment}
-              </p>
+              <span className="text-xs text-gray-400">
+                {formatDate(review.reviewDate)}
+              </span>
             </div>
-          );
-        })}
+
+            <div className="text-yellow-500 mt-2 text-lg">
+              {renderStars(review.rating)}
+            </div>
+
+            <p className="mt-2 text-gray-700 leading-relaxed">
+              {review.comment}
+            </p>
+
+            {review.sellerReply && (
+              <div className="mt-3 bg-gray-100 p-3 rounded">
+                <p className="text-sm font-semibold text-gray-700">
+                  Seller Reply:
+                </p>
+                <p className="text-sm text-gray-600">
+                  {review.sellerReply}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

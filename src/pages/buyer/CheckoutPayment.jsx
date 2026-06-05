@@ -1,214 +1,331 @@
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
-import CheckoutSteps from "./CheckoutSteps";
-import { useAuth } from "../../context/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import paymentApi from "../../api/paymentApi";
+import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
+import { useOrders } from "../../context/OrderContext";
+import CheckoutSteps from "./CheckoutSteps";
 import { CreditCard, Wallet, Banknote } from "lucide-react";
+import api from "../../api/axios";
 
 export default function CheckoutPayment() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { clearCart } = useCart();
+  const { placeOrder } = useOrders();
 
-  const [method, setMethod] = useState("card");
+  const [method, setMethod] = useState("CARD");
+  const [summary, setSummary] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
-  const checkoutAmount = JSON.parse(localStorage.getItem("checkoutAmount"));
-  const checkoutAddress = JSON.parse(localStorage.getItem("checkoutAddress"));
-  const checkoutItems =
-    JSON.parse(localStorage.getItem("checkoutItems")) || [];
-
-  const handlePlaceOrder = async () => {
-    if (!checkoutItems.length) {
-      setError("No items to place order");
-      return;
-    }
-
-    /* ================= COD ================= */
-    if (method === "cod") {
-      const existingOrders =
-        JSON.parse(localStorage.getItem("orders")) || [];
-
-      const newOrder = {
-        id: Date.now(),
-        items: checkoutItems,
-        amount: checkoutAmount,
-        address: checkoutAddress,
-        paymentMethod: "COD",
-        placedDate: new Date().toLocaleString(),
-        userId: user?.id,
-        status: "Placed",
-      };
-
-      localStorage.setItem(
-        "orders",
-        JSON.stringify([...existingOrders, newOrder])
-      );
-
-      localStorage.removeItem("checkoutItems");
-      localStorage.removeItem("checkoutAmount");
-      localStorage.removeItem("checkoutAddress");
-
-      clearCart();
-      navigate("/order-success");
-      return;
-    }
-
-    /* ================= RAZORPAY ================= */
-    try {
-      // 1️⃣ Create Razorpay order
-      const { data } = await paymentApi.post(
-        "/payment/create-order",
-        {
-          amount: checkoutAmount.total,
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const addressId = localStorage.getItem("checkoutAddressId");
+        if (!addressId) {
+          navigate("/checkout/address");
+          return;
         }
-      );
 
-      const orderId = data.orderId;
+        const addressListRes =
+  await api.get("/user/address");
 
-      const options = {
-  key: "rzp_test_SH4Bhcf8mzwGFx",
-  amount: checkoutAmount.total * 100,
-  currency: "INR",
-  name: "ShopVerse",
-  description: "Order Payment",
-  order_id: orderId,
+/* ✅ LOAD STORED CHECKOUT DATA */
+const storedSummary =
+  JSON.parse(
+    localStorage.getItem("checkoutAmount")
+  );
 
-  handler: async function (response) {
-    try {
-      await paymentApi.post("/payment/verify", {
-        razorpayOrderId: response.razorpay_order_id,
-        razorpayPaymentId: response.razorpay_payment_id,
-        razorpaySignature: response.razorpay_signature,
-        userEmail: user.email,
-        amount: checkoutAmount.total,
-        paymentMethod: method,
-      });
+const storedItems =
+  JSON.parse(
+    localStorage.getItem("checkoutItems")
+  );
 
-      const existingOrders =
-        JSON.parse(localStorage.getItem("orders")) || [];
+const selected =
+  (addressListRes.data || []).find(
+    (addr) =>
+      String(addr.id) === String(addressId)
+  );
 
-      const newOrder = {
-        id: Date.now(),
-        items: checkoutItems,
-        amount: checkoutAmount,
-        address: checkoutAddress,
-        paymentMethod: method,
-        placedDate: new Date().toLocaleString(),
-        userId: user?.id,
-        status: "Paid",
-      };
+setSummary(storedSummary || null);
 
-      localStorage.setItem(
-        "orders",
-        JSON.stringify([...existingOrders, newOrder])
-      );
+setCartItems(storedItems || []);
 
-      localStorage.removeItem("checkoutItems");
-      localStorage.removeItem("checkoutAmount");
-      localStorage.removeItem("checkoutAddress");
+setSelectedAddress(selected || null);
+      } catch {
+        setError("Failed to load checkout data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      clearCart();
+    loadData();
+  }, [navigate]);
 
-      // ✅ FORCE redirect
-      window.location.href = "/order-success";
-
-    } catch (err) {
-      setError("Payment verification failed");
+  const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
     }
-  },
 
-  modal: {
-    ondismiss: function () {
-      console.log("Payment popup closed");
-    },
-  },
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
 
-  prefill: {
-    name: user?.name,
-    email: user?.email,
-  },
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
 
-  theme: {
-    color: "#dc2626",
-  },
+    document.body.appendChild(script);
+  });
 };
 
+  const handlePlaceOrder = async () => {
+    try {
+      setPlacingOrder(true);
+      setError("");
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (!summary || !selectedAddress) {
+        throw new Error("Incomplete checkout data");
+      }
 
+      const orderPayload = {
+        shippingAddress: selectedAddress,
+        subtotal: summary.subtotal,
+        gst: summary.gst,
+        delivery:
+  summary.delivery ??
+  summary.shipping ??
+  0,
+        totalAmount:
+  summary.total ??
+  summary.totalAmount,
+        paymentMethod: method,
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          title: item.title || item.productName || item.name || "Product",
+          price:
+  item.finalPrice ||
+  item.discountedPrice ||
+  item.price,
+          image: item.image,
+          quantity: item.quantity,
+          sellerEmail: item.sellerEmail,
+        })),
+      };
+
+      if (method === "COD") {
+        const order = await placeOrder(orderPayload);
+        clearCart();
+        navigate(`/order-success/${order.id}`);
+        return;
+      }
+
+      const res = await paymentApi.post("/payment/create-order", {
+        amount:
+  summary.total ??
+  summary.totalAmount,
+      });
+
+      const { orderId, amount, key } = res.data;
+
+      const options = {
+        key,
+        amount,
+        currency: "INR",
+        name: "ShopVerse",
+        description: "Order Payment",
+        order_id: orderId,
+        handler: async function (response) {
+          await paymentApi.post("/payment/verify", {
+            razorpayOrderId: orderId,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            userEmail: user.email,
+            amount:
+  summary.total ??
+  summary.totalAmount,
+            paymentMethod: method,
+          });
+
+          const order = await placeOrder(orderPayload);
+          clearCart();
+          navigate(`/order-success/${order.id}`);
+        },
+        theme: { color: "#dc2626" },
+      };
+
+      const isLoaded = await loadRazorpayScript();
+
+if (!isLoaded) {
+  setError("Razorpay SDK failed to load.");
+  return;
+}
+
+if (!window.Razorpay) {
+  setError("Razorpay not available.");
+  return;
+}
+
+const rzp = new window.Razorpay(options);
+rzp.open();
     } catch (err) {
-      setError("Payment failed. Try again.");
+      setError(err.message || "Payment failed.");
+    } finally {
+      setPlacingOrder(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading payment...
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-gray-50 px-4 py-4">
+    <div className="min-h-screen bg-gray-50 px-6 py-6">
       <CheckoutSteps currentStep={3} />
 
-      <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 items-start">
+      <div className="mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3">
 
-        {/* LEFT */}
-        <div className="md:col-span-2 rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-gray-800">
-            Payment Options
+        {/* LEFT SECTION */}
+        <div className="md:col-span-2 rounded-2xl bg-white p-8 shadow-md">
+
+          <h2 className="mb-6 text-lg font-semibold">
+            Choose Payment Method
           </h2>
 
           {error && (
-            <div className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
+            <div className="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
               {error}
             </div>
           )}
 
           {[
-            ["card", <CreditCard size={18} />, "Card / UPI / Net Banking"],
-            ["wallet", <Wallet size={18} />, "Wallet"],
-            ["cod", <Banknote size={18} />, "Cash on Delivery"],
-          ].map(([key, icon, label]) => (
-            <div
-              key={key}
-              onClick={() => setMethod(key)}
-              className={`mb-2 flex items-center gap-3 cursor-pointer rounded-lg border px-4 py-3 font-medium transition ${
-                method === key
+            ["CARD", <CreditCard size={18} />, "Credit / Debit Card & UPI"],
+            ["WALLET", <Wallet size={18} />, "Wallet Payment"],
+            ["COD", <Banknote size={18} />, "Cash on Delivery"],
+          ].map(([keyName, icon, label]) => (
+            <motion.div
+              key={keyName}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => setMethod(keyName)}
+              className={`mb-4 flex cursor-pointer items-center gap-4 rounded-xl border px-5 py-4 text-sm transition ${
+                method === keyName
                   ? "border-red-600 bg-red-50"
                   : "hover:bg-gray-50"
               }`}
             >
               {icon}
-              {label}
-            </div>
+              <span className="font-medium">{label}</span>
+            </motion.div>
           ))}
 
-          <div className="mt-4 flex justify-between">
+          <div className="mt-8 flex justify-between">
             <button
               onClick={() => navigate("/checkout/summary")}
-              className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
+              className="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50"
             >
-              Back
+              ← Back
             </button>
 
             <button
               onClick={handlePlaceOrder}
-              className="rounded-lg bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700"
+              disabled={placingOrder}
+              className="rounded-lg bg-red-600 px-8 py-3 text-sm font-medium text-white hover:bg-red-700 transition"
             >
-              Pay Now →
+              {placingOrder ? "Processing..." : "Place Order →"}
             </button>
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div className="rounded-xl bg-white p-5 shadow-sm sticky top-24">
-          <h3 className="mb-4 font-semibold text-gray-800">
-            Price Details
+        {/* RIGHT SUMMARY */}
+        <div className="rounded-2xl bg-white p-8 shadow-md h-fit">
+
+          <h3 className="mb-6 text-base font-semibold">
+            Order Details
           </h3>
 
-          <div className="flex justify-between font-semibold text-gray-800">
-            <span>Total</span>
-            <span>₹{checkoutAmount?.total}</span>
-          </div>
+          {summary && (
+            <>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>₹{summary.subtotal.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Delivery</span>
+                  {Number(
+  summary.delivery ??
+  summary.shipping ??
+  0
+) === 0 ? (
+
+  <span className="text-green-600 font-medium">
+    FREE
+  </span>
+
+) : (
+
+  <span>
+    ₹{
+      Number(
+        summary.delivery ??
+        summary.shipping ??
+        0
+      ).toFixed(2)
+    }
+  </span>
+
+)}
+                </div>
+
+                <div className="flex justify-between">
+                  <span>GST</span>
+                  <span>₹{summary.gst.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {summary.discount > 0 && (
+
+  <div className="flex justify-between text-green-600">
+
+    <span>Coupon Discount</span>
+
+    <span>
+      -₹{summary.discount.toFixed(2)}
+    </span>
+
+  </div>
+
+)}
+
+              <hr className="my-6" />
+
+              <div className="flex justify-between text-lg font-bold text-red-600">
+                <span>Total</span>
+                <span>₹{Number(
+  summary.total ??
+  summary.totalAmount ??
+  0
+).toFixed(2)}</span>
+              </div>
+            </>
+          )}
+
+          <p className="mt-4 text-xs text-gray-500">
+            100% Secure Payments via Razorpay
+          </p>
         </div>
+
       </div>
     </div>
   );

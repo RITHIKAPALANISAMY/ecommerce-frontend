@@ -1,75 +1,91 @@
 import { useEffect, useState } from "react";
+import api from "../../api/axios";
 import "./AdminCategories.css";
 
-const STORAGE_KEY = "admin_categories";
-
-const defaultCategories = [
-  { id: 1, name: "Electronics" },
-  { id: 2, name: "Fashion" },
-  { id: 3, name: "Home & Kitchen" },
-];
-
-const AdminCategories = () => {
-  /* ===== STATE ===== */
-  const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : defaultCategories;
-  });
+export default function AdminCategories() {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [newCategory, setNewCategory] = useState("");
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState("");
 
-  /* ===== PERSIST ===== */
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
-  }, [categories]);
+  /* ================= FETCH ================= */
 
-  /* ===== ADD CATEGORY ===== */
-  const addCategory = () => {
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/api/categories");
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  /* ================= ADD ================= */
+
+  const addCategory = async () => {
     if (!newCategory.trim()) return;
 
-    const exists = categories.some(
-      (c) => c.name.toLowerCase() === newCategory.toLowerCase()
-    );
+    try {
+      await api.post("/api/categories", {
+        name: newCategory.trim(),
+      });
 
-    if (exists) {
-      alert("Category already exists");
-      return;
+      setNewCategory("");
+      fetchCategories();
+    } catch (err) {
+      console.error("Add failed", err);
+      alert("Failed to add category");
     }
-
-    setCategories([
-      ...categories,
-      { id: Date.now(), name: newCategory.trim() },
-    ]);
-
-    setNewCategory("");
   };
 
-  /* ===== DELETE CATEGORY ===== */
-  const deleteCategory = (id) => {
+  /* ================= DELETE ================= */
+
+  const deleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return;
-    setCategories(categories.filter((c) => c.id !== id));
+
+    try {
+      await api.delete(`/api/categories/${id}`);
+      fetchCategories();
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Delete failed");
+    }
   };
 
-  /* ===== EDIT CATEGORY ===== */
+  /* ================= EDIT ================= */
+
   const startEdit = (category) => {
     setEditId(category.id);
     setEditName(category.name);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editName.trim()) return;
 
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === editId ? { ...c, name: editName.trim() } : c
-      )
-    );
+    try {
+      // ✅ FIXED HERE → PUT instead of POST
+      await api.put(`/api/categories/${editId}`, {
+        name: editName.trim(),
+      });
 
-    setEditId(null);
-    setEditName("");
+      setEditId(null);
+      setEditName("");
+      fetchCategories();
+    } catch (err) {
+      console.error("Update failed", err);
+      alert("Update failed");
+    }
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="categories-page">
@@ -86,73 +102,79 @@ const AdminCategories = () => {
         <button onClick={addCategory}>Add</button>
       </div>
 
-      {/* CATEGORY LIST */}
-      <table className="categories-table">
-        <thead>
-          <tr>
-            <th>Category Name</th>
-            <th style={{ textAlign: "center" }}>Action</th>
-          </tr>
-        </thead>
+      {/* LOADING */}
+      {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
-        <tbody>
-          {categories.length === 0 ? (
+      {/* CATEGORY TABLE */}
+      {!loading && (
+        <table className="categories-table">
+          <thead>
             <tr>
-              <td colSpan="2" style={{ textAlign: "center" }}>
-                No categories found
-              </td>
+              <th>Category Name</th>
+              <th style={{ textAlign: "center" }}>Action</th>
             </tr>
-          ) : (
-            categories.map((category) => (
-              <tr key={category.id}>
-                <td>
-                  {editId === category.id ? (
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                    />
-                  ) : (
-                    category.name
-                  )}
-                </td>
+          </thead>
 
-                <td style={{ textAlign: "center" }}>
-                  {editId === category.id ? (
-                    <>
-                      <button className="save-btn" onClick={saveEdit}>
-                        Save
-                      </button>
-                      <button
-                        className="cancel-btn"
-                        onClick={() => setEditId(null)}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="edit-btn"
-                        onClick={() => startEdit(category)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => deleteCategory(category.id)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+          <tbody>
+            {categories.length === 0 ? (
+              <tr>
+                <td colSpan="2" style={{ textAlign: "center" }}>
+                  No categories found
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              categories.map((category) => (
+                <tr key={category.id}>
+                  <td>
+                    {editId === category.id ? (
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                      />
+                    ) : (
+                      category.name
+                    )}
+                  </td>
+
+                  <td style={{ textAlign: "center" }}>
+                    {editId === category.id ? (
+                      <>
+                        <button
+                          className="save-btn"
+                          onClick={saveEdit}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="cancel-btn"
+                          onClick={() => setEditId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="edit-btn"
+                          onClick={() => startEdit(category)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => deleteCategory(category.id)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
-};
-
-export default AdminCategories;
+}
