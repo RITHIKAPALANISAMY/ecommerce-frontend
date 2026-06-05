@@ -6,29 +6,22 @@ import {
   Package,
   ShoppingCart,
   Ticket,
-  Percent,
   BarChart3,
   CreditCard,
-  RotateCcw,
   RefreshCcw,
   Settings as SettingsIcon,
-  Store
+  Store,
 } from "lucide-react";
 
 const TABS = [
   { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Users", path: "/admin/users", icon: Users },
-
-  // ✅ NEW SELLER REQUESTS TAB
   { label: "Seller Requests", path: "/admin/seller-requests", icon: Store },
-
   { label: "Products", path: "/admin/products", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Coupons", path: "/admin/coupons", icon: Ticket },
-  { label: "Deals", path: "/admin/deals", icon: Percent },
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Payments", path: "/admin/payments", icon: CreditCard },
-  { label: "Returns", path: "/admin/returns", icon: RotateCcw },
   { label: "Refunds", path: "/admin/refunds", icon: RefreshCcw },
   { label: "Settings", path: "/admin/settings", icon: SettingsIcon },
 ];
@@ -43,7 +36,9 @@ export default function AdminLayout() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="bg-[#931012] text-white px-8 py-6 rounded-2xl flex justify-between items-center shadow">
           <div>
-            <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+            <h1 className="text-2xl font-semibold">
+              Admin Dashboard
+            </h1>
             <p className="text-sm opacity-90">
               Complete platform control and management
             </p>

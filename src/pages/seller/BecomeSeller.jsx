@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import Swal from "sweetalert2";
 
 export default function BecomeSeller() {
   const navigate = useNavigate();
@@ -33,14 +34,28 @@ export default function BecomeSeller() {
 
       await api.post("/seller/request", form);
 
-      alert("Seller request submitted successfully!");
+      Swal.fire({
+  toast: true,
+  position: "top-end",
+  icon: "success",
+  title: "Seller request submitted successfully!",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+});
       navigate("/", { replace: true });
 
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        "Failed to submit seller request"
-      );
+      Swal.fire({
+  toast: true,
+  position: "top-end",
+  icon: "error",
+  title:
+    err.response?.data?.message ||
+    "Failed to submit seller request",
+  showConfirmButton: false,
+  timer: 4000,
+});
     } finally {
       setLoading(false);
     }

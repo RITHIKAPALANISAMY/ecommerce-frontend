@@ -6,7 +6,11 @@ const paymentApi = axios.create({
     "Content-Type": "application/json",
   },
 });
+export const getAllPayments = () =>
+  paymentApi.get("/payment/admin/all");
 
+export const refundPayment = (id) =>
+  paymentApi.post(`/payment/admin/refund/${id}`);
 paymentApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 

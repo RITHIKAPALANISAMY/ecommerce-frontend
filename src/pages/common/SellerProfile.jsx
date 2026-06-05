@@ -22,13 +22,13 @@ import {
 import { useAuth } from "../../context/AuthContext";
 
 const SellerProfile = () => {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, fetchUserProfile, logout } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const navigate = useNavigate();
 
   /* ================= LOAD LATEST USER ================= */
   useEffect(() => {
-    refreshUser();
+    fetchUserProfile();
   }, []);
 
   if (!user) return null;
@@ -70,8 +70,7 @@ const SellerProfile = () => {
               <img
                 src={`http://localhost:8081${user.profileImage}`}
                 alt="Profile"
-                className="w-28 h-28 rounded-full object-cover border-4 border-red-600 
-                shadow-lg hover:scale-105 transition duration-300"
+                className="w-28 h-28 rounded-full object-cover border-4 border-red-600 shadow-lg"
               />
               {user.verified && (
                 <BadgeCheck className="absolute bottom-1 right-1 text-red-600 bg-white rounded-full" />
@@ -103,7 +102,7 @@ const SellerProfile = () => {
         <button
           onClick={() => setIsEditOpen(true)}
           className="flex items-center gap-2 bg-red-600 text-white px-6 py-2 
-          rounded-full hover:bg-red-700 hover:scale-105 transition duration-300 shadow-md"
+          rounded-full hover:bg-red-700 transition shadow-md"
         >
           <Edit3 size={18} />
           Edit Profile
@@ -127,15 +126,13 @@ const SellerProfile = () => {
       </Section>
 
       {/* ================= ACCOUNT ACTIONS ================= */}
-      <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6 
-      hover:shadow-2xl hover:-translate-y-1 transition duration-300 animate-fadeIn">
+      <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
         <h2 className="text-2xl font-semibold">Account Actions</h2>
 
         <div className="flex flex-wrap gap-4">
           <button
             onClick={handleChangePassword}
-            className="flex items-center gap-2 bg-gray-800 text-white px-6 py-2 
-            rounded-full hover:bg-black hover:scale-105 transition duration-300"
+            className="flex items-center gap-2 bg-gray-800 text-white px-6 py-2 rounded-full"
           >
             <Lock size={16} />
             Change Password
@@ -143,8 +140,7 @@ const SellerProfile = () => {
 
           <button
             onClick={handleDelete}
-            className="bg-red-600 text-white px-6 py-2 rounded-full 
-            hover:bg-red-700 hover:scale-105 transition duration-300"
+            className="bg-red-600 text-white px-6 py-2 rounded-full"
           >
             Delete Account
           </button>
@@ -155,7 +151,7 @@ const SellerProfile = () => {
         <EditProfileModal
           user={user}
           onClose={() => setIsEditOpen(false)}
-          refreshUser={refreshUser}
+          fetchUserProfile={fetchUserProfile}
         />
       )}
     </div>
@@ -164,15 +160,14 @@ const SellerProfile = () => {
 
 /* ================= SECTION COMPONENT ================= */
 const Section = ({ title, children }) => (
-  <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6 
-  hover:shadow-2xl hover:-translate-y-1 transition duration-300 animate-fadeIn">
+  <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
     <h2 className="text-2xl font-semibold">{title}</h2>
     <div className="grid md:grid-cols-2 gap-6">{children}</div>
   </div>
 );
 
 /* ================= EDIT MODAL ================= */
-const EditProfileModal = ({ user, onClose, refreshUser }) => {
+const EditProfileModal = ({ user, onClose, fetchUserProfile }) => {
   const [form, setForm] = useState({
     name: user.name || "",
     phone: user.phone || "",
@@ -205,7 +200,7 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
         await uploadProfileImage(formData);
       }
 
-      await refreshUser();
+      await fetchUserProfile();
       Swal.fire("Updated!", "Profile updated successfully.", "success");
       onClose();
     } catch {
@@ -214,8 +209,8 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn">
-      <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl animate-scaleUp">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl">
 
         <h2 className="text-2xl font-semibold text-center mb-6">
           Edit Profile
@@ -223,15 +218,15 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex justify-center">
-            <label className="relative cursor-pointer group">
+            <label className="relative cursor-pointer">
               {preview ? (
                 <img
                   src={preview}
                   alt="Preview"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-red-600 shadow-lg"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-red-600"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center shadow">
+                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center">
                   <Camera className="text-gray-500" />
                 </div>
               )}
@@ -242,7 +237,7 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
           <input
             type="text"
             placeholder="Full Name"
-            className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-red-600 outline-none"
+            className="w-full border rounded-xl px-4 py-2"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
@@ -251,34 +246,34 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
           <input
             type="text"
             placeholder="Phone"
-            className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-red-600 outline-none"
+            className="w-full border rounded-xl px-4 py-2"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
 
           <select
-            className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-red-600 outline-none"
+            className="w-full border rounded-xl px-4 py-2"
             value={form.gender}
             onChange={(e) => setForm({ ...form, gender: e.target.value })}
           >
             <option value="">Select Gender</option>
-            <option>Female</option>
-            <option>Male</option>
-            <option>Other</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Other">Other</option>
           </select>
 
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-full border hover:bg-gray-100 transition"
+              className="px-5 py-2 rounded-full border"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="px-6 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition shadow-md"
+              className="px-6 py-2 rounded-full bg-red-600 text-white"
             >
               Save Changes
             </button>
@@ -291,7 +286,7 @@ const EditProfileModal = ({ user, onClose, refreshUser }) => {
 
 /* ================= PROFILE ITEM ================= */
 const ProfileItem = ({ icon, label, value }) => (
-  <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition shadow-sm">
+  <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50">
     <div className="text-red-600">{icon}</div>
     <div>
       <p className="text-sm text-gray-500">{label}</p>

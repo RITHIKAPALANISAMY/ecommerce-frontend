@@ -9,12 +9,19 @@ export default function Wishlist() {
   const { wishlist, removeFromWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { user } = useAuth();
-  const { products } = useProducts();
+  const { products, fetchProducts } = useProducts(); // ✅ ensure products available
   const navigate = useNavigate();
 
   const [wishlistProducts, setWishlistProducts] = useState([]);
 
   const isBuyer = user?.role === "BUYER";
+
+  /* ================= ENSURE PRODUCTS LOADED ================= */
+  useEffect(() => {
+    if (!products.length) {
+      fetchProducts();
+    }
+  }, []);
 
   /* ================= MATCH WISHLIST WITH PRODUCTS ================= */
 
@@ -33,10 +40,15 @@ export default function Wishlist() {
     setWishlistProducts(matchedProducts);
   }, [wishlist, products]);
 
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
+  /* ================= REDIRECT IF NOT LOGGED IN ================= */
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user]);
+
+  if (!user) return null;
 
   if (wishlistProducts.length === 0) {
     return (
@@ -104,7 +116,7 @@ export default function Wishlist() {
                   {isBuyer && (
                     <button
                       onClick={() => {
-                        addToCart(product);
+                        addToCart({ id: product.id, quantity: 1 }); // ✅ FIXED
                         removeFromWishlist(product.id);
                       }}
                       className="w-full rounded-lg bg-red-600 py-2 text-sm font-medium text-white hover:bg-red-700"

@@ -13,6 +13,25 @@ const CartContext = createContext();
 export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  /* ================= NORMALIZE CART ================= */
+  const normalizeCart = (data) => {
+    if (!Array.isArray(data)) return [];
+
+    return data.map((item) => ({
+      id: item.id || item._id, // cart item ID
+      productId: item.productId,
+      productName: item.productName,
+      image: item.image,
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      stock: Number(item.stock) || 0,
+
+      // 🔥 VERY IMPORTANT FIX
+      sellerEmail: item.sellerEmail || item.product?.sellerEmail || null,
+    }));
+  };
 
   /* ================= LOAD CART ================= */
   useEffect(() => {
@@ -25,29 +44,33 @@ export function CartProvider({ children }) {
 
   const loadCart = async () => {
     try {
-      // ✅ DO NOT send email (JWT handles it)
+      setLoading(true);
       const res = await getUserCart();
-      setCartItems(res.data || []);
+
+      console.log("CART API RESPONSE:", res.data); // debug
+
+      setCartItems(normalizeCart(res.data));
     } catch (err) {
-      console.error("Failed to load cart", err);
+      console.error("Failed to load cart", err.response?.data || err);
+      setCartItems([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   /* ================= ADD TO CART ================= */
-  const addToCart = async (product) => {
-    if (!user) return;
-
-    // ✅ ONLY send required fields
-    const payload = {
-      productId: product.id,
-      quantity: 1,
-    };
+  const addToCart = async ({ id, quantity }) => {
+    if (!user || !id) return;
 
     try {
-      await addToCartAPI(payload);
-      loadCart();
+      await addToCartAPI({
+        productId: String(id),
+        quantity: quantity || 1,
+      });
+
+      await loadCart();
     } catch (err) {
-      console.error("Add to cart failed", err);
+      console.error("Add to cart failed", err.response?.data || err);
     }
   };
 
@@ -55,9 +78,9 @@ export function CartProvider({ children }) {
   const addQty = async (cartItemId, currentQty) => {
     try {
       await updateCartQtyAPI(cartItemId, currentQty + 1);
-      loadCart();
+      await loadCart();
     } catch (err) {
-      console.error("Qty update failed", err);
+      console.error("Qty update failed", err.response?.data || err);
     }
   };
 
@@ -67,9 +90,9 @@ export function CartProvider({ children }) {
 
     try {
       await updateCartQtyAPI(cartItemId, currentQty - 1);
-      loadCart();
+      await loadCart();
     } catch (err) {
-      console.error("Qty update failed", err);
+      console.error("Qty update failed", err.response?.data || err);
     }
   };
 
@@ -77,20 +100,19 @@ export function CartProvider({ children }) {
   const removeItem = async (cartItemId) => {
     try {
       await removeCartItemAPI(cartItemId);
-      loadCart();
+      await loadCart();
     } catch (err) {
-      console.error("Remove failed", err);
+      console.error("Remove failed", err.response?.data || err);
     }
   };
 
   /* ================= CLEAR CART ================= */
   const clearCart = async () => {
     try {
-      // ✅ DO NOT send email
       await clearCartAPI();
       setCartItems([]);
     } catch (err) {
-      console.error("Clear cart failed", err);
+      console.error("Clear cart failed", err.response?.data || err);
     }
   };
 
@@ -98,11 +120,13 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cartItems,
+        loading,
         addToCart,
         addQty,
         reduceQty,
         removeItem,
         clearCart,
+        loadCart,
       }}
     >
       {children}

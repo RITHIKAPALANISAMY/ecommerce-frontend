@@ -1,214 +1,591 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
+import axios from "axios";
+import { motion } from "framer-motion";
+import toast, { Toaster } from "react-hot-toast";
+
 import {
-  getSellerOrders,
-  updateOrderStatus,
-  cancelOrder,
-} from "../../api/orderApi";
-import { motion, AnimatePresence } from "framer-motion";
-import SoftStatCard from "./StatCardSoft";
+  Package,
+  CheckCircle,
+  XCircle,
+  IndianRupee,
+  Search
+} from "lucide-react";
+
+const ORDER_API = "http://localhost:8085/api/orders";
 
 export default function SellerOrders() {
+
   const { user } = useAuth();
-  const sellerEmail = user?.email || "";
+
+  const sellerEmail = user?.email?.toLowerCase();
 
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
-  const [search, setSearch] = useState("");
+  const [stats, setStats] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
-  /* ================= FETCH ORDERS ================= */
+  // ✅ FILTER + PAGINATION STATES
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ordersPerPage = 5;
+
   useEffect(() => {
+
     if (!sellerEmail) return;
 
     fetchOrders();
+    fetchStats();
+
   }, [sellerEmail]);
 
+  /* ================= FETCH ORDERS ================= */
+
   const fetchOrders = async () => {
+
     try {
-      setLoading(true);
-      const res = await getSellerOrders(sellerEmail);
-      setOrders(res.data || []);
-    } catch (err) {
-      console.error("Failed to load orders", err);
-    } finally {
-      setLoading(false);
+
+      const res = await axios.get(
+        `${ORDER_API}/seller/${sellerEmail}`
+      );
+
+      // ✅ LATEST ORDERS FIRST
+      const sortedOrders = (res.data || []).sort(
+        (a, b) =>
+          new Date(b.orderDate) - new Date(a.orderDate)
+      );
+
+      setOrders(sortedOrders);
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Failed to load orders");
     }
   };
 
-  /* ================= FILTER ================= */
-  const filteredOrders = useMemo(() => {
-    return orders
-      .filter(o => statusFilter === "ALL" || o.status === statusFilter)
-      .filter(o =>
-        String(o.id).includes(search) ||
-        String(o.buyerEmail || "")
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
-  }, [orders, statusFilter, search]);
+  /* ================= FETCH STATS ================= */
 
-  const totalRevenue = filteredOrders.reduce(
-    (sum, o) => sum + (o.amount || 0),
-    0
+  const fetchStats = async () => {
+
+    try {
+
+      const res = await axios.get(
+        `${ORDER_API}/seller/${sellerEmail}/stats`
+      );
+
+      setStats(res.data);
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  };
+
+  /* ================= GENERATE SHIPMENT ================= */
+
+  const generateShipment = async (id) => {
+
+    try {
+
+      await axios.put(
+        `${ORDER_API}/${id}/generate-shipment`
+      );
+
+      toast.success("Shipment Generated Successfully 🚚");
+
+      fetchOrders();
+      fetchStats();
+
+    } catch (error) {
+
+      console.error("Shipment error:", error);
+
+      toast.error("Shipment Failed ❌");
+    }
+  };
+
+  /* ================= UPDATE STATUS ================= */
+
+  const updateStatus = async (id, status) => {
+
+    try {
+
+      await axios.put(
+        `${ORDER_API}/${id}/status?status=${status}`
+      );
+
+      toast.success(`Order ${status}`);
+
+      fetchOrders();
+      fetchStats();
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Status update failed");
+    }
+  };
+
+  /* ================= FILTERED ORDERS ================= */
+
+  const filteredOrders = useMemo(() => {
+
+    return orders.filter((order) => {
+
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        order.status === statusFilter;
+
+      const matchesSearch =
+        order.buyerEmail
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        String(order.id).includes(searchTerm);
+
+      return matchesStatus && matchesSearch;
+    });
+
+  }, [orders, statusFilter, searchTerm]);
+
+  /* ================= PAGINATION ================= */
+
+  const totalPages = Math.ceil(
+    filteredOrders.length / ordersPerPage
   );
 
-  /* ================= ACTION HANDLERS ================= */
-  const handleStatusUpdate = async (id, status) => {
-    await updateOrderStatus(id, status);
-    fetchOrders();
-  };
+  const startIndex =
+    (currentPage - 1) * ordersPerPage;
 
-  const handleCancel = async (id) => {
-    await cancelOrder(id);
-    fetchOrders();
-  };
+  const currentOrders = filteredOrders.slice(
+    startIndex,
+    startIndex + ordersPerPage
+  );
 
-  if (loading) {
-    return (
-      <div className="p-6 text-gray-500 animate-pulse">
-        Loading orders...
-      </div>
-    );
-  }
+  useEffect(() => {
+
+    setCurrentPage(1);
+
+  }, [statusFilter, searchTerm]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h2 className="text-2xl font-semibold mb-6">My Orders</h2>
+    <>
+      <Toaster position="top-right" />
 
-      {/* ===== STATS ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-        <SoftStatCard title="Total Orders" value={filteredOrders.length} />
-        <SoftStatCard title="Revenue" value={`₹${totalRevenue}`} />
-        <SoftStatCard
-          title="Delivered"
-          value={filteredOrders.filter(o => o.status === "DELIVERED").length}
-        />
-        <SoftStatCard
-          title="Cancelled"
-          value={filteredOrders.filter(o => o.status === "CANCELLED").length}
-        />
-      </div>
+      <div className="min-h-screen bg-gray-50 px-6 py-12">
 
-      {/* ===== FILTERS ===== */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="rounded-md border px-3 py-2"
-        >
-          <option value="ALL">All Orders</option>
-          <option value="PLACED">Placed</option>
-          <option value="SHIPPED">Shipped</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+        <div className="max-w-7xl mx-auto">
 
-        <input
-          placeholder="Search by Order ID or Buyer"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 rounded-md border px-3 py-2"
-        />
-      </div>
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-3xl font-bold mb-10 text-gray-800"
+          >
+            Seller Dashboard
+          </motion.h2>
 
-      {/* ===== ORDERS ===== */}
-      <div className="space-y-5">
-        <AnimatePresence>
-          {filteredOrders.map(order => {
-            const expanded = expandedOrderId === order.id;
+          {/* ================= STATS ================= */}
+
+          {stats && (
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+
+              <SoftStatCard
+                title="Total Orders"
+                value={stats.totalOrders}
+                bg="bg-indigo-50"
+                text="text-indigo-700"
+                icon={<Package size={20} />}
+              />
+
+              <SoftStatCard
+                title="Delivered"
+                value={stats.delivered}
+                bg="bg-green-50"
+                text="text-green-700"
+                icon={<CheckCircle size={20} />}
+              />
+
+              <SoftStatCard
+                title="Cancelled"
+                value={stats.cancelled}
+                bg="bg-red-50"
+                text="text-red-700"
+                icon={<XCircle size={20} />}
+              />
+
+              <SoftStatCard
+                title="Revenue"
+                value={`₹${stats.totalRevenue.toFixed(2)}`}
+                bg="bg-purple-50"
+                text="text-purple-700"
+                icon={<IndianRupee size={20} />}
+              />
+
+            </div>
+
+          )}
+
+          {/* ================= FILTER + SEARCH ================= */}
+
+          <div className="bg-white p-5 rounded-2xl shadow-md mb-8 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+
+            {/* SEARCH */}
+
+            <div className="relative w-full md:w-80">
+
+              <Search
+                size={18}
+                className="absolute top-3 left-3 text-gray-400"
+              />
+
+              <input
+                type="text"
+                placeholder="Search order ID or buyer..."
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(e.target.value)
+                }
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
+              />
+
+            </div>
+
+            {/* FILTER BUTTONS */}
+
+            <div className="flex flex-wrap gap-3">
+
+              {[
+                "ALL",
+                "PLACED",
+                "SHIPPED",
+                "DELIVERED",
+                "CANCELLED",
+              ].map((status) => (
+
+                <button
+                  key={status}
+                  onClick={() =>
+                    setStatusFilter(status)
+                  }
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition
+                  ${
+                    statusFilter === status
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {status}
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
+
+          {/* ================= ORDERS ================= */}
+
+          <h3 className="text-xl font-semibold mb-6 text-gray-700">
+            Orders
+          </h3>
+
+          {currentOrders.length === 0 && (
+
+            <div className="bg-white p-8 rounded-2xl shadow text-gray-500">
+              No matching orders found.
+            </div>
+
+          )}
+
+          {currentOrders.map((order) => {
+
+            const expanded = expandedId === order.id;
 
             return (
+
               <motion.div
                 key={order.id}
-                layout
-                className="rounded-xl bg-white shadow hover:shadow-lg transition p-5"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl shadow-md p-6 mb-8 hover:shadow-lg transition"
               >
-                <div className="flex justify-between items-center flex-wrap gap-3">
+
+                <div className="flex justify-between items-center flex-wrap gap-4">
+
                   <div>
-                    <p className="font-semibold">
-                      Order ID: {order.id}
+
+                    <p className="font-semibold text-lg text-gray-800">
+                      Order #{order.id}
                     </p>
+
                     <p className="text-sm text-gray-500">
-                      {order.buyerEmail}
+                      Buyer: {order.buyerEmail}
                     </p>
+
+                    <p className="text-xs text-gray-400">
+                      {new Date(order.orderDate).toLocaleString()}
+                    </p>
+
                   </div>
 
                   <div className="flex items-center gap-4">
+
                     <StatusBadge status={order.status} />
 
                     <button
                       onClick={() =>
-                        setExpandedOrderId(expanded ? null : order.id)
+                        setExpandedId(expanded ? null : order.id)
                       }
-                      className="text-red-600 text-sm font-medium"
+                      className="text-red-600 text-sm font-medium hover:underline"
                     >
-                      {expanded ? "Hide" : "View"}
+                      {expanded ? "Hide Details" : "View Details"}
                     </button>
+
                   </div>
+
                 </div>
 
                 {expanded && (
-                  <div className="mt-5 border-t pt-4 space-y-3 text-sm">
-                    {order.items?.map(item => (
-                      <div
-                        key={item.productId}
-                        className="flex justify-between"
-                      >
-                        <span>{item.title}</span>
-                        <span>Qty: {item.quantity}</span>
-                        <span>₹{item.price * item.quantity}</span>
-                      </div>
-                    ))}
 
-                    {/* ===== ACTION BUTTONS ===== */}
-                    <div className="flex flex-wrap gap-3 mt-4">
-                      {order.status === "PLACED" && (
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(order.id, "SHIPPED")
-                          }
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-6 border-t pt-6 space-y-4"
+                  >
+
+                    {order.items
+                      .filter(i => i.sellerEmail === sellerEmail)
+                      .map((item) => (
+
+                        <div
+                          key={item.productId}
+                          className="flex justify-between items-center border-b pb-4"
                         >
-                          Mark Shipped
-                        </button>
+
+                          <div className="flex items-center gap-4">
+
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-16 h-16 rounded-lg object-cover border"
+                            />
+
+                            <div>
+
+                              <p className="font-medium text-gray-800">
+                                {item.title}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                ₹{item.price} × {item.quantity}
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                          <span className="font-semibold text-gray-800">
+                            ₹{item.price * item.quantity}
+                          </span>
+
+                        </div>
+
+                      ))}
+
+                    {/* ADDRESS */}
+
+                    <div className="bg-gray-50 p-4 rounded-xl text-sm mt-4">
+
+                      <p className="font-semibold mb-2">
+                        Customer Delivery Address
+                      </p>
+
+                      <p>
+                        {order.shippingAddress?.street}
+                      </p>
+
+                      <p>
+                        {order.shippingAddress?.city},
+                        {" "}
+                        {order.shippingAddress?.state}
+                        {" - "}
+                        {order.shippingAddress?.pincode}
+                      </p>
+
+                      <p className="mt-3 font-medium text-gray-700">
+                        📞 {order.shippingAddress?.phoneNumber}
+                      </p>
+
+                    </div>
+
+                    {/* ACTION BUTTONS */}
+
+                    <div className="flex gap-4 mt-4 flex-wrap">
+
+                      {order.status === "PLACED" && (
+
+                        <ActionButton
+                          label="Generate Shipment"
+                          color="bg-blue-600 hover:bg-blue-700"
+                          onClick={() =>
+                            generateShipment(order.id)
+                          }
+                        />
+
                       )}
 
                       {order.status === "SHIPPED" && (
-                        <button
+
+                        <ActionButton
+                          label="Mark Delivered"
+                          color="bg-green-600 hover:bg-green-700"
                           onClick={() =>
-                            handleStatusUpdate(order.id, "DELIVERED")
+                            updateStatus(order.id, "DELIVERED")
                           }
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                        >
-                          Mark Delivered
-                        </button>
+                        />
+
                       )}
 
                       {order.status !== "DELIVERED" &&
                         order.status !== "CANCELLED" && (
-                          <button
-                            onClick={() => handleCancel(order.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                          >
-                            Cancel Order
-                          </button>
+
+                          <ActionButton
+                            label="Cancel"
+                            color="bg-red-600 hover:bg-red-700"
+                            onClick={() =>
+                              updateStatus(order.id, "CANCELLED")
+                            }
+                          />
+
                         )}
+
                     </div>
-                  </div>
+
+                  </motion.div>
+
                 )}
+
               </motion.div>
+
             );
+
           })}
-        </AnimatePresence>
+
+          {/* ================= PAGINATION ================= */}
+
+          {totalPages > 1 && (
+
+            <div className="flex justify-center items-center gap-3 mt-10 flex-wrap">
+
+              <button
+                disabled={currentPage === 1}
+                onClick={() =>
+                  setCurrentPage(prev => prev - 1)
+                }
+                className="px-4 py-2 rounded-lg bg-gray-200 disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              {[...Array(totalPages)].map((_, index) => (
+
+                <button
+                  key={index}
+                  onClick={() =>
+                    setCurrentPage(index + 1)
+                  }
+                  className={`px-4 py-2 rounded-lg font-medium
+                  ${
+                    currentPage === index + 1
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  {index + 1}
+                </button>
+
+              ))}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage(prev => prev + 1)
+                }
+                className="px-4 py-2 rounded-lg bg-gray-200 disabled:opacity-50"
+              >
+                Next
+              </button>
+
+            </div>
+
+          )}
+
+        </div>
+
       </div>
-    </div>
+    </>
   );
 }
 
-/* ===== STATUS BADGE ===== */
+/* ================= COMPONENTS ================= */
+
+function SoftStatCard({ title, value, bg, text, icon }) {
+
+  return (
+
+    <motion.div
+      whileHover={{ scale: 1.04 }}
+      className={`p-6 rounded-2xl shadow-md ${bg} transition`}
+    >
+
+      <div className="flex justify-between items-start">
+
+        <div>
+
+          <p className="text-sm text-gray-500 mb-2">
+            {title}
+          </p>
+
+          <p className={`text-2xl font-bold ${text}`}>
+            {value}
+          </p>
+
+        </div>
+
+        <div className={`${text} opacity-80`}>
+          {icon}
+        </div>
+
+      </div>
+
+    </motion.div>
+
+  );
+}
+
+function ActionButton({ label, color, onClick }) {
+
+  return (
+
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={`${color} text-white px-5 py-2 rounded-lg text-sm transition`}
+    >
+      {label}
+    </motion.button>
+
+  );
+}
+
 function StatusBadge({ status }) {
+
   const styles = {
     PLACED: "bg-yellow-100 text-yellow-700",
     SHIPPED: "bg-blue-100 text-blue-700",
@@ -217,12 +594,12 @@ function StatusBadge({ status }) {
   };
 
   return (
+
     <span
-      className={`rounded-full px-3 py-1 text-sm font-medium ${
-        styles[status] || "bg-gray-100 text-gray-600"
-      }`}
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status]}`}
     >
       {status}
     </span>
+
   );
 }

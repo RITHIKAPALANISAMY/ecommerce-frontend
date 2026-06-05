@@ -15,38 +15,45 @@ import { CompareProvider } from "./context/CompareContext";
 import "./index.css";
 
 /* ================= VERSION CONTROL ================= */
-const APP_VERSION = "1.0.4"; // 🔥 increment version
+const APP_VERSION = "1.0.5"; // 🔥 incremented
 const storedVersion = localStorage.getItem("app_version");
 
 if (storedVersion !== APP_VERSION) {
-  console.log("🔄 App updated to version:", APP_VERSION);
+  console.log("🔄 ShopVerse updated to version:", APP_VERSION);
 
-  // Optional: clear stale checkout cache on version change
-  localStorage.removeItem("checkoutItems");
-  localStorage.removeItem("checkoutAmount");
-  localStorage.removeItem("checkoutAddress");
-  localStorage.removeItem("paymentMethod");
+  // Clear only checkout-related stale data
+  const keysToRemove = [
+    "checkoutItems",
+    "checkoutAmount",
+    "checkoutAddress",
+    "paymentMethod",
+    "checkoutAddressId"
+  ];
+
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
 
   localStorage.setItem("app_version", APP_VERSION);
 }
 
 /* ================= RENDER APP ================= */
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <AuthProvider>
-      <UserProvider>
-        <ProductProvider>
-          <CartProvider>
-            <OrderProvider>
-              <WishlistProvider>
-                <CompareProvider>
-                  <App />
-                </CompareProvider>
-              </WishlistProvider>
-            </OrderProvider>
-          </CartProvider>
-        </ProductProvider>
-      </UserProvider>
-    </AuthProvider>
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <UserProvider>
+          <ProductProvider>
+            <CartProvider>
+              <OrderProvider>
+                <WishlistProvider>
+                  <CompareProvider>
+                    <App />
+                  </CompareProvider>
+                </WishlistProvider>
+              </OrderProvider>
+            </CartProvider>
+          </ProductProvider>
+        </UserProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );

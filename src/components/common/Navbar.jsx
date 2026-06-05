@@ -35,10 +35,13 @@ export default function Navbar() {
   const compareCount = compareItems.length;
   const isCheckoutPage = location.pathname.startsWith("/checkout");
 
-  // ✅ FIXED: Roles array support
-  const isBuyer = user?.roles?.includes("buyer");
-  const isSeller = user?.roles?.includes("seller");
-  const isAdmin = user?.roles?.includes("admin");
+  /* ================= FIXED ROLE HANDLING ================= */
+
+  const roles = user?.roles?.map((r) => r.toLowerCase()) || [];
+
+  const isBuyer = roles.includes("buyer");
+  const isSeller = roles.includes("seller");
+  const isAdmin = roles.includes("admin");
 
   const username =
     user?.name || user?.fullName || user?.username || "User";
@@ -109,7 +112,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Become Seller Button */}
+            {/* Become Seller */}
             {user && !isSeller && (
               <button
                 onClick={() => navigate("/become-seller")}
@@ -157,15 +160,7 @@ export default function Navbar() {
                       <User size={16} /> My Profile
                     </Link>
 
-                    <Link
-                      to="/settings"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
-                    >
-                      <Settings size={16} /> Settings
-                    </Link>
-
-                    {/* BUYER */}
+                    {/* BUYER SECTION */}
                     {isBuyer && (
                       <>
                         <Link

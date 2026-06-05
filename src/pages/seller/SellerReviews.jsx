@@ -9,29 +9,49 @@ export default function SellerReviews() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  /* ================= FETCH REVIEWS WITHOUT REPLY ================= */
+  /* ================= FETCH REVIEWS ================= */
 
   const fetchReviews = async () => {
+
     try {
+
       setLoading(true);
 
+      const sellerEmail =
+        localStorage.getItem("sellerEmail");
+
       const res = await axios.get(
-        `${REVIEW_API}/seller/pending?page=0&size=20`
+        `${REVIEW_API}/seller/pending`,
+        {
+          params: {
+            sellerEmail,
+            page: 0,
+            size: 20
+          }
+        }
       );
 
       setReviews(res.data.content || []);
 
     } catch (err) {
-      console.error("Seller review fetch error:", err);
+
+      console.error(
+        "Seller review fetch error:",
+        err
+      );
+
     } finally {
+
       setLoading(false);
+
     }
   };
+
+  /* ================= LOAD ON PAGE OPEN ================= */
 
   useEffect(() => {
     fetchReviews();
   }, []);
-
   /* ================= REPLY FUNCTION ================= */
 
   const replyToReview = async (reviewId) => {

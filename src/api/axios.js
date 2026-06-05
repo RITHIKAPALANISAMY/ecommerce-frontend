@@ -22,6 +22,11 @@ api.interceptors.request.use((config) => {
     config.baseURL = "http://localhost:8082";
   }
 
+  /* Wishlist Service (Auth Service - 8081) */
+  else if (config.url.startsWith("/buyer/wishlist")) {
+    config.baseURL = "http://localhost:8081";
+  }
+
   /* Cart Service */
   else if (config.url.startsWith("/cart")) {
     config.baseURL = "http://localhost:8083";
@@ -36,7 +41,7 @@ api.interceptors.request.use((config) => {
     config.baseURL = "http://localhost:8085";
   }
 
-  /* Auth Service */
+  /* Default → Auth Service */
   else {
     config.baseURL = "http://localhost:8081";
   }

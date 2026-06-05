@@ -64,7 +64,12 @@ export default function Cart() {
     }, 0);
   }, [inStockItems]);
 
-  const shipping = subtotal > 0 ? 99 : 0;
+  const shipping =
+  subtotal >= 799
+    ? 0
+    : subtotal > 0
+    ? 99
+    : 0;
 
   // GST 18%
   const gst = Number((subtotal * 0.18).toFixed(2));
@@ -254,13 +259,24 @@ export default function Cart() {
             <span className="flex items-center gap-1">
               <Truck size={14} /> Shipping
             </span>
-            <span>₹{shipping.toFixed(2)}</span>
+            {shipping === 0 ? (
+  <span className="text-green-600 font-medium">
+    FREE
+  </span>
+) : (
+  <span>₹{shipping.toFixed(2)}</span>
+)}
           </div>
 
           <div className="my-2 flex justify-between text-sm">
             <span>GST (18%)</span>
             <span>₹{gst.toFixed(2)}</span>
           </div>
+          {subtotal >= 799 && (
+  <p className="text-sm text-green-600 font-medium mt-2">
+    🎉 You got FREE Delivery!
+  </p>
+)}
 
           {discount > 0 && (
             <div className="my-2 flex justify-between text-sm font-medium text-green-600">

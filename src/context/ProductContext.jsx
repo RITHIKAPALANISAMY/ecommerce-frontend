@@ -2,41 +2,31 @@ import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
 const ProductContext = createContext();
-
 const API_BASE = "http://localhost:8082/api/products";
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  /* ================= NORMALIZE PRODUCT ================= */
-  const normalizeProduct = (product) => {
-    if (!product) return null;
+  /* ================= NORMALIZE ID ================= */
+  const normalizeProducts = (data) => {
+    if (!Array.isArray(data)) return [];
 
-    return {
-      ...product,
-      id: product.id || product._id, // MongoDB compatibility
-    };
+    return data.map((p) => ({
+      ...p,
+      id: p.id || p._id,
+    }));
   };
 
-  /* ================= FETCH ALL PRODUCTS ================= */
+  /* ================= FETCH APPROVED PRODUCTS ================= */
   const fetchProducts = async () => {
-    setLoading(true);
-
     try {
-      const response = await axios.get(API_BASE);
+      setLoading(true);
 
-      if (!Array.isArray(response.data)) {
-        setProducts([]);
-        return;
-      }
-
-      const normalized = response.data
-        .map(normalizeProduct)
-        .filter(Boolean);
+      const response = await axios.get(`${API_BASE}/approved`);
+      const normalized = normalizeProducts(response.data);
 
       setProducts(normalized);
-
     } catch (error) {
       console.error(
         "Fetch products error:",
@@ -52,99 +42,66 @@ export function ProductProvider({ children }) {
     fetchProducts();
   }, []);
 
+  /* ================= GET SINGLE PRODUCT ================= */
+  const getProductById = async (id) => {
+    if (!id) return null;
+
+    try {
+      const response = await axios.get(`${API_BASE}/view/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Fetch product by id error:", error);
+      return null;
+    }
+  };
+
+  /* ================= REFRESH SINGLE PRODUCT IN STATE ================= */
+  const refreshSingleProduct = async (id) => {
+    if (!id) return;
+
+    try {
+      const response = await axios.get(`${API_BASE}/view/${id}`);
+      const updatedProduct = response.data;
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...updatedProduct, id } : p
+        )
+      );
+    } catch (error) {
+      console.error("Refresh product failed:", error);
+    }
+  };
+
   /* ================= CREATE PRODUCT ================= */
   const createProduct = async (productData) => {
-    try {
-      const response = await axios.post(API_BASE, productData);
-
-      const created = normalizeProduct(response.data);
-
-      // Prevent duplicates
-      setProducts((prev) => {
-        if (prev.some((p) => p.id === created.id)) return prev;
-        return [...prev, created];
-      });
-
-      return created;
-
-    } catch (error) {
-      console.error(
-        "Create product error:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
+    const response = await axios.post(API_BASE, productData);
+    return response.data;
   };
 
   /* ================= UPDATE PRODUCT ================= */
   const updateProduct = async (id, updatedData) => {
-    try {
-      const response = await axios.put(
-        `${API_BASE}/${id}`,
-        updatedData
-      );
+    if (!id) throw new Error("Product ID is missing");
 
-      const updated = normalizeProduct(response.data);
-
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === id ? updated : p
-        )
-      );
-
-      return updated;
-
-    } catch (error) {
-      console.error(
-        "Update product error:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
+    const response = await axios.put(`${API_BASE}/${id}`, updatedData);
+    return response.data;
   };
 
   /* ================= DELETE PRODUCT ================= */
   const deleteProduct = async (id) => {
-    try {
-      await axios.delete(`${API_BASE}/${id}`);
-
-      setProducts((prev) =>
-        prev.filter((p) => p.id !== id)
-      );
-
-    } catch (error) {
-      console.error(
-        "Delete product error:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
+    await axios.delete(`${API_BASE}/${id}`);
+    fetchProducts();
   };
 
   /* ================= GET PRODUCTS BY SELLER ================= */
   const getProductsBySeller = async (email) => {
     if (!email) return [];
 
-    try {
-      const normalizedEmail = email.trim().toLowerCase();
+    const response = await axios.get(
+      `${API_BASE}/seller/${email.trim().toLowerCase()}`
+    );
 
-      const response = await axios.get(
-        `${API_BASE}/seller/${normalizedEmail}`
-      );
-
-      if (!Array.isArray(response.data)) return [];
-
-      return response.data
-        .map(normalizeProduct)
-        .filter(Boolean);
-
-    } catch (error) {
-      console.error(
-        "Fetch seller products error:",
-        error.response?.data || error.message
-      );
-      return [];
-    }
+    return normalizeProducts(response.data);
   };
 
   return (
@@ -153,6 +110,8 @@ export function ProductProvider({ children }) {
         products,
         loading,
         fetchProducts,
+        getProductById,
+        refreshSingleProduct,   // 🔥 NEW
         createProduct,
         updateProduct,
         deleteProduct,

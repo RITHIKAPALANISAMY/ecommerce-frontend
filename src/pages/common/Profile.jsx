@@ -7,6 +7,8 @@ import SellerProfile from "./SellerProfile";
 
 const Profile = () => {
   const { user, loading } = useAuth();
+ 
+
 
   if (loading) {
     return (
@@ -25,11 +27,16 @@ const Profile = () => {
   }
 
   // 🔥 ROLE CHECKING
-  if (user.roles?.includes("seller")) {
-    return <SellerProfile user={user} />;
-  }
+  if (
+  user.roles?.some(role =>
+    role.toLowerCase().includes("seller")
+  )
+) {
+  return <SellerProfile user={user} />;
+}
 
   return <BuyerProfile user={user} />;
+  
 };
 
 export default Profile;

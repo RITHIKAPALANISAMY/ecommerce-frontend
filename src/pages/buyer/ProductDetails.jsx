@@ -1,37 +1,52 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useCompare } from "../../context/CompareContext";
 import {
   Truck,
   RotateCcw,
   ShieldCheck,
   Package,
 } from "lucide-react";
+import { Heart, GitCompare } from "lucide-react";
 import axios from "axios";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
-import { useCompare } from "../../context/CompareContext";
 import Reviews from "../../components/buyer/Reviews";
+import { motion } from "framer-motion";
+
 
 const PRODUCT_API = "http://localhost:8082/api/products";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } =
-    useWishlist();
-  const { compareItems } = useCompare();
+
+  const {
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+  } = useWishlist();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
-
-  /* ✅ NEW: review refresh state */
   const [refreshReviews, setRefreshReviews] = useState(false);
+  const { addToCompare, compareItems } = useCompare();
 
   /* ================= FETCH PRODUCT ================= */
+  useEffect(() => {
+  const handleStorageChange = () => {
+    setRefreshReviews(prev => !prev);
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorageChange);
+  };
+}, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -39,197 +54,181 @@ export default function ProductDetails() {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-
-        const res = await axios.get(`${PRODUCT_API}/${id}`);
-        console.log("PRODUCT RESPONSE:", res.data);
-
+        const res = await axios.get(`${PRODUCT_API}/view/${id}`);
         setProduct(res.data);
-      } catch (err) {
-        console.error("Failed to load product:", err);
+      } catch {
         setProduct(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduct();
+    if (id) fetchProduct();
   }, [id]);
 
-  /* ✅ NEW: listen for review submission event */
-  useEffect(() => {
-    const handleReviewRefresh = () => {
-      setRefreshReviews(prev => !prev);
-    };
-
-    window.addEventListener("reviewSubmitted", handleReviewRefresh);
-
-    return () => {
-      window.removeEventListener("reviewSubmitted", handleReviewRefresh);
-    };
-  }, []);
-
-  if (loading) {
+  if (loading)
     return (
       <div className="p-10 text-center text-gray-500">
         Loading product...
       </div>
     );
-  }
 
-  if (!product) {
+  if (!product)
     return (
       <div className="p-10 text-center text-gray-500">
         Product not found
       </div>
     );
-  }
-
-  /* ================= SAFE ID FIX ================= */
-
-  const productId = String(product._id || product.id);
-
-  /* ================= CALCULATIONS ================= */
 
   const stock = product.stock ?? 0;
-  const LOW_STOCK_LIMIT = 5;
-
-  const stockStatus =
-    stock === 0 ? "OUT" : stock <= LOW_STOCK_LIMIT ? "LOW" : "IN";
 
   const discountPercent =
     product.mrp && product.price
-      ? Math.round(
-          ((product.mrp - product.price) / product.mrp) * 100
-        )
+      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
       : 0;
 
   /* ================= HANDLERS ================= */
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (stock === 0) return;
-
-    addToCart({
-      ...product,
-      id: productId,
-      quantity: qty,
-    });
+    await addToCart({ id: product.id, quantity: qty });
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (stock === 0) return;
-
-    addToCart({
-      ...product,
-      id: productId,
-      quantity: qty,
-      buyNow: true,
-    });
-
+    await addToCart({ id: product.id, quantity: qty });
     navigate("/cart");
   };
 
-  const toggleWishlist = () => {
-    if (!productId) return;
-
-    if (isInWishlist(productId)) {
-      removeFromWishlist(productId);
+  const handleWishlist = () => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
     } else {
-      addToWishlist(productId);
+      addToWishlist(product.id);
     }
   };
 
+ const handleCompare = () => {
+  if (!product) return;
+
+  addToCompare(product);
+};
   /* ================= UI ================= */
 
   return (
-    <div className="bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+    <div className="bg-gradient-to-br from-gray-50 to-red-50 px-4 py-10">
 
-          {/* IMAGE SECTION */}
+      {/* ================= MAIN CARD ================= */}
+      <div className="mx-auto max-w-7xl rounded-3xl bg-white shadow-xl p-8">
+        <div className="grid gap-12 md:grid-cols-2">
+
+          {/* ================= IMAGE SECTION ================= */}
           <div>
-            <div className="relative flex h-[420px] items-center justify-center rounded-xl bg-gray-100">
+            <div className="relative h-[420px] flex items-center justify-center rounded-2xl bg-gray-100 overflow-hidden">
+
+              {/* Wishlist & Compare */}
+              <div className="absolute top-4 right-4 flex gap-3 z-10">
+                <button
+                  onClick={handleWishlist}
+                  className={`p-2 rounded-full shadow-md transition ${
+                    isInWishlist(product.id)
+                      ? "bg-red-100"
+                      : "bg-white hover:bg-red-50"
+                  }`}
+                >
+                  <Heart
+                    size={18}
+                    className={
+                      isInWishlist(product.id)
+                        ? "text-red-600 fill-red-600"
+                        : "text-red-500"
+                    }
+                  />
+                </button>
+
+                <button
+  onClick={handleCompare}
+  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition"
+>
+  <GitCompare size={18} className="text-gray-700" />
+</button>
+              </div>
 
               {discountPercent > 0 && (
-                <span className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                <span className="absolute top-4 left-4 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs px-3 py-1 rounded-full shadow-md">
                   {discountPercent}% OFF
                 </span>
               )}
 
-              <img
+              <motion.img
+                key={activeImg}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 src={product.images?.[activeImg] || "/placeholder.png"}
                 alt={product.title}
                 className="max-h-full max-w-full object-contain"
               />
             </div>
 
-            <div className="mt-4 flex gap-3">
+            {/* Thumbnails */}
+            <div className="mt-5 flex gap-3">
               {product.images?.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`h-16 w-16 rounded-lg border p-1 ${
+                  className={`h-16 w-16 rounded-xl border transition ${
                     i === activeImg
                       ? "border-red-500 ring-2 ring-red-200"
-                      : "border-gray-200"
+                      : "border-gray-200 hover:border-red-300"
                   }`}
                 >
                   <img
                     src={img}
                     alt=""
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain p-1"
                   />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* DETAILS SECTION */}
-          <div>
+          {/* ================= DETAILS ================= */}
+          <div className="flex flex-col">
+
             {product.brand && (
               <p className="text-sm uppercase tracking-wide text-gray-500">
                 {product.brand}
               </p>
             )}
 
-            <h1 className="mt-1 text-2xl font-semibold text-gray-900">
+            <h1 className="mt-2 text-2xl font-bold text-gray-900 leading-snug">
               {product.title}
             </h1>
 
             {/* PRICE */}
-            <div className="mt-4 flex items-end gap-3">
+            <div className="mt-6 flex items-end gap-4">
               <span className="text-3xl font-bold text-red-600">
                 ₹{product.price}
               </span>
 
               {product.mrp && (
-                <>
-                  <span className="text-sm text-gray-400 line-through">
-                    ₹{product.mrp}
-                  </span>
-                  {discountPercent > 0 && (
-                    <span className="text-sm font-semibold text-green-600">
-                      {discountPercent}% off
-                    </span>
-                  )}
-                </>
+                <span className="text-sm text-gray-400 line-through">
+                  ₹{product.mrp}
+                </span>
               )}
             </div>
 
             {/* STOCK */}
             <div className="mt-3 text-sm font-medium">
-              <span
-                className={
-                  stockStatus === "OUT"
-                    ? "text-red-600"
-                    : stockStatus === "LOW"
-                    ? "text-orange-500"
-                    : "text-green-600"
-                }
-              >
-                {stockStatus === "OUT" && "Out of stock"}
-                {stockStatus === "LOW" && `Only ${stock} left`}
-                {stockStatus === "IN" && "In stock"}
-              </span>
+              {stock === 0 ? (
+                <span className="text-red-600">Out of stock</span>
+              ) : stock <= 5 ? (
+                <span className="text-orange-500">
+                  Only {stock} left
+                </span>
+              ) : (
+                <span className="text-green-600">In stock</span>
+              )}
             </div>
 
             {/* QUANTITY */}
@@ -238,103 +237,92 @@ export default function ProductDetails() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => qty > 1 && setQty(qty - 1)}
-                  className="h-8 w-8 rounded border"
+                  className="h-9 w-9 rounded-lg border hover:bg-gray-100"
                 >
                   −
                 </button>
 
-                <span>{qty}</span>
+                <span className="text-lg font-semibold">{qty}</span>
 
                 <button
                   onClick={() => qty < stock && setQty(qty + 1)}
-                  disabled={stock === 0}
-                  className="h-8 w-8 rounded border disabled:opacity-50"
+                  className="h-9 w-9 rounded-lg border hover:bg-gray-100"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            {/* ACTIONS */}
-            <div className="mt-8 flex gap-3">
-              <button
+            {/* ACTION BUTTONS */}
+            <div className="mt-8 flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={handleAddToCart}
                 disabled={stock === 0}
-                className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-xl bg-red-600 py-3 font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-50"
               >
                 Add to Cart
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={handleBuyNow}
                 disabled={stock === 0}
-                className="flex-1 rounded-xl border py-3 font-semibold disabled:opacity-50"
+                className="flex-1 rounded-xl border border-gray-300 py-3 font-semibold hover:bg-gray-100 disabled:opacity-50"
               >
                 Buy Now
-              </button>
+              </motion.button>
             </div>
 
             {/* TRUST BADGES */}
-            <ul className="mt-6 grid grid-cols-2 gap-3 text-sm text-gray-600">
-              <li className="flex items-center gap-2">
+            <div className="mt-8 grid grid-cols-2 gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl">
                 <Truck size={16} /> Free Delivery
-              </li>
-              <li className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl">
                 <RotateCcw size={16} /> 7 Days Return
-              </li>
-              <li className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl">
                 <ShieldCheck size={16} /> Genuine Product
-              </li>
-              <li className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl">
                 <Package size={16} /> Secure Packaging
-              </li>
-            </ul>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* DESCRIPTION SECTION */}
-      <div className="mx-auto mt-10 max-w-7xl rounded-2xl bg-white p-6 shadow-md">
-        <h2 className="mb-6 text-xl font-semibold text-gray-800">
+      {/* DESCRIPTION */}
+      <div className="mx-auto mt-12 max-w-7xl rounded-3xl bg-white p-8 shadow-xl">
+        <h2 className="text-xl font-bold mb-6">
           Product Details
         </h2>
 
         {product.description?.about && (
-          <p className="mb-6 text-gray-600 leading-relaxed">
+          <p className="text-gray-600 leading-relaxed mb-6">
             {product.description.about}
           </p>
         )}
 
         {product.description?.highlights?.length > 0 && (
-          <ul className="mb-6 list-disc space-y-2 pl-5 text-gray-600">
+          <ul className="list-disc pl-5 space-y-2 text-gray-600 mb-6">
             {product.description.highlights.map((item, i) => (
               <li key={i}>{item}</li>
             ))}
           </ul>
         )}
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
-          {product.description?.material && (
-            <div><strong>Material:</strong> {product.description.material}</div>
-          )}
-          {product.description?.usage && (
-            <div><strong>Usage:</strong> {product.description.usage}</div>
-          )}
-          {product.description?.care && (
-            <div><strong>Care:</strong> {product.description.care}</div>
-          )}
-          {product.description?.warranty && (
-            <div><strong>Warranty:</strong> {product.description.warranty}</div>
-          )}
-          {product.description?.expiryDate && (
-            <div><strong>Expiry Date:</strong> {product.description.expiryDate}</div>
-          )}
-        </div>
       </div>
 
       {/* REVIEWS */}
-      <div className="mx-auto mt-10 max-w-7xl">
-        <Reviews productId={productId} refresh={refreshReviews} />
+      <div className="mx-auto mt-12 max-w-7xl">
+        <Reviews
+          productId={product.id}
+          refresh={refreshReviews}
+        />
       </div>
     </div>
   );

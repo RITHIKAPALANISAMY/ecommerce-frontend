@@ -1,113 +1,57 @@
-import { useMemo, useState } from "react";
-import jsPDF from "jspdf";
+import { useMemo, useState, useEffect } from "react";
 import { useUsers } from "../../context/UserContext";
+import { toast } from "react-toastify";
 
-/* BADGES */
-const roleBadge = (role) =>
-  role === "seller"
-    ? "bg-blue-100 text-blue-700"
-    : "bg-indigo-100 text-indigo-700";
-
-const statusBadge = (status) =>
-  status === "blocked"
-    ? "bg-red-100 text-red-700"
-    : "bg-green-100 text-green-700";
-
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 8;
 
 export default function AdminUsers() {
-  const {
-    users,
-    blockUser,
-    unblockUser,
-    deleteUser,
-    refreshUsers, // ✅ ADD
-  } = useUsers();
+  const { users, blockUser, unblockUser, refreshUsers } = useUsers();
 
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState("all");
-  const [status, setStatus] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [confirmUser, setConfirmUser] = useState(null);
 
-  /* FILTER */
+  useEffect(() => {
+    refreshUsers();
+  }, []);
+
+  /* ================= FILTER ================= */
   const filtered = useMemo(() => {
-    return users.filter((u) => {
-      if (
-        search &&
-        !`${u.name} ${u.email}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      )
-        return false;
+  return [...users]
+    .filter((u) => {
+      const matchesSearch =
+        `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase());
 
-      if (role !== "all" && u.role !== role) return false;
-      if (status !== "all" && u.status !== status) return false;
+      const matchesRole =
+        roleFilter === "all" || u.role === roleFilter;
 
-      return true;
-    });
-  }, [users, search, role, status]);
+      return matchesSearch && matchesRole;
+    })
+    .sort((a,b)=> new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-  /* PAGINATION */
+}, [users, search, roleFilter]);
+
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
   const pagedUsers = filtered.slice(
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE
   );
 
-  /* EXPORT CSV */
-  const exportUsersCSV = () => {
-    const rows = [
-      ["Name", "Email", "Role", "Status"],
-      ...filtered.map((u) => [
-        u.name,
-        u.email,
-        u.role,
-        u.status,
-      ]),
-    ];
+  /* ================= BLOCK / UNBLOCK ================= */
+  const handleConfirmAction = async () => {
+    if (!confirmUser) return;
 
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+    if (confirmUser.status === "active") {
+      await blockUser(confirmUser.id);
+      toast.success("User blocked successfully");
+    } else {
+      await unblockUser(confirmUser.id);
+      toast.success("User unblocked successfully");
+    }
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "users-report.csv";
-    a.click();
-  };
-
-  /* EXPORT PDF */
-  const exportUsersPDF = () => {
-    const doc = new jsPDF();
-    let y = 20;
-
-    doc.setFontSize(18);
-    doc.text("USER REPORT", 14, y);
-    y += 10;
-
-    doc.setFontSize(11);
-    doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      14,
-      y
-    );
-    y += 10;
-
-    filtered.forEach((u, i) => {
-      doc.text(
-        `${i + 1}. ${u.name} | ${u.email} | ${u.role} | ${u.status}`,
-        14,
-        y
-      );
-      y += 6;
-
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-    });
-
-    doc.save("users-report.pdf");
+    setConfirmUser(null);
   };
 
   return (
@@ -116,119 +60,75 @@ export default function AdminUsers() {
         Users Management
       </h2>
 
-      {/* FILTER BAR */}
-      <div className="flex flex-wrap gap-4 mb-4">
+      {/* ================= FILTER BAR ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <input
           placeholder="Search name or email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border px-3 py-2 rounded w-64"
+          className="border px-3 py-2 rounded w-full"
         />
 
         <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
           className="border px-3 py-2 rounded"
         >
           <option value="all">All Roles</option>
           <option value="buyer">Buyer</option>
           <option value="seller">Seller</option>
         </select>
-
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="border px-3 py-2 rounded"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="blocked">Blocked</option>
-        </select>
-
-        <button
-          onClick={exportUsersCSV}
-          className="border px-4 py-2 rounded"
-        >
-          Export CSV
-        </button>
-
-        <button
-          onClick={exportUsersPDF}
-          className="bg-[#931012] text-white px-4 py-2 rounded"
-        >
-          Export PDF
-        </button>
       </div>
 
-      {/* TABLE */}
+      {/* ================= TABLE ================= */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4">Email</th>
-              <th className="px-6 py-4">Role</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Actions</th>
+              <th className="px-6 py-4 text-left">Name</th>
+              <th className="px-6 py-4 text-left">Email</th>
+              <th className="px-6 py-4 text-left">Role</th>
+              <th className="px-6 py-4 text-left">Status</th>
+              <th className="px-6 py-4 text-left">Action</th>
             </tr>
           </thead>
 
           <tbody>
             {pagedUsers.map((u) => (
-              <tr key={u.__uid} className="border-t">
+              <tr key={u.id} className="border-t">
                 <td className="px-6 py-4">{u.name}</td>
                 <td className="px-6 py-4">{u.email}</td>
+
                 <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${roleBadge(
-                      u.role
-                    )}`}
-                  >
+                  <span className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
                     {u.role}
                   </span>
                 </td>
+
                 <td className="px-6 py-4">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(
-                      u.status
-                    )}`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      u.status === "blocked"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-green-100 text-green-600"
+                    }`}
                   >
                     {u.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 space-x-3 text-xs">
-                  {u.status === "active" ? (
-                    <button
-                      onClick={() => {
-                        blockUser(u.__uid);
-                        refreshUsers(); // ✅ ADD
-                      }}
-                      className="text-red-600"
-                    >
-                      Block
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        unblockUser(u.__uid);
-                        refreshUsers(); // ✅ ADD
-                      }}
-                      className="text-green-600"
-                    >
-                      Unblock
-                    </button>
-                  )}
 
+                <td className="px-6 py-4">
                   <button
-                    onClick={() => {
-                      if (confirm("Delete this user?")) {
-                        deleteUser(u.__uid);
-                        refreshUsers(); // ✅ ADD
-                      }
-                    }}
-                    className="text-gray-500"
+                    onClick={() => setConfirmUser(u)}
+                    className={`px-3 py-1 text-xs rounded text-white transition ${
+                      u.status === "active"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-green-600 hover:bg-green-700"
+                    }`}
                   >
-                    Delete
+                    {u.status === "active"
+                      ? "Block"
+                      : "Unblock"}
                   </button>
                 </td>
               </tr>
@@ -248,22 +148,61 @@ export default function AdminUsers() {
         </table>
       </div>
 
-      {/* PAGINATION */}
-      <div className="flex justify-end gap-2 mt-4">
-        {Array.from({ length: totalPages }).map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setPage(i + 1)}
-            className={`px-3 py-1 rounded ${
-              page === i + 1
-                ? "bg-[#931012] text-white"
-                : "border"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
+      {/* ================= PAGINATION ================= */}
+      <div className="w-full flex justify-center mt-8">
+        <div className="flex gap-2 flex-wrap">
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i + 1)}
+              className={`px-3 py-1 rounded ${
+                page === i + 1
+                  ? "bg-[#931012] text-white"
+                  : "border hover:bg-gray-100"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* ================= CONFIRM MODAL ================= */}
+      {confirmUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-4">
+              Confirm Action
+            </h3>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to{" "}
+              <strong>
+                {confirmUser.status === "active"
+                  ? "block"
+                  : "unblock"}
+              </strong>{" "}
+              this user?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmUser(null)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleConfirmAction}
+                className="px-4 py-2 bg-[#931012] text-white rounded"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

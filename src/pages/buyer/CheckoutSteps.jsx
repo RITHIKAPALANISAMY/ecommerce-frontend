@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 
 export default function CheckoutSteps({ currentStep }) {
   const navigate = useNavigate();
@@ -11,67 +12,81 @@ export default function CheckoutSteps({ currentStep }) {
   ];
 
   const handleStepClick = (step) => {
-    // Only allow navigating to previous steps
     if (step.id < currentStep) {
       navigate(step.path);
     }
   };
 
   return (
-    <div className="w-full bg-white py-6 shadow-sm">
-      <div className="mx-auto flex max-w-3xl items-center justify-between">
+    <div className="w-full py-4">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md px-6 py-5">
 
-        {steps.map((step, index) => {
-          const isActive = currentStep >= step.id;
-          const isClickable = step.id < currentStep;
+        <div className="flex items-center justify-between relative">
 
-          return (
-            <div key={step.id} className="flex items-center w-full">
+          {/* Background Line */}
+          <div className="absolute top-4 left-0 right-0 h-1 bg-gray-200 rounded-full" />
 
-              {/* Step Circle */}
-              <div className="flex flex-col items-center w-full relative">
+          {/* Animated Progress Line */}
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{
+              width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+            }}
+            transition={{ duration: 0.4 }}
+            className="absolute top-4 left-0 h-1 bg-red-600 rounded-full"
+          />
 
+          {steps.map((step) => {
+            const isCompleted = currentStep > step.id;
+            const isActive = currentStep === step.id;
+            const isClickable = step.id < currentStep;
+
+            return (
+              <div
+                key={step.id}
+                className="relative flex flex-col items-center z-10"
+              >
+                {/* Step Circle */}
                 <motion.div
-                  whileHover={isClickable ? { scale: 1.1 } : {}}
+                  whileHover={isClickable ? { scale: 1.08 } : {}}
                   whileTap={isClickable ? { scale: 0.95 } : {}}
                   onClick={() => handleStepClick(step)}
                   className={`
-                    flex h-10 w-10 items-center justify-center 
-                    rounded-full border text-sm font-semibold
+                    flex items-center justify-center
+                    w-9 h-9 rounded-full text-xs font-semibold
                     transition-all duration-300
                     ${
-                      isActive
-                        ? "bg-red-600 border-red-600 text-white"
-                        : "bg-white border-gray-300 text-gray-500"
+                      isCompleted
+                        ? "bg-green-500 text-white"
+                        : isActive
+                        ? "bg-red-600 text-white ring-2 ring-red-200"
+                        : "bg-white border border-gray-300 text-gray-500"
                     }
                     ${isClickable ? "cursor-pointer" : "cursor-default"}
                   `}
                 >
-                  {currentStep > step.id ? "✓" : step.id}
+                  {isCompleted ? <Check size={14} /> : step.id}
                 </motion.div>
 
-                <span className="mt-2 text-xs font-medium text-gray-700 text-center">
+                {/* Label */}
+                <span
+                  className={`
+                    mt-2 text-xs font-medium transition-colors
+                    ${
+                      isActive
+                        ? "text-red-600"
+                        : isCompleted
+                        ? "text-green-600"
+                        : "text-gray-500"
+                    }
+                  `}
+                >
                   {step.label}
                 </span>
               </div>
-
-              {/* Connector Line */}
-              {index < steps.length - 1 && (
-                <div
-                  className={`
-                    h-1 flex-1 mx-2 rounded transition-all duration-300
-                    ${
-                      currentStep > step.id
-                        ? "bg-red-600"
-                        : "bg-gray-300"
-                    }
-                  `}
-                />
-              )}
-            </div>
-          );
-        })}
-
+            );
+          })}
+        </div>
       </div>
     </div>
   );

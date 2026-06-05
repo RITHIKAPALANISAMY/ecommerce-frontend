@@ -3,7 +3,6 @@ import axios from "axios";
 import { useAuth } from "./AuthContext";
 
 const OrderContext = createContext();
-
 const ORDER_API = "http://localhost:8085/api/orders";
 
 export const OrderProvider = ({ children }) => {
@@ -12,16 +11,33 @@ export const OrderProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  /* ================= SORT NEWEST FIRST ================= */
+
+  const sortOrders = (data) => {
+    if (!Array.isArray(data)) return [];
+
+    return [...data].sort(
+      (a, b) =>
+        new Date(b.orderDate || b.createdAt || 0) -
+        new Date(a.orderDate || a.createdAt || 0)
+    );
+  };
+
   /* ================= FETCH BUYER ORDERS ================= */
+
   const fetchBuyerOrders = async () => {
     if (!user?.email) return;
 
     try {
       setLoading(true);
+
       const response = await axios.get(
         `${ORDER_API}/buyer/${user.email.toLowerCase()}`
       );
-      setOrders(response.data || []);
+
+      const data = response.data?.content || response.data || [];
+
+      setOrders(sortOrders(data));
     } catch (error) {
       console.error("Failed to fetch buyer orders:", error);
     } finally {
@@ -29,35 +45,104 @@ export const OrderProvider = ({ children }) => {
     }
   };
 
-  /* ================= PLACE ORDER ================= */
-  const placeOrder = async ({ address, amount, paymentMethod, items }) => {
-    if (!items?.length || !user?.email) {
-      console.error("Order failed: Missing items or user");
-      return null;
-    }
+  /* ================= FETCH ADMIN ORDERS ================= */
 
+  const fetchAllOrders = async () => {
     try {
       setLoading(true);
 
-      const newOrder = {
-        buyerEmail: user.email.toLowerCase(),
-        buyerName: user.name || "Customer",
-        items,
-        address,
-        amount,
-        paymentMethod,
-      };
+      const response = await axios.get(`${ORDER_API}/admin/all`);
 
-      console.log("Sending order:", newOrder);
+      const data = response.data?.content || response.data || [];
 
-      const response = await axios.post(ORDER_API, newOrder);
-
-      return response.data; // ✅ RETURN SAVED ORDER
+      /* 🔥 SORT LATEST FIRST */
+      setOrders(sortOrders(data));
     } catch (error) {
-      console.error("Order placement failed:", error.response?.data || error);
-      throw error;
+      console.error("Failed to fetch admin orders:", error);
+      setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* ================= PLACE ORDER ================= */
+
+  const placeOrder = async (orderData) => {
+
+  if (!orderData?.items?.length || !user?.email) {
+    console.error("Order failed: Missing items or user");
+    return null;
+  }
+
+  try {
+
+    setLoading(true);
+
+    /* ✅ FIX DISCOUNTED ITEM PRICE */
+
+    const updatedItems = orderData.items.map((item) => ({
+
+      ...item,
+
+      price:
+        item.finalPrice ||
+        item.discountedPrice ||
+        item.price
+
+    }));
+
+    const response = await axios.post(ORDER_API, {
+
+      ...orderData,
+
+      items: updatedItems,
+
+      buyerEmail: user.email.toLowerCase(),
+
+      buyerName: user.name || "Customer",
+
+    });
+
+    /* refresh orders */
+
+    await fetchAllOrders();
+
+    return response.data;
+
+  } catch (error) {
+
+    console.error("Order placement failed:", error);
+
+    throw error;
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+
+  /* ================= UPDATE STATUS ================= */
+
+  const updateOrderStatus = async (id, status) => {
+    try {
+      await axios.put(`${ORDER_API}/${id}/status?status=${status}`);
+
+      await fetchAllOrders();
+    } catch (error) {
+      console.error("Status update failed:", error);
+    }
+  };
+
+  /* ================= CANCEL ORDER ================= */
+
+  const cancelOrder = async (id) => {
+    try {
+      await axios.delete(`${ORDER_API}/${id}`);
+
+      await fetchBuyerOrders();
+    } catch (error) {
+      console.error("Cancel failed:", error);
     }
   };
 
@@ -67,7 +152,10 @@ export const OrderProvider = ({ children }) => {
         orders,
         loading,
         fetchBuyerOrders,
+        fetchAllOrders,
         placeOrder,
+        updateOrderStatus,
+        cancelOrder,
       }}
     >
       {children}

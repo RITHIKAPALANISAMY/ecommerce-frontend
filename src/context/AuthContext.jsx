@@ -7,13 +7,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD USER ================= */
   const fetchUserProfile = async () => {
     try {
       const response = await api.get("/user/profile");
       const profile = response.data;
 
-      const formattedUser = {
+      setUser({
         id: profile.id,
         name: profile.name,
         email: profile.email,
@@ -21,36 +20,37 @@ export const AuthProvider = ({ children }) => {
         gender: profile.gender,
         profileImage: profile.profileImage,
         verified: profile.verified,
-
-        // ✅ ADD THESE STORE FIELDS
         storeName: profile.storeName,
         storePhone: profile.storePhone,
         gstNumber: profile.gstNumber,
         storeAddress: profile.storeAddress,
-
         roles: profile.roles.map((r) =>
-          r.replace("ROLE_", "").toLowerCase()
+          r.replace("ROLE_", "").toUpperCase()
         ),
-      };
-
-      setUser(formattedUser);
+      });
     } catch (error) {
-      console.error("Profile fetch failed:", error);
+      console.error("Session expired");
+      localStorage.clear();
       setUser(null);
     }
   };
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+
     if (!token) {
       setLoading(false);
       return;
     }
 
-    fetchUserProfile().finally(() => setLoading(false));
+    const init = async () => {
+      await fetchUserProfile();
+      setLoading(false);
+    };
+
+    init();
   }, []);
 
-  /* ================= LOGIN ================= */
   const login = async (data) => {
     try {
       const response = await api.post("/auth/login", data);
@@ -70,7 +70,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /* ================= REGISTER ================= */
   const register = async (data) => {
     try {
       const response = await api.post("/auth/register", data);
@@ -90,12 +89,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /* ================= REFRESH USER ================= */
-  const refreshUser = async () => {
-    await fetchUserProfile();
-  };
-
-  /* ================= LOGOUT ================= */
   const logout = async () => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
@@ -113,15 +106,15 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider
       value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        refreshUser,
-      }}
+  user,
+  loading,
+  login,
+  register,
+  logout,
+  fetchUserProfile
+}}
     >
-      {children}
+      {children} {/* ✅ ALWAYS RENDER */}
     </AuthContext.Provider>
   );
 };

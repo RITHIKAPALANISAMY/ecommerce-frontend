@@ -15,13 +15,19 @@ import Coupons from "./pages/admin/Coupons";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Users from "./pages/admin/Users";
 import Products from "./pages/admin/Products";
+import Payments from "./pages/admin/Payments";
+import Refunds from "./pages/admin/Refunds";
 import OrdersAdmin from "./pages/admin/AdminOrders";
 import AdminSellerRequests from "./pages/admin/AdminSellerRequests";
+import Analytics from "./pages/admin/Analytics";
+import Settings from "./pages/admin/Settings";
 
 /* SELLER */
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerReviews from "./pages/seller/SellerReviews";
+import SellerProducts from "./pages/seller/SellerProducts";
+import SellerAnalytics from "./pages/seller/SellerAnalytics";
 import BecomeSeller from "./pages/seller/BecomeSeller";
 
 /* BUYER */
@@ -61,6 +67,7 @@ export default function App() {
     <>
       <Routes>
 
+        {/* ================= ADMIN ================= */}
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" />} />
@@ -68,25 +75,35 @@ export default function App() {
             <Route path="users" element={<Users />} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<OrdersAdmin />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="refunds" element={<Refunds />} />
             <Route path="seller-requests" element={<AdminSellerRequests />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Route>
 
+        {/* ================= SELLER ================= */}
         <Route element={<ProtectedRoute allowedRoles={["SELLER"]} />}>
           <Route path="/seller" element={<SellerLayout />}>
+            <Route index element={<Navigate to="dashboard" />} />
             <Route path="dashboard" element={<SellerDashboard />} />
+            <Route path="products" element={<SellerProducts />} />
             <Route path="orders" element={<SellerOrders />} />
             <Route path="reviews" element={<SellerReviews />} />
+            <Route path="analytics" element={<SellerAnalytics />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Route>
 
+        {/* ================= BECOME SELLER ================= */}
         <Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
           <Route path="/become-seller" element={<BecomeSeller />} />
         </Route>
 
+        {/* ================= PUBLIC BUYER ================= */}
         <Route element={<BuyerLayout />}>
           <Route index element={<Home />} />
           <Route path="product/:id" element={<ProductDetails />} />
@@ -95,27 +112,35 @@ export default function App() {
           <Route path="compare" element={<Compare />} />
         </Route>
 
+        {/* ================= PROTECTED BUYER ================= */}
         <Route element={<ProtectedRoute allowedRoles={["BUYER"]} />}>
           <Route element={<BuyerLayout />}>
+
             <Route path="cart" element={<Cart />} />
             <Route path="orders" element={<BuyerOrders />} />
             <Route path="wishlist" element={<Wishlist />} />
             <Route path="profile" element={<Profile />} />
+
             <Route path="checkout" element={<Checkout />}>
               <Route index element={<Navigate to="address" />} />
               <Route path="address" element={<CheckoutAddress />} />
               <Route path="summary" element={<CheckoutSummary />} />
               <Route path="payment" element={<CheckoutPayment />} />
             </Route>
-            <Route path="order-success" element={<OrderSuccess />} />
+
+            {/* ✅ ORDER SUCCESS INSIDE BUYER LAYOUT + PROTECTED */}
+            <Route path="order-success/:id" element={<OrderSuccess />} />
+
           </Route>
         </Route>
 
+        {/* ================= AUTH ================= */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
+        {/* ================= ERROR ================= */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<NotFound />} />
 
@@ -128,6 +153,7 @@ export default function App() {
         autoClose={3000}
         newestOnTop
         pauseOnHover
+        theme="colored"
       />
     </>
   );

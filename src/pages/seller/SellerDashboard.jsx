@@ -1,35 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useProducts } from "../../context/ProductContext";
 import { getSellerOrders } from "../../api/orderApi";
-
-import SellerProducts from "./SellerProducts";
-import SellerOrders from "./SellerOrders";
-import SellerAnalytics from "./SellerAnalytics";
-
 import {
-  Package,
   IndianRupee,
-  AlertTriangle,
-  XCircle,
   ShoppingCart,
   CheckCircle,
+  XCircle,
+  Truck,
 } from "lucide-react";
 
 export default function SellerDashboard() {
   const { user } = useAuth();
-  const { products, loading, fetchProducts } = useProducts();
 
-  const [tab, setTab] = useState("overview");
-  const [sellerProducts, setSellerProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const sellerEmail = user?.email?.trim().toLowerCase();
-
-  /* ================= FETCH PRODUCTS ================= */
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   /* ================= FETCH SELLER ORDERS ================= */
   useEffect(() => {
@@ -37,196 +23,192 @@ export default function SellerDashboard() {
 
     const fetchOrders = async () => {
       try {
+        setLoading(true);
         const res = await getSellerOrders(sellerEmail);
         setOrders(res.data || []);
       } catch (error) {
         console.error("Failed to fetch seller orders", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchOrders();
   }, [sellerEmail]);
 
-  /* ================= FILTER SELLER PRODUCTS ================= */
-  useEffect(() => {
-    if (!sellerEmail || !products) {
-      setSellerProducts([]);
-      return;
-    }
+  /* ================= ORDER FILTERS ================= */
 
-    const filtered = products.filter(
-      (p) =>
-        p.sellerEmail?.trim().toLowerCase() === sellerEmail
-    );
+  const deliveredOrders = useMemo(
+    () => orders.filter((o) => o.status === "DELIVERED"),
+    [orders]
+  );
 
-    setSellerProducts(filtered);
-  }, [products, sellerEmail]);
+  const shippedOrders = useMemo(
+    () => orders.filter((o) => o.status === "SHIPPED"),
+    [orders]
+  );
 
-  /* ================= CALCULATIONS ================= */
-  const LOW_STOCK_LIMIT = 5;
+  const cancelledOrders = useMemo(
+    () => orders.filter((o) => o.status === "CANCELLED"),
+    [orders]
+  );
 
-  const lowStock = sellerProducts.filter(
-    (p) => p.stock > 0 && p.stock <= LOW_STOCK_LIMIT
-  ).length;
-
-  const outOfStock = sellerProducts.filter(
-    (p) => p.stock === 0
-  ).length;
+  /* ================= REVENUE ================= */
 
   const totalRevenue = useMemo(() => {
-    return orders.reduce(
-      (sum, order) => sum + (order.amount || 0),
-      0
-    );
-  }, [orders]);
+    if (!sellerEmail) return 0;
+
+    return deliveredOrders.reduce((sum, order) => {
+      const sellerItems = order.items?.filter(
+        (item) =>
+          item.sellerEmail?.toLowerCase() === sellerEmail
+      );
+
+      const sellerRevenue = sellerItems?.reduce(
+        (itemSum, item) =>
+          itemSum +
+          (item.price || 0) * (item.quantity || 1),
+        0
+      );
+
+      return sum + (sellerRevenue || 0);
+    }, 0);
+  }, [deliveredOrders, sellerEmail]);
 
   const totalOrders = orders.length;
+  const deliveredCount = deliveredOrders.length;
+  const shippedCount = shippedOrders.length;
+  const cancelledCount = cancelledOrders.length;
 
-  const deliveredOrders = orders.filter(
-    (o) => o.status === "DELIVERED"
-  ).length;
+  const avgOrderValue = useMemo(() => {
+    if (deliveredCount === 0) return 0;
+    return Math.round(totalRevenue / deliveredCount);
+  }, [totalRevenue, deliveredCount]);
 
-  const cancelledOrders = orders.filter(
-    (o) => o.status === "CANCELLED"
-  ).length;
+  const deliveryRate = totalOrders
+    ? Math.round((deliveredCount / totalOrders) * 100)
+    : 0;
 
-  const tabs = [
-    { key: "overview", label: "Overview" },
-    { key: "products", label: "Products" },
-    { key: "orders", label: "Orders" },
-    { key: "analytics", label: "Analytics" },
-  ];
+  const cancellationRate = totalOrders
+    ? Math.round((cancelledCount / totalOrders) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <p className="text-gray-500 animate-pulse">
+          Loading dashboard...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6">
-      <div className="mx-auto max-w-7xl">
+    <div className="space-y-10">
 
-        {/* HEADER */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Seller Dashboard
-          </h2>
-          <p className="text-sm text-gray-500">
-            {sellerEmail}
-          </p>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Dashboard Overview
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Welcome back, {sellerEmail}
+        </p>
+      </div>
+
+      {/* KPI GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <StatCard
+          title="Total Revenue"
+          value={`₹${totalRevenue}`}
+          icon={IndianRupee}
+          color="text-green-600"
+        />
+
+        <StatCard
+          title="Total Orders"
+          value={totalOrders}
+          icon={ShoppingCart}
+          color="text-blue-600"
+        />
+
+        <StatCard
+          title="Delivered"
+          value={deliveredCount}
+          icon={CheckCircle}
+          color="text-emerald-600"
+        />
+
+        <StatCard
+          title="Cancelled"
+          value={cancelledCount}
+          icon={XCircle}
+          color="text-red-600"
+        />
+      </div>
+
+      {/* SECOND SECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* BUSINESS SUMMARY */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Business Summary
+          </h3>
+
+          <div className="space-y-3 text-sm text-gray-600">
+            <p>
+              Shipped Orders: <strong>{shippedCount}</strong>
+            </p>
+            <p>
+              Average Order Value: <strong>₹{avgOrderValue}</strong>
+            </p>
+          </div>
         </div>
 
-        {/* TABS */}
-        <div className="mb-10 flex flex-wrap gap-3">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`rounded-lg px-5 py-2 text-sm font-medium transition ${
-                tab === t.key
-                  ? "bg-red-600 text-white shadow-md"
-                  : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* PERFORMANCE */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Performance
+          </h3>
 
-        {loading && (
-          <p className="text-gray-500">Loading products...</p>
-        )}
+          <div className="flex justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Delivery Rate</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {deliveryRate}%
+              </p>
+            </div>
 
-        {/* ================= OVERVIEW ================= */}
-        {tab === "overview" && !loading && (
-          <div className="rounded-2xl bg-white p-8 shadow-lg">
-
-            <h3 className="mb-8 text-xl font-semibold text-gray-800">
-              Business Overview
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-              <StatCard
-                title="Total Revenue"
-                value={`₹${totalRevenue}`}
-                icon={IndianRupee}
-                color="text-green-600"
-              />
-
-              <StatCard
-                title="Total Orders"
-                value={totalOrders}
-                icon={ShoppingCart}
-                color="text-blue-600"
-              />
-
-              <StatCard
-                title="Delivered Orders"
-                value={deliveredOrders}
-                icon={CheckCircle}
-                color="text-emerald-600"
-              />
-
-              <StatCard
-                title="Cancelled Orders"
-                value={cancelledOrders}
-                icon={XCircle}
-                color="text-red-600"
-              />
-
-              <StatCard
-                title="Products"
-                value={sellerProducts.length}
-                icon={Package}
-                color="text-purple-600"
-              />
-
-              <StatCard
-                title="Low Stock"
-                value={lowStock}
-                icon={AlertTriangle}
-                color="text-yellow-600"
-              />
-
-              <StatCard
-                title="Out of Stock"
-                value={outOfStock}
-                icon={XCircle}
-                color="text-red-500"
-              />
-
+            <div>
+              <p className="text-gray-400 text-sm">Cancellation Rate</p>
+              <p className="text-2xl font-bold text-red-600">
+                {cancellationRate}%
+              </p>
             </div>
           </div>
-        )}
-
-        {/* ================= PRODUCTS ================= */}
-        {tab === "products" && !loading && (
-          <SellerProducts sellerProducts={sellerProducts} />
-        )}
-
-        {/* ================= ORDERS ================= */}
-        {tab === "orders" && (
-          <SellerOrders sellerEmail={sellerEmail} />
-        )}
-
-        {/* ================= ANALYTICS ================= */}
-        {tab === "analytics" && (
-          <SellerAnalytics sellerEmail={sellerEmail} />
-        )}
+        </div>
 
       </div>
+
     </div>
   );
 }
 
 /* ================= STAT CARD ================= */
+
 function StatCard({ title, value, icon: Icon, color }) {
   return (
-    <div className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-500">
-          {title}
-        </p>
-        <Icon className={`h-5 w-5 ${color}`} />
+    <div className="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-lg transition">
+      <div className="flex justify-between items-center">
+        <p className="text-gray-500 text-sm">{title}</p>
+        <div className="p-2 rounded-lg bg-gray-100">
+          <Icon className={`h-5 w-5 ${color}`} />
+        </div>
       </div>
 
-      <p className="mt-4 text-3xl font-bold text-gray-800">
+      <p className="text-3xl font-bold mt-4 text-gray-800">
         {value}
       </p>
     </div>
